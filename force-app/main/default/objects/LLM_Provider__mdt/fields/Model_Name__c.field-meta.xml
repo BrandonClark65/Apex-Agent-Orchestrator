@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Model_Name__c</fullName>
+    <description>Name of the LLM Model.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Name of the LLM Model.</inlineHelpText>
+    <label>Model Name</label>
+    <required>true</required>
+    <type>TextArea</type>
+</CustomField>

@@ -1,36 +1,50 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <types>
-        <members>*</members>
-        <name>ApexClass</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexComponent</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexPage</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTestSuite</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>ApexTrigger</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>AuraDefinitionBundle</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>LightningComponentBundle</name>
-    </types>
-    <types>
-        <members>*</members>
-        <name>StaticResource</name>
-    </types>
-    <version>66.0</version>
+	<types>
+		<members>Agent_Definition__mdt.Goal__c</members>
+		<members>Agent_Definition__mdt.IsActive__c</members>
+		<members>Agent_Definition__mdt.LLM_Provider__c</members>
+		<members>Agent_Definition__mdt.MaxSteps__c</members>
+		<members>Agent_Definition__mdt.Memory_Config__c</members>
+		<members>Agent_Definition__mdt.SystemPrompt__c</members>
+		<members>Agent_Tool_Definition__mdt.Description__c</members>
+		<members>Agent_Tool_Definition__mdt.InputSchema__c</members>
+		<members>Agent_Tool_Definition__mdt.IsEnabled__c</members>
+		<members>Agent_Tool_Definition__mdt.OutputSchema__c</members>
+		<members>Agent_Tool_Definition__mdt.Tool_Class__c</members>
+		<members>Agent_Tool_Mapping__mdt.Agent__c</members>
+		<members>Agent_Tool_Mapping__mdt.IsAllowed__c</members>
+		<members>Agent_Tool_Mapping__mdt.Tool__c</members>
+		<members>LLM_Provider__mdt.Base_URL__c</members>
+		<members>LLM_Provider__mdt.MaxTokens__c</members>
+		<members>LLM_Provider__mdt.Model_Name__c</members>
+		<members>LLM_Provider__mdt.Named_Credential__c</members>
+		<members>LLM_Provider__mdt.Provider_Type__c</members>
+		<members>Memory_Config__mdt.Index_Name__c</members>
+		<members>Memory_Config__mdt.Memory_Type__c</members>
+		<members>Memory_Config__mdt.VectorDB_API_Key_NC__c</members>
+		<members>Memory_Config__mdt.VectorDB_Endpoint__c</members>
+		<name>CustomField</name>
+	</types>
+	<types>
+		<members>Agent_Definition__mdt</members>
+		<members>Agent_Tool_Definition__mdt</members>
+		<members>Agent_Tool_Mapping__mdt</members>
+		<members>LLM_Provider__mdt</members>
+		<members>Memory_Config__mdt</members>
+		<name>CustomObject</name>
+	</types>
+	<types>
+		<members>Agent_Definition__mdt-Agent Definition Layout</members>
+		<members>Agent_Tool_Definition__mdt-Agent Tool Definition Layout</members>
+		<members>Agent_Tool_Mapping__mdt-Agent-Tool Mapping Layout</members>
+		<members>LLM_Provider__mdt-LLM Provider Layout</members>
+		<members>Memory_Config__mdt-Memory Config Layout</members>
+		<name>Layout</name>
+	</types>
+	<types>
+		<members>AAO_Admin</members>
+		<name>PermissionSet</name>
+	</types>
+	<version>67.0</version>
 </Package>

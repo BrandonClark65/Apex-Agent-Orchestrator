@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tool__c</fullName>
+    <description>Agent Tool Definition</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Agent Tool Definition</inlineHelpText>
+    <label>Tool</label>
+    <referenceTo>Agent_Tool_Definition__mdt</referenceTo>
+    <relationshipLabel>Agent-Tool Mappings</relationshipLabel>
+    <relationshipName>Agent_Tool_Mappings</relationshipName>
+    <required>true</required>
+    <type>MetadataRelationship</type>
+    <unique>false</unique>
+</CustomField>

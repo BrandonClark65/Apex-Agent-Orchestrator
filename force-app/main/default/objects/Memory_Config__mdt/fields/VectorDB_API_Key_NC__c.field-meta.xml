@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>VectorDB_API_Key_NC__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>VectorDB API Key NC</label>
+    <required>false</required>
+    <type>TextArea</type>
+</CustomField>

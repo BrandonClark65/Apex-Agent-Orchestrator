@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LLM_Provider__c</fullName>
+    <description>LLM Provider used by the agent.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>LLM Provider used by the agent.</inlineHelpText>
+    <label>LLM Provider</label>
+    <referenceTo>LLM_Provider__mdt</referenceTo>
+    <relationshipLabel>Agent Definitions</relationshipLabel>
+    <relationshipName>Agent_Definitions</relationshipName>
+    <required>true</required>
+    <type>MetadataRelationship</type>
+    <unique>false</unique>
+</CustomField>
