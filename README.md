@@ -1,18 +1,41 @@
-# Salesforce DX Project: Next Steps
+# Apex Agent Orchestrator (AAO)
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+A Salesforce‑native framework for building, running, and monitoring AI agents that take actions across Salesforce and external systems.
 
-## How Do You Plan to Deploy Your Changes?
+## 🚀 What This Project Is
+A managed‑package‑ready orchestration layer that enables:
+- Multi‑step agent reasoning
+- Apex‑based tool execution
+- LLM provider abstraction (OpenAI, Azure, Anthropic, etc.)
+- Memory integration (Salesforce data + external vector stores)
+- Full execution logging and observability
+- Admin‑configurable agents via Custom Metadata
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+## 🧩 Core Components
+- **AgentRunner** — Executes agent loops and manages LLM interactions.
+- **ToolRegistry** — Discovers and invokes Apex tools.
+- **LLMClient** — Provider‑agnostic LLM interface.
+- **ExecutionLogger** — Stores reasoning, steps, and results.
+- **Custom Metadata** — Defines agents, tools, and provider configs.
+- **LWCs** — Agent Builder UI, Execution Viewer, Tool Catalog.
 
-## Configure Your Salesforce DX Project
+## 📦 Package Layout
+force-app/
+main/
+default/
+classes/
+lwc/
+customMetadata/
+permissionsets/
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
 
-## Read All About It
+## 🛠️ Roadmap
+- Agent execution loop (MVP)
+- Tool interface + registry
+- LLM provider abstraction
+- Execution logs + dashboard
+- Memory integration
+- Sample agents
+- Managed package release
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+
