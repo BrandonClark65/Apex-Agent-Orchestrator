@@ -28,6 +28,8 @@
 	</types>
 	<types>
 		<members>Agent_Definition__mdt</members>
+		<members>Agent_Run__c</members>
+		<members>Agent_Step__c</members>
 		<members>Agent_Tool_Definition__mdt</members>
 		<members>Agent_Tool_Mapping__mdt</members>
 		<members>LLM_Provider__mdt</members>
@@ -36,6 +38,8 @@
 	</types>
 	<types>
 		<members>Agent_Definition__mdt-Agent Definition Layout</members>
+		<members>Agent_Run__c-Agent Run Layout</members>
+		<members>Agent_Step__c-Agent Step Layout</members>
 		<members>Agent_Tool_Definition__mdt-Agent Tool Definition Layout</members>
 		<members>Agent_Tool_Mapping__mdt-Agent-Tool Mapping Layout</members>
 		<members>LLM_Provider__mdt-LLM Provider Layout</members>

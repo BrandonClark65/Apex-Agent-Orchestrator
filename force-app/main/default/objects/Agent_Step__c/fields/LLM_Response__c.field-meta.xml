@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LLM_Response__c</fullName>
+    <description>Response returned from the LLM for this step.</description>
+    <inlineHelpText>Response returned from the LLM for this step.</inlineHelpText>
+    <label>LLM Response</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

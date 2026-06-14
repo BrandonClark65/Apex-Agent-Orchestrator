@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tool__c</fullName>
+    <description>Which tool(Agent_Tool_Definition__mdt) was used for this step.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Which tool(Agent_Tool_Definition__mdt) was used for this step.</inlineHelpText>
+    <label>Tool</label>
+    <length>100</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

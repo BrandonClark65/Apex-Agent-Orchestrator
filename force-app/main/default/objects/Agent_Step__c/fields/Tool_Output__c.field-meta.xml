@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tool_Output__c</fullName>
+    <description>Response payload from the tool used in this step.</description>
+    <inlineHelpText>Response payload from the tool used in this step.</inlineHelpText>
+    <label>Tool Output</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

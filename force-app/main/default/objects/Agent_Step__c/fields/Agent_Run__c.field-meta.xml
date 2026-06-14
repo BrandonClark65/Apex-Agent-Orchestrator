@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Agent_Run__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>Which Agent Run is this step associated with?</description>
+    <inlineHelpText>Which Agent Run is this step associated with?</inlineHelpText>
+    <label>Agent Run</label>
+    <referenceTo>Agent_Run__c</referenceTo>
+    <relationshipLabel>Agent Steps</relationshipLabel>
+    <relationshipName>Agent_Steps</relationshipName>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>
