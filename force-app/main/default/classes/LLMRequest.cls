@@ -5,7 +5,7 @@ public with sharing class LLMRequest {
 
     public LLMRequest() {}
 
-    public LLM Request(String userPrompt){
+    public LLMRequest(String userPrompt){
         messages.add(new LLMMessage('user', userPrompt));
     }
 }

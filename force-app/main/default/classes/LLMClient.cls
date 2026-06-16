@@ -1,3 +1,3 @@
-public with sharing interface LLMClient {
+public interface LLMClient {
     LLMResponse complete(LLMRequest request);
 }
