@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
 	<types>
+		<members>LLMClient</members>
+		<members>LLMClientFactory</members>
+		<members>LLMMessage</members>
+		<members>LLMRequest</members>
+		<members>LLMResponse</members>
+		<members>OpenAIClient</members>
+		<members>OpenAIRequestDTO</members>
+		<members>OpenAIResponseDTO</members>
+		<name>ApexClass</name>
+	</types>
+	<types>
 		<members>Agent_Definition__mdt.Goal__c</members>
 		<members>Agent_Definition__mdt.IsActive__c</members>
 		<members>Agent_Definition__mdt.LLM_Provider__c</members>

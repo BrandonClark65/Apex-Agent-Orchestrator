@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Agent_Run__c</fullName>
-    <description>The Agent(Custom Metadata Type Record) for this run.</description>
+    <fullName>Agent__c</fullName>
     <externalId>false</externalId>
-    <inlineHelpText>The Agent(Custom Metadata Type Record) for this run.</inlineHelpText>
-    <label>Agent Run</label>
-    <length>20</length>
+    <label>Agent</label>
+    <length>100</length>
     <required>true</required>
     <trackTrending>false</trackTrending>
     <type>Text</type>
