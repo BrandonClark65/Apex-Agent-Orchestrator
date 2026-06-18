@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Test Agent</label>
+    <protected>true</protected>
+    <values>
+        <field>Goal__c</field>
+        <value xsi:type="xsd:string">A Salesforce-native AI agent that can query, create, and update records.</value>
+    </values>
+    <values>
+        <field>IsActive__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>LLM_Provider__c</field>
+        <value xsi:type="xsd:string">OpenAI_GPT4</value>
+    </values>
+    <values>
+        <field>MaxSteps__c</field>
+        <value xsi:type="xsd:double">5.0</value>
+    </values>
+    <values>
+        <field>Memory_Config__c</field>
+        <value xsi:type="xsd:string">NoMemory</value>
+    </values>
+    <values>
+        <field>SystemPrompt__c</field>
+        <value xsi:type="xsd:string">You are a Salesforce Apex Agent. You MUST respond using this JSON protocol:
+
+If you need to call a tool:
+{
+  &quot;tool&quot;: &quot;Tool_Class_Name&quot;,
+  &quot;args&quot;: { ... }
+}
+
+If you are giving the final answer:
+{
+  &quot;final&quot;: &quot;your final answer here&quot;
+}
+
+Never return plain text. Always return valid JSON.</value>
+    </values>
+</CustomMetadata>

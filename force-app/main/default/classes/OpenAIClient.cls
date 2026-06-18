@@ -41,4 +41,3 @@ public with sharing class OpenAIClient implements LLMClient {
         return response;
     }
 }
-
