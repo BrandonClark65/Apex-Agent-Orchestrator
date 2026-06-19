@@ -1,5 +1,7 @@
 public with sharing class ToolRegistry {
-
+    //
+    // Instantiate a tool by Apex class name
+    //
     public static AgentTool getToolByClassName(String className) {
         Type t = Type.forName(className);
         if (t == null) {
@@ -7,7 +9,9 @@ public with sharing class ToolRegistry {
         }
         return (AgentTool)t.newInstance();
     }
-
+    //
+    // Return instantiated tool classes (used when actually executing tools)
+    //
     public static List<AgentTool> getToolsForAgent(String agentDeveloperName) {
         List<AgentTool> tools = new List<AgentTool>();
 
@@ -46,6 +50,43 @@ public with sharing class ToolRegistry {
         }
 
         return tools;
+    }
+    //
+    // Return CMDT tool definitions (used for tool manifest)
+    //
+    public static Map<String, aao__Agent_Tool_Definition__mdt> getToolDefinitionsForAgent(String agentDeveloperName) {
+
+        // Step 1: Query mappings
+        List<aao__Agent_Tool_Mapping__mdt> mappings = [
+            SELECT aao__Tool__c
+            FROM aao__Agent_Tool_Mapping__mdt
+            WHERE aao__Agent__c = :agentDeveloperName
+              AND aao__IsAllowed__c = true
+        ];
+
+        if (mappings.isEmpty()) {
+            return new Map<String, aao__Agent_Tool_Definition__mdt>();
+        }
+
+        // Step 2: Collect DeveloperNames
+        Set<String> toolDeveloperNames = new Set<String>();
+        for (aao__Agent_Tool_Mapping__mdt m : mappings) {
+            toolDeveloperNames.add(m.aao__Tool__c);
+        }
+
+        // Step 3: Query CMDT definitions
+        Map<String, aao__Agent_Tool_Definition__mdt> toolDefs =
+            new Map<String, aao__Agent_Tool_Definition__mdt>([
+                SELECT DeveloperName,
+                       aao__Tool_Class__c,
+                       aao__Description__c,
+                       aao__InputSchema__c,
+                       aao__OutputSchema__c
+                FROM aao__Agent_Tool_Definition__mdt
+                WHERE DeveloperName IN :toolDeveloperNames
+            ]);
+
+        return toolDefs;
     }
 }
 
