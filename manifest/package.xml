@@ -14,9 +14,9 @@
 	<types>
 		<members>Agent_Definition__mdt.Goal__c</members>
 		<members>Agent_Definition__mdt.IsActive__c</members>
-		<members>Agent_Definition__mdt.LLM_Provider__c</members>
+		<members>Agent_Definition__mdt.LLMProvider__c</members>
 		<members>Agent_Definition__mdt.MaxSteps__c</members>
-		<members>Agent_Definition__mdt.Memory_Config__c</members>
+		<members>Agent_Definition__mdt.MemoryConfig__c</members>
 		<members>Agent_Definition__mdt.SystemPrompt__c</members>
 		<members>Agent_Tool_Definition__mdt.Description__c</members>
 		<members>Agent_Tool_Definition__mdt.InputSchema__c</members>

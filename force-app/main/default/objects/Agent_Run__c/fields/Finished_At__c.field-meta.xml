@@ -4,7 +4,7 @@
     <description>Date and Time when the run finished.</description>
     <inlineHelpText>Date and Time when the run finished.</inlineHelpText>
     <label>Finished At</label>
-    <required>true</required>
+    <required>false</required>
     <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

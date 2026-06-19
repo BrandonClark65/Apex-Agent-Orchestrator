@@ -11,7 +11,7 @@
         <value xsi:type="xsd:boolean">true</value>
     </values>
     <values>
-        <field>LLM_Provider__c</field>
+        <field>LLMProvider__c</field>
         <value xsi:type="xsd:string">OpenAI_GPT4</value>
     </values>
     <values>
@@ -19,7 +19,7 @@
         <value xsi:type="xsd:double">5.0</value>
     </values>
     <values>
-        <field>Memory_Config__c</field>
+        <field>MemoryConfig__c</field>
         <value xsi:type="xsd:string">NoMemory</value>
     </values>
     <values>

@@ -1,21 +1,21 @@
 public with sharing class AgentEngine {
 
-    public static Id runAgent(String agentDeveloperName, String inputContextJson) {
+    public static Id runAgent(String agentDeveloperName, String inputContextJson, String triggerType) {
 
         aao__Agent_Definition__mdt agentDef = [
             SELECT aao__Goal__c,
                    aao__SystemPrompt__c,
-                   aao__LLM_Provider__c,
+                   aao__LLMProvider__c,
                    aao__MaxSteps__c
             FROM aao__Agent_Definition__mdt
             WHERE DeveloperName = :agentDeveloperName
             LIMIT 1
         ];
 
-        Id runId = ExecutionLogger.startRun(agentDeveloperName, inputContextJson);
+        Id runId = ExecutionLogger.startRun(agentDeveloperName, inputContextJson, triggerType);
 
         try {
-            LLMClient client = LLMClientFactory.forProvider(agentDef.aao__LLM_Provider__c);
+            LLMClient client = LLMClientFactory.forProvider(agentDef.aao__LLMProvider__c);
 
             List<LLMMessage> history = new List<LLMMessage>{
                 new LLMMessage('system', agentDef.aao__SystemPrompt__c),

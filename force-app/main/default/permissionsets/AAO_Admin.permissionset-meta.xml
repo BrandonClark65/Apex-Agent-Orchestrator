@@ -82,4 +82,12 @@
         <viewAllFields>true</viewAllFields>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
+    <tabSettings>
+        <tab>Agent_Run__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Agent_Step__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
 </PermissionSet>

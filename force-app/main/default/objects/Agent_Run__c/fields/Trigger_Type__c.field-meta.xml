@@ -12,9 +12,9 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Manual</fullName>
-                <default>false</default>
-                <label>Manual</label>
+                <fullName>Unknown</fullName>
+                <default>true</default>
+                <label>Unknown</label>
             </value>
             <value>
                 <fullName>Scheduled</fullName>
@@ -25,6 +25,31 @@
                 <fullName>Event</fullName>
                 <default>false</default>
                 <label>Event</label>
+            </value>
+            <value>
+                <fullName>Apex</fullName>
+                <default>false</default>
+                <label>Apex</label>
+            </value>
+            <value>
+                <fullName>Flow</fullName>
+                <default>false</default>
+                <label>Flow</label>
+            </value>
+            <value>
+                <fullName>API</fullName>
+                <default>false</default>
+                <label>API</label>
+            </value>
+            <value>
+                <fullName>UI</fullName>
+                <default>false</default>
+                <label>UI</label>
+            </value>
+            <value>
+                <fullName>Agent</fullName>
+                <default>false</default>
+                <label>Agent</label>
             </value>
         </valueSetDefinition>
     </valueSet>

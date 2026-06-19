@@ -10,7 +10,7 @@ public with sharing class OpenAIClient implements LLMClient {
         Http http = new Http();
         HttpRequest req = new HttpRequest();
 
-        req.setEndpoint('callout:' + provider.aao__Named_Credential__c);
+        req.setEndpoint('callout:' + provider.aao__Named_Credential__c + provider.aao__API_Endpoint__c);
         req.setMethod('POST');
         req.setHeader('Content-Type', 'application/json');
 

@@ -1,11 +1,12 @@
 public with sharing class ExecutionLogger {
 
-    public static Id startRun(String agentName, String inputContextJson) {
+    public static Id startRun(String agentName, String inputContextJson, String triggerType) {
         aao__Agent_Run__c run = new aao__Agent_Run__c(
             aao__Agent__c = agentName,
             aao__Status__c = 'Running',
             aao__Input_Context__c = inputContextJson,
-            aao__Started_At__c = System.now()
+            aao__Started_At__c = System.now(),
+            aao__Trigger_Type__c = String.isBlank(triggerType) ? 'Unknown' : triggerType
         );
         insert run;
         return run.Id;

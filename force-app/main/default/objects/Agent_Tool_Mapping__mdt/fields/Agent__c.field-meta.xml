@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Agent__c</fullName>
-    <description>Agent Definition</description>
+    <description>DeveloperName of Agent Definition</description>
     <fieldManageability>DeveloperControlled</fieldManageability>
-    <inlineHelpText>Agent Definition</inlineHelpText>
+    <inlineHelpText>DeveloperName of Agent Definition</inlineHelpText>
     <label>Agent</label>
-    <referenceTo>Agent_Definition__mdt</referenceTo>
-    <relationshipLabel>Agent-Tool Mappings</relationshipLabel>
-    <relationshipName>Agent_Tool_Mappings</relationshipName>
     <required>true</required>
-    <type>MetadataRelationship</type>
-    <unique>false</unique>
+    <type>TextArea</type>
 </CustomField>
