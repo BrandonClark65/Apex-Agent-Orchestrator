@@ -7,6 +7,7 @@ public with sharing class OpenAIClient implements LLMClient {
     }
 
     public LLMResponse complete(LLMRequest request) {
+        
         Http http = new Http();
         HttpRequest req = new HttpRequest();
 
@@ -14,8 +15,23 @@ public with sharing class OpenAIClient implements LLMClient {
         req.setMethod('POST');
         req.setHeader('Content-Type', 'application/json');
 
+        if (request.maxTokens == null) {
+            request.maxTokens = provider.aao__MaxTokens__c != null
+                ? Integer.valueOf(provider.aao__MaxTokens__c)
+                : 2048; // safe fallback
+        }
+        if (request.temperature == null) {
+            request.temperature = provider.aao__Temperature__c != null
+                ? provider.aao__Temperature__c
+                : 0.0; // safe default for agents
+        }
+
+
+
         OpenAIRequestDTO dto = new OpenAIRequestDTO();
-        dto.model = provider.aao__Model_Name__c;
+        if (provider.aao__Model_Name__c != null) {
+            dto.model = provider.aao__Model_Name__c;
+        }
         dto.messages = request.messages;
         dto.max_tokens = request.maxTokens;
         dto.temperature = request.temperature;

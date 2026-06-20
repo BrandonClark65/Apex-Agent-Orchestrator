@@ -1,33 +1,35 @@
-public with sharing class AgentRunQueueable implements Queueable, Database.AllowsCallouts {
+public with sharing class AgentToolQueueable implements Queueable {
 
     private String agentDeveloperName;
-    private String inputContextJson;
     private String triggerType;
     private Id runId;
     private List<LLMMessage> history;
+    private String toolName;
+    private Map<String, Object> args;
 
-    public AgentRunQueueable(
+    public AgentToolQueueable(
         String agentDeveloperName,
-        String inputContextJson,
         String triggerType,
         Id runId,
-        List<LLMMessage> history
+        List<LLMMessage> history,
+        String toolName,
+        Map<String, Object> args
     ) {
         this.agentDeveloperName = agentDeveloperName;
-        this.inputContextJson = inputContextJson;
         this.triggerType = triggerType;
         this.runId = runId;
         this.history = history;
+        this.toolName = toolName;
+        this.args = args;
     }
 
     public void execute(QueueableContext qc) {
 
         try {
-            AgentEngine.runLLMStep(agentDeveloperName, inputContextJson, triggerType, runId, history);
+            AgentEngine.runToolStep(agentDeveloperName, triggerType, runId, history, toolName, args);
 
         } catch (Exception e) {
             ExecutionLogger.finishRun(runId, null, 'Failed', e.getMessage());
         }
     }
 }
-

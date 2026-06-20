@@ -1,5 +1,9 @@
 public with sharing class ExecutionLogger {
-
+    //
+    // ───────────────────────────────────────────────────────────────
+    // START RUN
+    // ───────────────────────────────────────────────────────────────
+    //
     public static Id startRun(String agentName, String inputContextJson, String triggerType) {
         aao__Agent_Run__c run = new aao__Agent_Run__c(
             aao__Agent__c = agentName,
@@ -11,7 +15,58 @@ public with sharing class ExecutionLogger {
         insert run;
         return run.Id;
     }
+    //
+    // ───────────────────────────────────────────────────────────────
+    // STEP NUMBER HELPERS
+    // ───────────────────────────────────────────────────────────────
+    //
 
+    // Returns the next step number (COUNT + 1)
+    public static Integer nextStepNumber(Id runId) {
+        Integer countSteps = [
+            SELECT COUNT()
+            FROM aao__Agent_Step__c
+            WHERE aao__Agent_Run__c = :runId
+        ];
+        return countSteps + 1;
+    }
+
+    // Returns the current step count (COUNT)
+    public static Integer getCurrentStep(Id runId) {
+        return [
+            SELECT COUNT()
+            FROM aao__Agent_Step__c
+            WHERE aao__Agent_Run__c = :runId
+        ];
+    }
+    //
+    // ───────────────────────────────────────────────────────────────
+    // Check for identical tool call (to avoid duplicates)
+    // ───────────────────────────────────────────────────────────────
+    // 
+    public static Boolean hasIdenticalToolCall(Id runId, String toolName, Map<String, Object> args) {
+        List<aao__Agent_Step__c> steps = [
+            SELECT aao__Step_Type__c, aao__Tool_Input__c
+            FROM aao__Agent_Step__c
+            WHERE aao__Agent_Run__c = :runId
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+
+        if (steps.isEmpty()) return false;
+
+        aao__Agent_Step__c last = steps[0];
+
+        if (last.aao__Step_Type__c != 'ToolCall') return false;
+
+        return last.aao__Tool_Input__c == JSON.serialize(args);
+    }
+
+    //
+    // ───────────────────────────────────────────────────────────────
+    // LOG STEP
+    // ───────────────────────────────────────────────────────────────
+    //   
     public static void logStep(Id runId, AgentStepLog log) {
         aao__Agent_Step__c step = new aao__Agent_Step__c(
             aao__Agent_Run__c = runId,
@@ -25,7 +80,11 @@ public with sharing class ExecutionLogger {
         );
         insert step;
     }
-
+    //
+    // ───────────────────────────────────────────────────────────────
+    // FINISH RUN
+    // ───────────────────────────────────────────────────────────────
+    //
     public static void finishRun(Id runId, String finalOutput, String status, String errorMessage) {
         aao__Agent_Run__c run = new aao__Agent_Run__c(
             Id = runId,
