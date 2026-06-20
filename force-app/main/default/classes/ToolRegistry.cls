@@ -75,18 +75,25 @@ public with sharing class ToolRegistry {
         }
 
         // Step 3: Query CMDT definitions
-        Map<String, aao__Agent_Tool_Definition__mdt> toolDefs =
-            new Map<String, aao__Agent_Tool_Definition__mdt>([
-                SELECT DeveloperName,
-                       aao__Tool_Class__c,
-                       aao__Description__c,
-                       aao__InputSchema__c,
-                       aao__OutputSchema__c
-                FROM aao__Agent_Tool_Definition__mdt
-                WHERE DeveloperName IN :toolDeveloperNames
-            ]);
+        List<aao__Agent_Tool_Definition__mdt> defs = [
+            SELECT DeveloperName,
+                aao__Tool_Class__c,
+                aao__Description__c,
+                aao__InputSchema__c,
+                aao__OutputSchema__c
+            FROM aao__Agent_Tool_Definition__mdt
+            WHERE DeveloperName IN :toolDeveloperNames
+        ];
 
-        return toolDefs;
+        // Step 4: Build map keyed by DeveloperName (NOT Id)
+        Map<String, aao__Agent_Tool_Definition__mdt> result =
+            new Map<String, aao__Agent_Tool_Definition__mdt>();
+
+        for (aao__Agent_Tool_Definition__mdt def : defs) {
+            result.put(def.DeveloperName, def);
+        }
+
+        return result;
     }
 }
 

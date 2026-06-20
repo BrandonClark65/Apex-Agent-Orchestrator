@@ -15,9 +15,19 @@
                 <label>Plan</label>
             </value>
             <value>
+                <fullName>LLMCall</fullName>
+                <default>false</default>
+                <label>LLM Call</label>
+            </value>
+            <value>
                 <fullName>ToolCall</fullName>
                 <default>false</default>
                 <label>ToolCall</label>
+            </value>
+            <value>
+                <fullName>InvalidTool</fullName>
+                <default>false</default>
+                <label>InvalidTool</label>
             </value>
             <value>
                 <fullName>ToolResult</fullName>

@@ -12,6 +12,6 @@
     </values>
     <values>
         <field>Tool__c</field>
-        <value xsi:type="xsd:string">Create_Record</value>
+        <value xsi:type="xsd:string">CreateRecordTool</value>
     </values>
 </CustomMetadata>

@@ -24,6 +24,7 @@ public with sharing class AgentEngine {
     // ───────────────────────────────────────────────────────────────
     //
     public void executeAgentRun(String agentDeveloperName, String inputContextJson, String triggerType, Id runId) {
+        System.debug('Executing agent run: ' + agentDeveloperName + ', ' + inputContextJson + ', ' + triggerType + ', ' + runId);
 
         try {
             // Load agent definition
@@ -39,11 +40,13 @@ public with sharing class AgentEngine {
 
             // Load allowed tools for this agent
             Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(agentDeveloperName);
+            System.debug('Loaded tool definitions: ' + toolDefs);
 
             // Build tool manifest
             String toolManifest = buildToolManifest(toolDefs);
+            System.debug('Built tool manifest: ' + toolManifest);
 
-            // Build enhanced system prompt
+            // Build enhanced System prompt
             String systemPrompt =
                 agentDef.aao__SystemPrompt__c +
                 '\n\nYou have access to the following tools. ' +
@@ -72,6 +75,7 @@ public with sharing class AgentEngine {
                 // 1. Call LLM
                 LLMRequest req = new LLMRequest();
                 req.messages = history;
+                System.debug('LLM Request step ' + step + ': ' + JSON.serialize(req));
 
                 LLMResponse res = client.complete(req);
 
@@ -98,15 +102,18 @@ public with sharing class AgentEngine {
                 // ───────────────────────────────────────────────────────────────
                 //
                 if (parsed.containsKey('tool')) {
+                    System.debug('LLM wants to call a tool with args: ' + JSON.serialize(parsed));
 
                     String toolName = (String)parsed.get('tool');
                     Map<String, Object> args = (Map<String, Object>)parsed.get('args');
+                    System.debug('Parsed tool call: ' + toolName + ' with args: ' + JSON.serialize(args));
 
                     // Guardrail: invalid tool
                     if (!toolDefs.containsKey(toolName)) {
+                        System.debug('LLM attempted to call invalid tool: ' + toolName);
 
                         String errorMsg = 'Invalid tool "' + toolName + '". ' +
-                                          'You may ONLY call tools listed in the system prompt.';
+                                          'You may ONLY call tools listed in the System prompt.';
 
                         // Log invalid tool step
                         ExecutionLogger.logStep(
@@ -123,6 +130,7 @@ public with sharing class AgentEngine {
                         );
 
                         // Tell LLM it used an invalid tool
+                        System.debug('Telling LLM about invalid tool usage: ' + errorMsg);
                         history.add(new LLMMessage('assistant', '{"error": "' + errorMsg + '"}'));
                         continue;
                     }

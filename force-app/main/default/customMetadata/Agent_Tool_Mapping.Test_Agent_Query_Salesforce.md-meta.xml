@@ -12,6 +12,6 @@
     </values>
     <values>
         <field>Tool__c</field>
-        <value xsi:type="xsd:string">Query_Salesforce</value>
+        <value xsi:type="xsd:string">QuerySalesforceTool</value>
     </values>
 </CustomMetadata>
