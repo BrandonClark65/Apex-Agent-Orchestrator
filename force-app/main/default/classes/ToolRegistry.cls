@@ -5,7 +5,7 @@ public with sharing class ToolRegistry {
     public static AgentTool getToolByClassName(String className) {
         Type t = Type.forName(className);
         if (t == null) {
-            throw new AuraHandledException('Tool class not found: ' + className);
+            throw new AgentException('Tool class not found: ' + className);
         }
         return (AgentTool)t.newInstance();
     }
@@ -44,7 +44,7 @@ public with sharing class ToolRegistry {
         for (String devName : toolDeveloperNames) {
             aao__Agent_Tool_Definition__mdt def = toolDefs.get(devName);
             if (def == null) {
-                throw new AuraHandledException('Tool definition not found for: ' + devName);
+                throw new AgentException('Tool definition not found for: ' + devName);
             }
             tools.add(getToolByClassName(def.aao__Tool_Class__c));
         }

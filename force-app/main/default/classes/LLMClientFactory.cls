@@ -13,6 +13,7 @@ public with sharing class LLMClientFactory {
             return new OpenAIClient(provider);
         }
 
-        throw new AuraHandledException('Unsupported LLM provider: ' + provider.aao__Provider_Type__c);
+        throw new AgentException('Unsupported LLM provider: ' + provider.aao__Provider_Type__c);
+
     }
 }

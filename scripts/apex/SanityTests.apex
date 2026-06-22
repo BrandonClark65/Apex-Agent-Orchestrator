@@ -24,7 +24,7 @@ System.debug(res.getBody());
 // Run a test agent
 Id runId = AgentEngine.runAgent(
     'Test_Agent', 
-    '{"task": "Find all Accounts in Portland"}',
+    '{"task": "Find all Accounts in Portland and then update their phone numbers to 123-456-7890."}',
     'Apex'
 );
 
