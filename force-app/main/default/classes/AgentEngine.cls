@@ -99,7 +99,8 @@ public with sharing class AgentEngine {
                     res.rawResponse,
                     null,
                     null,
-                    'Completed'
+                    'Completed',
+                    null
                 )
             );
 
@@ -197,7 +198,8 @@ public with sharing class AgentEngine {
                     null,
                     JSON.serialize(args),
                     JSON.serialize(toolResult),
-                    toolResult.success ? 'Completed' : 'Failed'
+                    toolResult.success ? 'Completed' : 'Failed',
+                    toolName
                 )
             );
 

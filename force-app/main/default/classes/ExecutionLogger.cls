@@ -46,7 +46,7 @@ public with sharing class ExecutionLogger {
     // 
     public static Boolean hasIdenticalToolCall(Id runId, String toolName, Map<String, Object> args) {
         List<aao__Agent_Step__c> steps = [
-            SELECT aao__Step_Type__c, aao__Tool_Input__c
+            SELECT aao__Step_Type__c, aao__Tool_Input__c, aao__Tool__c
             FROM aao__Agent_Step__c
             WHERE aao__Agent_Run__c = :runId
             ORDER BY CreatedDate DESC
@@ -58,9 +58,24 @@ public with sharing class ExecutionLogger {
         aao__Agent_Step__c last = steps[0];
 
         if (last.aao__Step_Type__c != 'ToolCall') return false;
+        if (last.aao__Tool__c != toolName) return false;
 
-        return last.aao__Tool_Input__c == JSON.serialize(args);
+        // Normalize both sides
+        String lastNormalized = normalize(JSON.deserializeUntyped(last.aao__Tool_Input__c));
+        String currentNormalized = normalize(args);
+
+        return lastNormalized == currentNormalized;
     }
+    private static String normalize(Object value) {
+        // Serialize → Deserialize → Serialize again
+        // This produces stable, canonical JSON ordering
+        return JSON.serialize(
+            JSON.deserializeUntyped(
+                JSON.serialize(value)
+            )
+        );
+    }
+
 
     //
     // ───────────────────────────────────────────────────────────────
@@ -76,7 +91,8 @@ public with sharing class ExecutionLogger {
             aao__LLM_Response__c = log.llmResponse,
             aao__Tool_Input__c = log.toolInput,
             aao__Tool_Output__c = log.toolOutput,
-            aao__Status__c = log.status
+            aao__Status__c = log.status,
+            aao__Tool__c = log.toolName
         );
         insert step;
     }
