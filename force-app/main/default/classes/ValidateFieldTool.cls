@@ -23,7 +23,7 @@ public with sharing class ValidateFieldTool implements AgentTool {
             // Exact match
             if (fields.containsKey(userField)) {
                 Schema.DescribeFieldResult f = fields.get(userField).getDescribe();
-                return AgentToolResult.success(new Map<String, Object>{
+                return AgentToolResult.success('Field found', new Map<String, Object>{
                     'exists' => true,
                     'apiName' => userField,
                     'label' => f.getLabel(),
@@ -47,7 +47,7 @@ public with sharing class ValidateFieldTool implements AgentTool {
 
             if (bestMatch != null) {
                 Schema.DescribeFieldResult f = fields.get(bestMatch).getDescribe();
-                return AgentToolResult.success(new Map<String, Object>{
+                return AgentToolResult.success('Fuzzy match found', new Map<String, Object>{
                     'exists' => true,
                     'apiName' => bestMatch,
                     'label' => f.getLabel(),

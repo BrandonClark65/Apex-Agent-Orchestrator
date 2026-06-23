@@ -12,7 +12,7 @@ public with sharing class QuerySalesforceTool implements AgentTool {
         try {
             String soql = (String)args.get('query');
             if (String.isBlank(soql)) {
-                return new AgentToolResult(false, 'Missing SOQL query', null);
+                return AgentToolResult.error('Missing SOQL query');
             }
 
             List<SObject> results = Database.query(soql);
@@ -21,10 +21,10 @@ public with sharing class QuerySalesforceTool implements AgentTool {
                 'records' => results
             };
 
-            return new AgentToolResult(true, 'Query executed successfully', data);
+            return AgentToolResult.success('Query executed successfully', data);
 
         } catch (Exception e) {
-            return new AgentToolResult(false, e.getMessage(), null);
+            return AgentToolResult.error(e.getMessage());
         }
     }
 }

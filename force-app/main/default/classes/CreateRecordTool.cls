@@ -14,7 +14,7 @@ public with sharing class CreateRecordTool implements AgentTool {
             Map<String, Object> fields = (Map<String, Object>)args.get('fields');
 
             if (String.isBlank(objectType) || fields == null) {
-                return new AgentToolResult(false, 'Missing object or fields', null);
+                return AgentToolResult.error('Missing object or fields');
             }
 
             SObject record = (SObject)Type.forName('Schema.' + objectType).newInstance();
@@ -29,10 +29,10 @@ public with sharing class CreateRecordTool implements AgentTool {
                 'id' => record.Id
             };
 
-            return new AgentToolResult(true, 'Record created', data);
+            return AgentToolResult.success('Record created', data);
 
         } catch (Exception e) {
-            return new AgentToolResult(false, e.getMessage(), null);
+            return AgentToolResult.error(e.getMessage());
         }
     }
 }

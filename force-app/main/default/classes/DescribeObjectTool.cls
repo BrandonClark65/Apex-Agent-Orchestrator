@@ -33,7 +33,7 @@ public with sharing class DescribeObjectTool implements AgentTool {
                 });
             }
 
-            return AgentToolResult.success(new Map<String, Object>{
+            return AgentToolResult.success('Object described successfully', new Map<String, Object>{
                 'object' => objectName,
                 'fields' => fieldInfo
             });

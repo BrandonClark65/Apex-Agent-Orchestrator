@@ -10,8 +10,8 @@ public class AgentToolResult {
     }
 
     // SUCCESS helper
-    public static AgentToolResult success(Map<String, Object> data) {
-        return new AgentToolResult(true, 'OK', data);
+    public static AgentToolResult success(String message, Map<String, Object> data) {
+        return new AgentToolResult(true, message, data);
     }
 
     // ERROR helper

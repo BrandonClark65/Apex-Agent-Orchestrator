@@ -29,6 +29,7 @@ public with sharing class UpdateRecordTool implements AgentTool {
             List<SObject> toUpdate = new List<SObject>();
             List<Map<String, Object>> results = new List<Map<String, Object>>();
 
+            // Build records + validation
             for (Object o : recordsInput) {
                 Map<String, Object> rec = (Map<String, Object>) o;
 
@@ -44,8 +45,9 @@ public with sharing class UpdateRecordTool implements AgentTool {
                     continue;
                 }
 
-                // Validate fields
                 Boolean valid = true;
+
+                // Validate fields
                 for (String key : fields.keySet()) {
                     if (!fieldMap.containsKey(key)) {
                         results.add(new Map<String, Object>{
@@ -78,6 +80,7 @@ public with sharing class UpdateRecordTool implements AgentTool {
                 }
                 toUpdate.add(sobj);
 
+                // Placeholder result — may be overwritten if DML fails
                 results.add(new Map<String, Object>{
                     'id' => recordId,
                     'success' => true,
@@ -85,25 +88,36 @@ public with sharing class UpdateRecordTool implements AgentTool {
                 });
             }
 
+            // Perform DML
             if (!toUpdate.isEmpty()) {
                 try {
                     update toUpdate;
                 } catch (DmlException d) {
-                    // Attach DML errors to results
-                    for (Integer i = 0; i < toUpdate.sizeUp(); i++) {
-                        results[i].put('success', false);
-                        results[i].put('message', d.getDmlMessage(i));
+
+                    // Align DML errors to only the "Pending update" entries
+                    Integer updateIndex = 0;
+
+                    for (Integer i = 0; i < results.size(); i++) {
+                        Map<String, Object> r = results[i];
+
+                        if ((Boolean) r.get('success') == true &&
+                            r.get('message') == 'Pending update') {
+
+                            r.put('success', false);
+                            r.put('message', d.getDmlMessage(updateIndex));
+                            updateIndex++;
+                        }
                     }
                 }
             }
 
-            return AgentToolResult.success(new Map<String, Object>{
-                'results' => results
-            });
+            return AgentToolResult.success(
+                'Records updated',
+                new Map<String, Object>{ 'results' => results }
+            );
 
         } catch (Exception e) {
             return AgentToolResult.error(e.getMessage());
         }
     }
 }
-
