@@ -26,4 +26,8 @@
         <field>Provider_Type__c</field>
         <value xsi:type="xsd:string">OpenAI</value>
     </values>
+    <values>
+        <field>Temperature__c</field>
+        <value xsi:type="xsd:double">0.1</value>
+    </values>
 </CustomMetadata>

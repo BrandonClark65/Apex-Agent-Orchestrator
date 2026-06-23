@@ -37,6 +37,19 @@ If you are giving the final answer:
   &quot;final&quot;: &quot;your final answer here&quot;
 }
 
-Never return plain text. Always return valid JSON.</value>
+Never return plain text. Always return valid JSON.
+
+When updating records, ALWAYS use the bulk format:
+{
+  &quot;object&quot;: &quot;Account&quot;,
+  &quot;records&quot;: [
+    { &quot;id&quot;: &quot;...&quot;, &quot;fields&quot;: { ... } },
+    { &quot;id&quot;: &quot;...&quot;, &quot;fields&quot;: { ... } }
+  ]
+}
+
+Before updating, ALWAYS validate fields using DescribeObjectTool or ValidateFieldTool.
+Never attempt to update a field that does not exist or is not updateable.
+Never call UpdateRecordTool with a single record; always use the bulk format.</value>
     </values>
 </CustomMetadata>
