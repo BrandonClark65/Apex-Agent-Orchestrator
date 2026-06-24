@@ -36,6 +36,14 @@ public with sharing class OpenAIClient implements LLMClient {
         dto.max_tokens = request.maxTokens;
         dto.temperature = request.temperature;
 
+        // DEBUG: Log the full request before sending
+        System.debug('=== LLM REQUEST DTO (RAW APEX OBJECT) ===\n' + JSON.serializePretty(dto));
+        System.debug('=== LLM REQUEST MESSAGES ===\n' + JSON.serializePretty(dto.messages));
+        for (Integer i = 0; i < dto.messages.size(); i++) {
+            System.debug('=== MESSAGE ' + i + ' ===\n' + JSON.serializePretty(dto.messages[i]));
+        }
+
+
         req.setBody(JSON.serialize(dto));
 
         HttpResponse res = http.send(req);

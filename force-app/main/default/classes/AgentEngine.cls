@@ -2,7 +2,7 @@ public with sharing class AgentEngine {
 
     //
     // ───────────────────────────────────────────────────────────────
-    // 1. PUBLIC ENTRY POINT (SYNCHRONOUS)
+    // 1. PUBLIC ENTRY POINT
     // ───────────────────────────────────────────────────────────────
     //
     @AuraEnabled
@@ -10,7 +10,6 @@ public with sharing class AgentEngine {
 
         Id runId = ExecutionLogger.startRun(agentDeveloperName, inputContextJson, triggerType);
 
-        // Initial history: we let runLLMStep build the system prompt
         List<LLMMessage> history = new List<LLMMessage>{
             new LLMMessage('user', inputContextJson)
         };
@@ -26,7 +25,6 @@ public with sharing class AgentEngine {
     //
     // ───────────────────────────────────────────────────────────────
     // 2. LLM STEP (CALLOUTS ALLOWED)
-    //    Called from AgentRunQueueable
     // ───────────────────────────────────────────────────────────────
     //
     public static void runLLMStep(
@@ -36,60 +34,50 @@ public with sharing class AgentEngine {
         Id runId,
         List<LLMMessage> history
     ) {
-        System.debug('AgentEngine.runLLMStep: ' + agentDeveloperName + ', runId=' + runId);
-
         try {
-            // Load agent definition
             aao__Agent_Definition__mdt agentDef = [
                 SELECT aao__Goal__c,
-                    aao__SystemPrompt__c,
-                    aao__LLMProvider__c,
-                    aao__MaxSteps__c
+                       aao__SystemPrompt__c,
+                       aao__LLMProvider__c,
+                       aao__MaxSteps__c
                 FROM aao__Agent_Definition__mdt
                 WHERE DeveloperName = :agentDeveloperName
                 LIMIT 1
             ];
 
-            // Max step enforcement
             Integer currentStep = ExecutionLogger.getCurrentStep(runId);
             Integer maxSteps = agentDef.aao__MaxSteps__c != null
                 ? Integer.valueOf(agentDef.aao__MaxSteps__c)
-                : 5;
+                : 10;
 
             if (currentStep >= maxSteps) {
                 ExecutionLogger.finishRun(runId, null, 'Failed', 'Max steps exceeded');
                 return;
             }
 
-            // Load tools
             Map<String, aao__Agent_Tool_Definition__mdt> toolDefs =
                 ToolRegistry.getToolDefinitionsForAgent(agentDeveloperName);
 
-            // Build tool manifest
             String toolManifest = buildToolManifest(toolDefs);
 
-            // Build system prompt
             String systemPrompt =
                 agentDef.aao__SystemPrompt__c +
                 '\n\nYou have access to the following tools. ' +
                 'You may ONLY call tools from this list.\n\n' +
                 toolManifest +
-                '\n\nAfter receiving a tool_result, you may call another tool OR produce a final answer. ' +
-                'Never call the same tool with the same arguments more than once. ';
+                '\n\nAfter receiving a tool output, decide whether to call another tool or return a final answer. ' +
+                'You may ONLY respond with {"tool":..., "args":...} or {"final":{...}}.';
 
-            // Ensure system message is first
             if (history.isEmpty() || history[0].role != 'system') {
                 history.add(0, new LLMMessage('system', systemPrompt));
             }
 
-            // LLM call
             LLMClient client = LLMClientFactory.forProvider(agentDef.aao__LLMProvider__c);
             LLMRequest req = new LLMRequest();
             req.messages = history;
 
             LLMResponse res = client.complete(req);
 
-            // Log LLM step
             ExecutionLogger.logStep(
                 runId,
                 new AgentStepLog(
@@ -104,34 +92,34 @@ public with sharing class AgentEngine {
                 )
             );
 
-            // Parse response
             Map<String, Object> parsed = (Map<String, Object>)JSON.deserializeUntyped(res.text);
 
-            // Final answer
             if (parsed.containsKey('final')) {
-                Object finalOutput = parsed.get('final');
-                String finalAnswer = JSON.serialize(finalOutput);
-                ExecutionLogger.finishRun(runId, finalAnswer, 'Succeeded', null);
+                ExecutionLogger.finishRun(runId, JSON.serialize(parsed.get('final')), 'Succeeded', null);
                 return;
             }
 
-            // Tool call
             if (parsed.containsKey('tool')) {
                 String toolName = (String)parsed.get('tool');
                 Map<String, Object> args = (Map<String, Object>)parsed.get('args');
 
-                // Prevent repeated identical tool calls
                 if (ExecutionLogger.hasIdenticalToolCall(runId, toolName, args)) {
-                    ExecutionLogger.finishRun(
-                        runId,
-                        null,
-                        'Failed',
-                        'Repeated identical tool call detected.'
+                    // Instead of failing, instruct LLM to finalize
+                    history.add(new LLMMessage(
+                        'assistant',
+                        '{"error":"Repeated tool call detected"}'
+                    ));
+                    history.add(new LLMMessage(
+                        'user',
+                        '{"instruction":"The previous tool call was identical. You must now return a final answer."}'
+                    ));
+
+                    System.enqueueJob(
+                        new AgentRunQueueable(agentDeveloperName, null, triggerType, runId, history)
                     );
                     return;
                 }
 
-                // Enqueue tool step
                 System.enqueueJob(
                     new AgentToolQueueable(
                         agentDeveloperName,
@@ -145,7 +133,6 @@ public with sharing class AgentEngine {
                 return;
             }
 
-            // Unexpected response
             ExecutionLogger.finishRun(runId, res.rawResponse, 'Failed', 'Invalid LLM response');
 
         } catch (Exception e) {
@@ -154,11 +141,9 @@ public with sharing class AgentEngine {
     }
 
 
-
     //
     // ───────────────────────────────────────────────────────────────
-    // 3. TOOL STEP (DML ALLOWED, NO CALLOUTS)
-    //    Called from AgentToolQueueable
+    // 3. TOOL STEP (NO CALLOUTS)
     // ───────────────────────────────────────────────────────────────
     //
     public static void runToolStep(
@@ -169,10 +154,7 @@ public with sharing class AgentEngine {
         String toolName,
         Map<String, Object> args
     ) {
-        System.debug('AgentEngine.runToolStep: ' + toolName + ', runId=' + runId);
-
         try {
-            // Load tool definitions
             Map<String, aao__Agent_Tool_Definition__mdt> toolDefs =
                 ToolRegistry.getToolDefinitionsForAgent(agentDeveloperName);
 
@@ -181,14 +163,11 @@ public with sharing class AgentEngine {
                 return;
             }
 
-            // Load tool class
             aao__Agent_Tool_Definition__mdt def = toolDefs.get(toolName);
             AgentTool tool = ToolRegistry.getToolByClassName(def.aao__Tool_Class__c);
 
-            // Execute tool
             AgentToolResult toolResult = tool.run(args);
 
-            // Log tool step
             ExecutionLogger.logStep(
                 runId,
                 new AgentStepLog(
@@ -203,43 +182,32 @@ public with sharing class AgentEngine {
                 )
             );
 
-            //
-            // Add structured tool_result message
-            //
             history.add(new LLMMessage(
                 'assistant',
-                '{"tool_result": {"tool": "' + toolName + '", "output": ' + JSON.serialize(toolResult) + '}}'
-            ));
+                JSON.serialize(new Map<String, Object>{
+                    'tool'   => toolName,
+                    'output' => toolResult
+                }))
+            );
 
-            //
-            // Add explicit instruction for next step
-            //
             history.add(new LLMMessage(
                 'user',
-                '{"instruction": "Use the tool_result above. If more tools are needed, call them. ' +
-                'Otherwise, return a final answer. Always respond in the required JSON format."}'
+                '{"instruction":"Given the tool output above, decide whether to call another tool or return a final answer. Only respond with {\"tool\":..., \"args\":...} or {\"final\":{...}}."}'
             ));
 
-            //
-            // Schedule next LLM step
-            //
             System.enqueueJob(
-                new AgentRunQueueable(
-                    agentDeveloperName,
-                    null,
-                    triggerType,
-                    runId,
-                    history
-                )
+                new AgentRunQueueable(agentDeveloperName, null, triggerType, runId, history)
             );
 
         } catch (Exception e) {
             ExecutionLogger.finishRun(runId, null, 'Failed', e.getMessage());
         }
     }
+
+
     //
     // ───────────────────────────────────────────────────────────────
-    // TOOL MANIFEST BUILDER
+    // TOOL MANIFEST
     // ───────────────────────────────────────────────────────────────
     //
     private static String buildToolManifest(Map<String, aao__Agent_Tool_Definition__mdt> toolDefs) {
