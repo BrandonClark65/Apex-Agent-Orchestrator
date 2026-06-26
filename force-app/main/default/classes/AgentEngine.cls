@@ -95,7 +95,15 @@ public with sharing class AgentEngine {
             Map<String, Object> parsed = (Map<String, Object>)JSON.deserializeUntyped(res.text);
 
             if (parsed.containsKey('final')) {
-                ExecutionLogger.finishRun(runId, JSON.serialize(parsed.get('final')), 'Succeeded', null);
+                Map<String, Object> finalResult = (Map<String, Object>)parsed.get('final');
+                Boolean isError = finalResult.containsKey('error');
+
+                ExecutionLogger.finishRun(
+                    runId,
+                    JSON.serialize(finalResult),
+                    isError ? 'Failed' : 'Succeeded',
+                    isError ? String.valueOf(finalResult.get('error')) : null
+                );
                 return;
             }
 
@@ -114,29 +122,19 @@ public with sharing class AgentEngine {
                         '{"instruction":"The previous tool call was identical. You must now return a final answer."}'
                     ));
 
-                    System.enqueueJob(
-                        new AgentRunQueueable(agentDeveloperName, null, triggerType, runId, history)
-                    );
+                    scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
                     return;
                 }
 
-                System.enqueueJob(
-                    new AgentToolQueueable(
-                        agentDeveloperName,
-                        triggerType,
-                        runId,
-                        history,
-                        toolName,
-                        args
-                    )
-                );
+                scheduleNextToolStep(runId, agentDeveloperName, triggerType, history, toolName, args);
                 return;
             }
 
             ExecutionLogger.finishRun(runId, res.rawResponse, 'Failed', 'Invalid LLM response');
 
         } catch (Exception e) {
-            ExecutionLogger.finishRun(runId, null, 'Failed', e.getMessage());
+            String runAsUser = '[DIAGNOSTIC] Running as: ' + UserInfo.getName() + ' (' + UserInfo.getUserId() + ') | ';
+            ExecutionLogger.finishRun(runId, null, 'Failed', runAsUser + e.getMessage());
         }
     }
 
@@ -195,13 +193,54 @@ public with sharing class AgentEngine {
                 '{"instruction":"Given the tool output above, decide whether to call another tool or return a final answer. Only respond with {\"tool\":..., \"args\":...} or {\"final\":{...}}."}'
             ));
 
-            System.enqueueJob(
-                new AgentRunQueueable(agentDeveloperName, null, triggerType, runId, history)
-            );
+            scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
 
         } catch (Exception e) {
-            ExecutionLogger.finishRun(runId, null, 'Failed', e.getMessage());
+            String runAsUser = '[DIAGNOSTIC] Running as: ' + UserInfo.getName() + ' (' + UserInfo.getUserId() + ') | ';
+            ExecutionLogger.finishRun(runId, null, 'Failed', runAsUser + e.getMessage());
         }
+    }
+
+
+    //
+    // ───────────────────────────────────────────────────────────────
+    // STEP SCHEDULING (PLATFORM EVENT HOP — RESETS QUEUEABLE CHAIN DEPTH)
+    // ───────────────────────────────────────────────────────────────
+    //
+    private static void scheduleNextLLMStep(
+        Id runId,
+        String agentDeveloperName,
+        String triggerType,
+        List<LLMMessage> history
+    ) {
+        update new Agent_Run__c(Id = runId, History_Json__c = JSON.serialize(history));
+
+        EventBus.publish(new Agent_Step_Event__e(
+            Run_Id__c = runId,
+            Agent_Developer_Name__c = agentDeveloperName,
+            Trigger_Type__c = triggerType,
+            Step_Type__c = 'LLM'
+        ));
+    }
+
+    private static void scheduleNextToolStep(
+        Id runId,
+        String agentDeveloperName,
+        String triggerType,
+        List<LLMMessage> history,
+        String toolName,
+        Map<String, Object> args
+    ) {
+        update new Agent_Run__c(Id = runId, History_Json__c = JSON.serialize(history));
+
+        EventBus.publish(new Agent_Step_Event__e(
+            Run_Id__c = runId,
+            Agent_Developer_Name__c = agentDeveloperName,
+            Trigger_Type__c = triggerType,
+            Step_Type__c = 'Tool',
+            Tool_Name__c = toolName,
+            Tool_Args_Json__c = JSON.serialize(args)
+        ));
     }
 
 

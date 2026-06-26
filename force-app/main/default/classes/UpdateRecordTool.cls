@@ -80,7 +80,7 @@ public with sharing class UpdateRecordTool implements AgentTool {
                 }
                 toUpdate.add(sobj);
 
-                // Placeholder result — may be overwritten if DML fails
+                // Placeholder result — overwritten below once DML outcome is known
                 results.add(new Map<String, Object>{
                     'id' => recordId,
                     'success' => true,
@@ -92,6 +92,13 @@ public with sharing class UpdateRecordTool implements AgentTool {
             if (!toUpdate.isEmpty()) {
                 try {
                     update toUpdate;
+
+                    // Confirm success on every record that was actually submitted for DML
+                    for (Map<String, Object> r : results) {
+                        if (r.get('message') == 'Pending update') {
+                            r.put('message', 'Updated successfully');
+                        }
+                    }
                 } catch (DmlException d) {
 
                     // Align DML errors to only the "Pending update" entries
