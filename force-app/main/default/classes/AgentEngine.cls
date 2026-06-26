@@ -1,5 +1,8 @@
 public with sharing class AgentEngine {
 
+    // Consecutive failed steps (LLM or tool) allowed before a run is hard-failed.
+    private static final Integer MAX_CONSECUTIVE_ERRORS = 3;
+
     //
     // ───────────────────────────────────────────────────────────────
     // 1. PUBLIC ENTRY POINT
@@ -78,6 +81,14 @@ public with sharing class AgentEngine {
 
             LLMResponse res = client.complete(req);
 
+            Map<String, Object> parsed;
+            try {
+                parsed = (Map<String, Object>)JSON.deserializeUntyped(res.text);
+            } catch (Exception parseEx) {
+                parsed = new Map<String, Object>();
+            }
+            Boolean isValidContract = parsed.containsKey('final') || parsed.containsKey('tool');
+
             ExecutionLogger.logStep(
                 runId,
                 new AgentStepLog(
@@ -87,12 +98,10 @@ public with sharing class AgentEngine {
                     res.rawResponse,
                     null,
                     null,
-                    'Completed',
+                    isValidContract ? 'Completed' : 'Failed',
                     null
                 )
             );
-
-            Map<String, Object> parsed = (Map<String, Object>)JSON.deserializeUntyped(res.text);
 
             if (parsed.containsKey('final')) {
                 Map<String, Object> finalResult = (Map<String, Object>)parsed.get('final');
@@ -130,11 +139,21 @@ public with sharing class AgentEngine {
                 return;
             }
 
-            ExecutionLogger.finishRun(runId, res.rawResponse, 'Failed', 'Invalid LLM response');
+            // Step already logged above (as 'Failed') — just evaluate whether to retry or hard-fail.
+            retryOrFail(
+                runId, agentDeveloperName, triggerType, history,
+                'Invalid LLM response: ' + res.rawResponse,
+                'Invalid LLM response: ' + res.rawResponse
+            );
 
         } catch (Exception e) {
             String runAsUser = '[DIAGNOSTIC] Running as: ' + UserInfo.getName() + ' (' + UserInfo.getUserId() + ') | ';
-            ExecutionLogger.finishRun(runId, null, 'Failed', runAsUser + e.getMessage());
+            handleStepError(
+                runId, agentDeveloperName, triggerType, history,
+                'LLMCall', null,
+                runAsUser + e.getMessage(),
+                e.getMessage()
+            );
         }
     }
 
@@ -157,7 +176,12 @@ public with sharing class AgentEngine {
                 ToolRegistry.getToolDefinitionsForAgent(agentDeveloperName);
 
             if (!toolDefs.containsKey(toolName)) {
-                ExecutionLogger.finishRun(runId, null, 'Failed', 'Invalid tool: ' + toolName);
+                handleStepError(
+                    runId, agentDeveloperName, triggerType, history,
+                    'ToolCall', toolName,
+                    'Invalid tool: ' + toolName,
+                    'Invalid tool: ' + toolName
+                );
                 return;
             }
 
@@ -197,8 +221,77 @@ public with sharing class AgentEngine {
 
         } catch (Exception e) {
             String runAsUser = '[DIAGNOSTIC] Running as: ' + UserInfo.getName() + ' (' + UserInfo.getUserId() + ') | ';
-            ExecutionLogger.finishRun(runId, null, 'Failed', runAsUser + e.getMessage());
+            handleStepError(
+                runId, agentDeveloperName, triggerType, history,
+                'ToolCall', toolName,
+                runAsUser + e.getMessage(),
+                e.getMessage()
+            );
         }
+    }
+
+
+    //
+    // ───────────────────────────────────────────────────────────────
+    // ERROR HANDLING / RETRY
+    // ───────────────────────────────────────────────────────────────
+    // Logs the failed step. If the run has failed MAX_CONSECUTIVE_ERRORS times
+    // in a row, it's hard-failed; otherwise the error is handed back to the
+    // LLM (as conversation context, not the diagnostic-laden log message) so
+    // it can adjust course on the next step.
+    //
+    private static void handleStepError(
+        Id runId,
+        String agentDeveloperName,
+        String triggerType,
+        List<LLMMessage> history,
+        String stepType,
+        String toolName,
+        String logMessage,
+        String llmMessage
+    ) {
+        ExecutionLogger.logStep(
+            runId,
+            new AgentStepLog(
+                ExecutionLogger.nextStepNumber(runId),
+                stepType,
+                null,
+                stepType == 'LLMCall' ? logMessage : null,
+                null,
+                stepType == 'ToolCall' ? logMessage : null,
+                'Failed',
+                toolName
+            )
+        );
+
+        retryOrFail(runId, agentDeveloperName, triggerType, history, logMessage, llmMessage);
+    }
+
+    // Assumes the failed step has already been logged by the caller.
+    private static void retryOrFail(
+        Id runId,
+        String agentDeveloperName,
+        String triggerType,
+        List<LLMMessage> history,
+        String logMessage,
+        String llmMessage
+    ) {
+        if (ExecutionLogger.getConsecutiveErrorCount(runId) >= MAX_CONSECUTIVE_ERRORS) {
+            ExecutionLogger.finishRun(runId, null, 'Failed', logMessage);
+            return;
+        }
+
+        history.add(new LLMMessage(
+            'assistant',
+            JSON.serialize(new Map<String, Object>{ 'error' => llmMessage })
+        ));
+        history.add(new LLMMessage(
+            'user',
+            '{"instruction":"The previous step failed. Adjust your approach and respond with ' +
+            '{\"tool\":..., \"args\":...} or {\"final\":{...}}."}'
+        ));
+
+        scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
     }
 
 

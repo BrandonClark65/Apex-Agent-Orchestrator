@@ -75,6 +75,27 @@ public with sharing class ExecutionLogger {
             )
         );
     }
+    //
+    // ───────────────────────────────────────────────────────────────
+    // Count how many steps in a row (most recent first) have failed
+    // ───────────────────────────────────────────────────────────────
+    //
+    public static Integer getConsecutiveErrorCount(Id runId) {
+        List<aao__Agent_Step__c> steps = [
+            SELECT aao__Status__c
+            FROM aao__Agent_Step__c
+            WHERE aao__Agent_Run__c = :runId
+            ORDER BY CreatedDate DESC
+            LIMIT 10
+        ];
+
+        Integer count = 0;
+        for (aao__Agent_Step__c step : steps) {
+            if (step.aao__Status__c != 'Failed') break;
+            count++;
+        }
+        return count;
+    }
 
 
     //
