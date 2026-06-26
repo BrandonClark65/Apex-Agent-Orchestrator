@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Create Record</label>
+    <protected>true</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Creates a Salesforce record dynamically.</value>
+    </values>
+    <values>
+        <field>InputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;object&quot;: &quot;string&quot;,
+  &quot;fields&quot;: &quot;map&lt;string, any&gt;&quot;
+}</value>
+    </values>
+    <values>
+        <field>IsEnabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>OutputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;id&quot;: &quot;string&quot;
+}</value>
+    </values>
+    <values>
+        <field>PromptGuidance__c</field>
+        <value xsi:type="xsd:string">Only call this after validating the target object (via DescribeObjectTool) and every field you are setting (via ValidateField) earlier in this run. Never invent a field name, change its casing, or guess at structure — follow the input_schema exactly.</value>
+    </values>
+    <values>
+        <field>Tool_Class__c</field>
+        <value xsi:type="xsd:string">CreateRecordTool</value>
+    </values>
+</CustomMetadata>

@@ -343,16 +343,22 @@ public with sharing class AgentEngine {
     // ───────────────────────────────────────────────────────────────
     //
     private static String buildToolManifest(Map<String, aao__Agent_Tool_Definition__mdt> toolDefs) {
-        String manifest = '[\n';
+        List<String> entries = new List<String>();
         for (aao__Agent_Tool_Definition__mdt def : toolDefs.values()) {
-            manifest += '  {\n' +
-                '    "name": "' + def.DeveloperName + '",\n' +
-                '    "description": "' + def.aao__Description__c + '",\n' +
+            String entry = '  {\n' +
+                '    "name": ' + JSON.serialize(def.DeveloperName) + ',\n' +
+                '    "description": ' + JSON.serialize(def.aao__Description__c) + ',\n';
+
+            if (String.isNotBlank(def.aao__PromptGuidance__c)) {
+                entry += '    "usage_guidance": ' + JSON.serialize(def.aao__PromptGuidance__c) + ',\n';
+            }
+
+            entry +=
                 '    "input_schema": ' + def.aao__InputSchema__c + ',\n' +
                 '    "output_schema": ' + def.aao__OutputSchema__c + '\n' +
-                '  },\n';
+                '  }';
+            entries.add(entry);
         }
-        manifest += ']';
-        return manifest;
+        return '[\n' + String.join(entries, ',\n') + '\n]';
     }
 }

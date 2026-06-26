@@ -80,7 +80,8 @@ public with sharing class ToolRegistry {
                 aao__Tool_Class__c,
                 aao__Description__c,
                 aao__InputSchema__c,
-                aao__OutputSchema__c
+                aao__OutputSchema__c,
+                aao__PromptGuidance__c
             FROM aao__Agent_Tool_Definition__mdt
             WHERE DeveloperName IN :toolDeveloperNames
         ];
