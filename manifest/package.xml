@@ -44,6 +44,7 @@
 	<types>
 		<members>Agent_Definition__mdt</members>
 		<members>Agent_Run__c</members>
+		<members>Agent_Step_Event__e</members>
 		<members>Agent_Step__c</members>
 		<members>Agent_Tool_Definition__mdt</members>
 		<members>Agent_Tool_Mapping__mdt</members>
