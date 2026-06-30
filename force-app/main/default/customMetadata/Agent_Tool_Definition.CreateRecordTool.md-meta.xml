@@ -4,13 +4,19 @@
     <protected>true</protected>
     <values>
         <field>Description__c</field>
-        <value xsi:type="xsd:string">Creates a Salesforce record dynamically.</value>
+        <value xsi:type="xsd:string">Bulk-creates Salesforce records of any object type.</value>
     </values>
     <values>
         <field>InputSchema__c</field>
         <value xsi:type="xsd:string">{
   &quot;object&quot;: &quot;string&quot;,
-  &quot;fields&quot;: &quot;map&lt;string, any&gt;&quot;
+  &quot;records&quot;: [
+    {
+      &quot;fields&quot;: {
+        &quot;*&quot;: &quot;any&quot;
+      }
+    }
+  ]
 }</value>
     </values>
     <values>
@@ -20,12 +26,25 @@
     <values>
         <field>OutputSchema__c</field>
         <value xsi:type="xsd:string">{
-  &quot;id&quot;: &quot;string&quot;
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;results&quot;: {
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;id&quot;: { &quot;type&quot;: &quot;string&quot; },
+          &quot;success&quot;: { &quot;type&quot;: &quot;boolean&quot; },
+          &quot;message&quot;: { &quot;type&quot;: &quot;string&quot; }
+        }
+      }
+    }
+  }
 }</value>
     </values>
     <values>
         <field>PromptGuidance__c</field>
-        <value xsi:type="xsd:string">Only call this after validating the target object (via DescribeObjectTool) and every field you are setting (via ValidateField) earlier in this run. Never invent a field name, change its casing, or guess at structure — follow the input_schema exactly.</value>
+        <value xsi:type="xsd:string">Only call this after validating the target object (via DescribeObjectTool) and every field you are setting (via ValidateField) earlier in this run. Never invent a field name, change its casing, or guess at structure — follow the input_schema exactly. No Id is needed; new record Ids are returned in the results.</value>
     </values>
     <values>
         <field>Tool_Class__c</field>
