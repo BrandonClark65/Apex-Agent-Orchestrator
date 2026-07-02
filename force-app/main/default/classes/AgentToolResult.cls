@@ -8,6 +8,10 @@ public class AgentToolResult {
   public Boolean success;
   public String message;
   public Map<String, Object> data;
+  // True when the tool started async work (a sub-agent run) instead of completing inline.
+  // AgentEngine.runToolStep suspends the run instead of scheduling the next LLM step;
+  // the run resumes when the async work finishes. See SubAgentTool.
+  public Boolean pending;
 
   /**
    * @description Constructs a result directly; prefer `success`/`error` where possible.
@@ -23,6 +27,7 @@ public class AgentToolResult {
     this.success = success;
     this.message = message;
     this.data = data;
+    this.pending = false;
   }
 
   /**
@@ -45,5 +50,21 @@ public class AgentToolResult {
    */
   public static AgentToolResult error(String message) {
     return new AgentToolResult(false, message, null);
+  }
+
+  /**
+   * @description Builds a pending result for a tool that started async work (a sub-agent
+   * run) rather than completing inline. The engine suspends the run until the work finishes.
+   * @param message Human-readable summary of what was started.
+   * @param data Must contain `childRunId` (Id of the sub-agent's Agent_Run__c) so the engine can link the child run back to this step.
+   * @return A result with success = true and pending = true.
+   */
+  public static AgentToolResult pending(
+    String message,
+    Map<String, Object> data
+  ) {
+    AgentToolResult result = new AgentToolResult(true, message, data);
+    result.pending = true;
+    return result;
   }
 }

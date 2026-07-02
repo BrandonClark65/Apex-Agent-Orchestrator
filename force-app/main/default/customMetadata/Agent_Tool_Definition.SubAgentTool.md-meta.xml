@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Sub Agent</label>
+    <protected>true</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Delegates a task to another agent and returns that agent&apos;s final answer as the tool output.</value>
+    </values>
+    <values>
+        <field>InputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;agentName&quot;: &quot;string (DeveloperName of the agent to delegate to)&quot;,
+  &quot;input&quot;: &quot;string or object (the complete, self-contained task for that agent)&quot;
+}</value>
+    </values>
+    <values>
+        <field>IsEnabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>OutputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;agentName&quot;: &quot;string&quot;,
+  &quot;childRunId&quot;: &quot;string&quot;,
+  &quot;output&quot;: &quot;object (the delegated agent&apos;s final answer)&quot;
+}</value>
+    </values>
+    <values>
+        <field>PromptGuidance__c</field>
+        <value xsi:type="xsd:string">Use this to delegate a whole sub-task to a specialist agent, not to make a single query or write — use your own tools for those. The input must be a complete, self-contained task description: the delegated agent cannot see this conversation, so include every Id, field value, and constraint it needs. The run pauses until the delegated agent finishes and its final answer arrives as this tool&apos;s output. If output.success is false, the sub-agent failed — either retry with a clearer input or handle the task with your own tools.</value>
+    </values>
+    <values>
+        <field>Tool_Class__c</field>
+        <value xsi:type="xsd:string">SubAgentTool</value>
+    </values>
+</CustomMetadata>

@@ -51,6 +51,11 @@
                 <default>false</default>
                 <label>Agent</label>
             </value>
+            <value>
+                <fullName>SubAgent</fullName>
+                <default>false</default>
+                <label>SubAgent</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

@@ -160,8 +160,9 @@ public with sharing class ExecutionLogger {
    * LLM call or a tool call. Build the `log` argument with `new AgentStepLog(...)`.
    * @param runId Id of the parent `Agent_Run__c`.
    * @param log Step data to persist.
+   * @return Id of the inserted Agent_Step__c record.
    */
-  public static void logStep(Id runId, AgentStepLog log) {
+  public static Id logStep(Id runId, AgentStepLog log) {
     aao__Agent_Step__c step = new aao__Agent_Step__c(
       aao__Agent_Run__c = runId,
       aao__Step_Number__c = log.stepNumber,
@@ -174,6 +175,7 @@ public with sharing class ExecutionLogger {
       aao__Tool__c = log.toolName
     );
     insert step;
+    return step.Id;
   }
   //
   // ───────────────────────────────────────────────────────────────
@@ -183,7 +185,12 @@ public with sharing class ExecutionLogger {
   /**
    * @description Marks a run as finished by updating its status, final output, and error
    * message, and stamping `Finished_At__c`. Called for both successful (`'Succeeded'`) and
-   * hard-failed (`'Failed'`) terminations.
+   * hard-failed (`'Failed'`) terminations. If the finishing run is a sub-agent run (has a
+   * `Parent_Run__c`), also resumes the suspended parent via `AgentEngine.resumeParentRun` —
+   * this is the single choke point every termination path goes through, so a child that
+   * hard-fails still wakes its parent instead of leaving it suspended forever. The resume
+   * only fires on the first transition out of `'Running'`, so a duplicate `finishRun` call
+   * cannot resume the parent twice.
    * @param runId Id of the `Agent_Run__c` to finish.
    * @param finalOutput Serialized final answer JSON, or `null` on failure.
    * @param status `'Succeeded'` or `'Failed'`.
@@ -195,6 +202,13 @@ public with sharing class ExecutionLogger {
     String status,
     String errorMessage
   ) {
+    List<aao__Agent_Run__c> current = [
+      SELECT aao__Status__c, Parent_Run__c, Parent_Step__c, aao__Agent__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+      LIMIT 1
+    ];
+
     aao__Agent_Run__c run = new aao__Agent_Run__c(
       Id = runId,
       aao__Status__c = status,
@@ -203,5 +217,19 @@ public with sharing class ExecutionLogger {
       aao__Finished_At__c = System.now()
     );
     update run;
+
+    Boolean firstTermination =
+      !current.isEmpty() && current[0].aao__Status__c == 'Running';
+    if (firstTermination && current[0].Parent_Run__c != null) {
+      AgentEngine.resumeParentRun(
+        current[0].Parent_Run__c,
+        current[0].Parent_Step__c,
+        runId,
+        current[0].aao__Agent__c,
+        finalOutput,
+        status,
+        errorMessage
+      );
+    }
   }
 }

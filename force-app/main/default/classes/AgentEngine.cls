@@ -10,6 +10,12 @@
  * The model's response is constrained to exactly one of `{"tool":...}`, `{"tools":[...]}`
  * (parallel tool calls), or `{"final":{...}}`; `runLLMStep` parses on that contract, so
  * changing the system prompt's response format requires updating the parser here too.
+ *
+ * Multi-agent collaboration: a tool may return `AgentToolResult.pending` (see `SubAgentTool`)
+ * to start a child agent run instead of completing inline. The parent run then suspends —
+ * its ToolCall step is logged as `'Pending'` and nothing further is scheduled — until the
+ * child run's `ExecutionLogger.finishRun` calls `resumeParentRun` with the child's final
+ * output as the tool result.
  * @group Agent Engine
  */
 public with sharing class AgentEngine {
@@ -317,7 +323,7 @@ public with sharing class AgentEngine {
     // Non-locking read to detect parallel mode before tool execution.
     // The actual atomic decrement happens later under FOR UPDATE.
     Agent_Run__c runCheck = [
-      SELECT PendingToolCount__c
+      SELECT PendingToolCount__c, Depth__c
       FROM Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
@@ -325,6 +331,15 @@ public with sharing class AgentEngine {
     Boolean isParallel =
       runCheck.PendingToolCount__c != null &&
       runCheck.PendingToolCount__c > 0;
+
+    // Expose run-level context to tools (SubAgentTool reads this to link child runs
+    // to this run and enforce the nesting-depth guard).
+    AgentToolContext.runId = runId;
+    AgentToolContext.agentDeveloperName = agentDeveloperName;
+    AgentToolContext.triggerType = triggerType;
+    AgentToolContext.depth = runCheck.Depth__c != null
+      ? Integer.valueOf(runCheck.Depth__c)
+      : 0;
 
     try {
       Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(
@@ -361,6 +376,15 @@ public with sharing class AgentEngine {
       AgentTool tool = ToolRegistry.getToolByClassName(def.aao__Tool_Class__c);
 
       AgentToolResult toolResult = tool.run(args);
+
+      if (toolResult.pending == true) {
+        // The tool started a sub-agent run instead of completing inline. Log this step
+        // as 'Pending' and stop scheduling — the run resumes via resumeParentRun when
+        // the child run finishes. In parallel mode PendingToolCount__c is intentionally
+        // NOT decremented here; the child's completion decrements it.
+        suspendForSubAgent(runId, toolName, toolResult, JSON.serialize(args));
+        return;
+      }
 
       if (isParallel) {
         // logStep happens inside the FOR UPDATE lock in completeParallelToolStep
@@ -696,6 +720,249 @@ public with sharing class AgentEngine {
           Run_Id__c = runId,
           Agent_Developer_Name__c = agentDeveloperName,
           Trigger_Type__c = triggerType,
+          Step_Type__c = 'LLM'
+        )
+      );
+    }
+  }
+
+  //
+  // ───────────────────────────────────────────────────────────────
+  // SUB-AGENT LIFECYCLE (SUSPEND / RESUME)
+  // ───────────────────────────────────────────────────────────────
+  // A tool may return AgentToolResult.pending to indicate it started a child agent run
+  // instead of completing inline (see SubAgentTool). The parent run then suspends: its
+  // ToolCall step is logged with status 'Pending' and no next step is scheduled. When the
+  // child run finishes, ExecutionLogger.finishRun calls resumeParentRun, which completes
+  // the pending step with the child's final output and re-enters the parent's loop.
+  //
+
+  /**
+   * @description Creates a child `Agent_Run__c` linked to a parent run, with seeded history,
+   * ready to execute. Called by `SubAgentTool.run`. Deliberately does NOT publish the child's
+   * first LLM step event — `suspendForSubAgent` does that after the parent's pending step and
+   * `Parent_Step__c` linkage are in place, so the child can never finish before the parent
+   * knows how to be resumed.
+   * @param agentDeveloperName DeveloperName of the child `Agent_Definition__mdt` to run.
+   * @param inputContextJson Task for the child agent, passed as its initial user message.
+   * @param parentRunId Id of the `Agent_Run__c` that is delegating.
+   * @param depth Nesting depth of the child run (parent depth + 1).
+   * @return Id of the newly created child Agent_Run__c record.
+   */
+  public static Id startSubAgentRun(
+    String agentDeveloperName,
+    String inputContextJson,
+    Id parentRunId,
+    Integer depth
+  ) {
+    Id childRunId = ExecutionLogger.startRun(
+      agentDeveloperName,
+      inputContextJson,
+      'SubAgent'
+    );
+
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage('user', inputContextJson)
+    };
+
+    update new Agent_Run__c(
+      Id = childRunId,
+      Parent_Run__c = parentRunId,
+      Depth__c = depth,
+      History_Json__c = JSON.serialize(history)
+    );
+
+    return childRunId;
+  }
+
+  // Suspends the run after a tool returned a pending result: logs the ToolCall step as
+  // 'Pending', links the child run back to that step, and only then starts the child's
+  // first LLM step. The FOR UPDATE lock serializes the step insert with sibling parallel
+  // jobs, same as completeParallelToolStep. PendingToolCount__c is left untouched — for a
+  // parallel batch the child's completion performs this tool's decrement in resumeParentRun.
+  private static void suspendForSubAgent(
+    Id runId,
+    String toolName,
+    AgentToolResult result,
+    String argsJson
+  ) {
+    Id childRunId = result.data != null &&
+      result.data.get('childRunId') != null
+      ? Id.valueOf(String.valueOf(result.data.get('childRunId')))
+      : null;
+    if (childRunId == null) {
+      throw new AgentException(
+        'Pending result from tool ' +
+          toolName +
+          ' is missing data.childRunId; cannot suspend the run.'
+      );
+    }
+
+    Agent_Run__c run = [
+      SELECT Id
+      FROM Agent_Run__c
+      WHERE Id = :runId
+      FOR UPDATE
+    ];
+
+    Id stepId = ExecutionLogger.logStep(
+      runId,
+      new AgentStepLog(
+        ExecutionLogger.nextStepNumber(runId),
+        'ToolCall',
+        null,
+        null,
+        argsJson,
+        JSON.serialize(result),
+        'Pending',
+        toolName
+      )
+    );
+
+    Agent_Run__c child = [
+      SELECT Agent__c
+      FROM Agent_Run__c
+      WHERE Id = :childRunId
+      LIMIT 1
+    ];
+    update new Agent_Run__c(Id = childRunId, Parent_Step__c = stepId);
+
+    EventBus.publish(
+      new Agent_Step_Event__e(
+        Run_Id__c = childRunId,
+        Agent_Developer_Name__c = child.Agent__c,
+        Trigger_Type__c = 'SubAgent',
+        Step_Type__c = 'LLM'
+      )
+    );
+  }
+
+  /**
+   * @description Resumes a suspended parent run after one of its child (sub-agent) runs
+   * finishes. Called by `ExecutionLogger.finishRun` for any finishing run that has a
+   * `Parent_Run__c` — including hard-failure paths, so a failed child surfaces to the parent
+   * as a failed tool result rather than leaving the parent hanging. Completes the parent's
+   * pending ToolCall step with the child's final output, merges that output into the parent's
+   * history, and re-enters the parent's LLM loop (or, when the parent is mid parallel batch,
+   * performs this tool's counter decrement and only re-enters when the batch is drained).
+   * No-ops if the parent is no longer `Running`.
+   * @param parentRunId Id of the suspended parent `Agent_Run__c`.
+   * @param parentStepId Id of the parent's `'Pending'` ToolCall step (`Agent_Run__c.Parent_Step__c` on the child), may be null if suspension never completed.
+   * @param childRunId Id of the child run that just finished.
+   * @param childAgentName DeveloperName of the child's agent definition.
+   * @param childFinalOutput Child run's serialized final output, or null.
+   * @param childStatus Child run's terminal status (`'Succeeded'` or `'Failed'`).
+   * @param childErrorMessage Child run's error message when failed, otherwise null.
+   */
+  public static void resumeParentRun(
+    Id parentRunId,
+    Id parentStepId,
+    Id childRunId,
+    String childAgentName,
+    String childFinalOutput,
+    String childStatus,
+    String childErrorMessage
+  ) {
+    List<Agent_Run__c> parents = [
+      SELECT
+        Status__c,
+        PendingToolCount__c,
+        History_Json__c,
+        Agent__c,
+        Trigger_Type__c
+      FROM Agent_Run__c
+      WHERE Id = :parentRunId
+      FOR UPDATE
+    ];
+    if (parents.isEmpty() || parents[0].Status__c != 'Running') {
+      return;
+    }
+    Agent_Run__c parent = parents[0];
+
+    Boolean childSucceeded = childStatus == 'Succeeded';
+    Map<String, Object> data = new Map<String, Object>{
+      'agentName' => childAgentName,
+      'childRunId' => childRunId
+    };
+    if (childFinalOutput != null) {
+      try {
+        data.put('output', JSON.deserializeUntyped(childFinalOutput));
+      } catch (Exception parseEx) {
+        data.put('output', childFinalOutput);
+      }
+    }
+    AgentToolResult result = new AgentToolResult(
+      childSucceeded,
+      childSucceeded
+        ? 'Sub-agent ' + childAgentName + ' completed'
+        : 'Sub-agent ' + childAgentName + ' failed: ' + childErrorMessage,
+      data
+    );
+
+    String toolName = 'SubAgentTool';
+    if (parentStepId != null) {
+      List<Agent_Step__c> steps = [
+        SELECT Tool__c
+        FROM Agent_Step__c
+        WHERE Id = :parentStepId
+        LIMIT 1
+      ];
+      if (!steps.isEmpty()) {
+        if (steps[0].Tool__c != null) {
+          toolName = steps[0].Tool__c;
+        }
+        update new Agent_Step__c(
+          Id = parentStepId,
+          Tool_Output__c = JSON.serialize(result),
+          Status__c = childSucceeded ? 'Completed' : 'Failed'
+        );
+      }
+    }
+
+    List<LLMMessage> merged = (List<LLMMessage>) JSON.deserialize(
+      parent.History_Json__c,
+      List<LLMMessage>.class
+    );
+    merged.add(
+      new LLMMessage(
+        'assistant',
+        JSON.serialize(
+          new Map<String, Object>{ 'tool' => toolName, 'output' => result }
+        )
+      )
+    );
+
+    // If the parent is mid parallel batch, this resume is the suspended tool's
+    // deferred decrement; only re-enter the LLM loop once the batch is drained.
+    Boolean isParallel =
+      parent.PendingToolCount__c != null &&
+      parent.PendingToolCount__c > 0;
+    Integer remaining = isParallel
+      ? Integer.valueOf(parent.PendingToolCount__c) - 1
+      : 0;
+
+    if (remaining == 0) {
+      merged.add(
+        new LLMMessage(
+          'user',
+          '{"instruction":"Given the tool output(s) above, decide whether to call more tools or return a final answer. ' +
+          'Only respond with {\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}."}'
+        )
+      );
+    }
+
+    update new Agent_Run__c(
+      Id = parentRunId,
+      History_Json__c = JSON.serialize(merged),
+      PendingToolCount__c = remaining
+    );
+
+    if (remaining == 0) {
+      EventBus.publish(
+        new Agent_Step_Event__e(
+          Run_Id__c = parentRunId,
+          Agent_Developer_Name__c = parent.Agent__c,
+          Trigger_Type__c = parent.Trigger_Type__c,
           Step_Type__c = 'LLM'
         )
       );
