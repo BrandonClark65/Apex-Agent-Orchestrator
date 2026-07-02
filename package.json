@@ -13,9 +13,11 @@
     "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prepare": "husky || true",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "docs": "apexdocs markdown"
   },
   "devDependencies": {
+    "@cparra/apexdocs": "^3.23.1",
     "@lwc/eslint-plugin-lwc": "^3.1.0",
     "@prettier/plugin-xml": "^3.4.1",
     "@salesforce/eslint-config-lwc": "^4.0.0",

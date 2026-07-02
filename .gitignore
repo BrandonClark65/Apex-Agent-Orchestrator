@@ -50,3 +50,6 @@ plan.md
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Generated Apex reference docs (run `npm run docs` to build)
+docs/apex/
