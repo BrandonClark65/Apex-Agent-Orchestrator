@@ -155,4 +155,88 @@ private class AgentEngineTest {
 
         System.assertEquals('Succeeded', getRun(runId).aao__Status__c);
     }
+
+    @IsTest
+    static void testParallelToolExecution() {
+        LLMClientMock mock = new LLMClientMock();
+        // LLM returns two tools to run in parallel
+        mock.addResponse('{"tools":[{"tool":"QuerySalesforceTool","args":{"object":"Account"}},{"tool":"DescribeObjectTool","args":{"object":"Account"}}]}');
+        mock.addResponse('{"final":{"message":"Done with parallel"}}');
+        LLMClientFactory.setMock(mock);
+
+        String inputJson = '{"task":"Analyze accounts in parallel"}';
+        List<LLMMessage> history = new List<LLMMessage>();
+        Id runId = startRun(inputJson, history);
+
+        Test.startTest();
+        // LLM responds with parallel tool calls — sets PendingToolCount__c = 2 on the run
+        AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, history);
+
+        // Both tools execute. In real execution these run concurrently via separate Queueables.
+        // Pass an empty history list — parallel mode reads/writes History_Json__c directly.
+        AgentEngine.runToolStep('CRUD_Agent', 'Apex', runId, new List<LLMMessage>(), 'QuerySalesforceTool',
+            new Map<String, Object>{ 'object' => 'Account' });
+        AgentEngine.runToolStep('CRUD_Agent', 'Apex', runId, new List<LLMMessage>(), 'DescribeObjectTool',
+            new Map<String, Object>{ 'object' => 'Account' });
+
+        // The second tool was the last (PendingToolCount__c reached 0), so it published the
+        // next LLM event. Read the merged history from the run record and simulate that hop.
+        aao__Agent_Run__c runRecord = [SELECT History_Json__c FROM aao__Agent_Run__c WHERE Id = :runId];
+        List<LLMMessage> mergedHistory = (List<LLMMessage>)JSON.deserialize(
+            runRecord.History_Json__c, List<LLMMessage>.class
+        );
+        AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, mergedHistory);
+        Test.stopTest();
+
+        aao__Agent_Run__c run = getRun(runId);
+        System.assertEquals('Succeeded', run.aao__Status__c);
+        System.assert(run.aao__Final_Output__c.contains('Done with parallel'), 'Expected final output');
+
+        List<aao__Agent_Step__c> steps = getSteps(runId);
+        // 1 LLM (parallel request) + 2 tool calls + 1 LLM (final)
+        System.assertEquals(4, steps.size());
+        System.assertEquals('LLMCall', steps[0].aao__Step_Type__c);
+        System.assertEquals('ToolCall', steps[1].aao__Step_Type__c);
+        System.assertEquals('ToolCall', steps[2].aao__Step_Type__c);
+        System.assertEquals('LLMCall', steps[3].aao__Step_Type__c);
+
+        // PendingToolCount__c resets to 0 after the batch
+        aao__Agent_Run__c finalRun = [SELECT PendingToolCount__c FROM aao__Agent_Run__c WHERE Id = :runId];
+        System.assertEquals(0, Integer.valueOf(finalRun.PendingToolCount__c));
+    }
+
+    @IsTest
+    static void testParallelToolOneFailsLLMStillFinalizes() {
+        LLMClientMock mock = new LLMClientMock();
+        // LLM requests a valid tool and an invalid one in parallel
+        mock.addResponse('{"tools":[{"tool":"QuerySalesforceTool","args":{"object":"Account"}},{"tool":"QuerySalesforceTool","args":{"object":"BadObject__INVALID"}}]}');
+        mock.addResponse('{"final":{"message":"Handled partial failure"}}');
+        LLMClientFactory.setMock(mock);
+
+        String inputJson = '{"task":"Query two objects in parallel"}';
+        List<LLMMessage> history = new List<LLMMessage>();
+        Id runId = startRun(inputJson, history);
+
+        Test.startTest();
+        AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, history);
+
+        // Both tools run regardless of individual success/failure
+        AgentEngine.runToolStep('CRUD_Agent', 'Apex', runId, new List<LLMMessage>(), 'QuerySalesforceTool',
+            new Map<String, Object>{ 'object' => 'Account' });
+        AgentEngine.runToolStep('CRUD_Agent', 'Apex', runId, new List<LLMMessage>(), 'QuerySalesforceTool',
+            new Map<String, Object>{ 'object' => 'BadObject__INVALID' });
+
+        aao__Agent_Run__c runRecord = [SELECT History_Json__c FROM aao__Agent_Run__c WHERE Id = :runId];
+        List<LLMMessage> mergedHistory = (List<LLMMessage>)JSON.deserialize(
+            runRecord.History_Json__c, List<LLMMessage>.class
+        );
+        AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, mergedHistory);
+        Test.stopTest();
+
+        // LLM saw both outputs (one success, one SOQL error) and chose to finalize
+        System.assertEquals('Succeeded', getRun(runId).aao__Status__c);
+        System.assertEquals(0, Integer.valueOf(
+            [SELECT PendingToolCount__c FROM aao__Agent_Run__c WHERE Id = :runId].PendingToolCount__c
+        ));
+    }
 }

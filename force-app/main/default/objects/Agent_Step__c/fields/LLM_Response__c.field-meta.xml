@@ -4,7 +4,7 @@
     <description>Response returned from the LLM for this step.</description>
     <inlineHelpText>Response returned from the LLM for this step.</inlineHelpText>
     <label>LLM Response</label>
-    <length>32768</length>
+    <length>131072</length>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
     <visibleLines>3</visibleLines>

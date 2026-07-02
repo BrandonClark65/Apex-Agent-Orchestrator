@@ -44,6 +44,7 @@ $RECYCLE.BIN/
 
 # Claude Code project guidance
 CLAUDE.md
+plan.md
 
 # Python Salesforce Functions
 **/__pycache__/

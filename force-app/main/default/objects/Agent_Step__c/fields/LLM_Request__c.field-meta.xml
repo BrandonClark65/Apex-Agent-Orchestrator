@@ -4,7 +4,7 @@
     <description>Payload sent to the LLM.</description>
     <inlineHelpText>Payload sent to the LLM.</inlineHelpText>
     <label>LLM Request</label>
-    <length>32768</length>
+    <length>131072</length>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
     <visibleLines>3</visibleLines>

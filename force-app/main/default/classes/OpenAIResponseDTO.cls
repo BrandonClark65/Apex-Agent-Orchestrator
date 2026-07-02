@@ -5,6 +5,7 @@ public class OpenAIResponseDTO {
     public class Choice {
         public Integer index;
         public Message message;
+        public String finish_reason;
     }
 
     public class Message {
