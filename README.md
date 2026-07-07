@@ -29,6 +29,19 @@ customMetadata/
 permissionsets/
 
 
+## Apex Reference Documentation
+
+Apex classes are documented with [ApexDocs](https://github.com/cesarParra/apexdocs) via `/** @description ... */` comment blocks. The generated reference guide is a build artifact (`docs/apex/`, gitignored) — regenerate it locally whenever you want current docs:
+
+```bash
+npm install
+npm run docs
+```
+
+This reads `apexdocs.config.mjs` and writes a Markdown reference guide to `docs/apex/`, grouped by architecture area (Agent Engine, Agent Tools, LLM Integration, Tests). Open `docs/apex/index.md` as the entry point.
+
+When adding or changing a public class, method, or constructor, add/update its `@description`/`@param`/`@return` ApexDoc comment so the generated docs stay accurate.
+
 ## Post-Install Setup
 
 ### Grant the Automated Process User access to LLM credentials

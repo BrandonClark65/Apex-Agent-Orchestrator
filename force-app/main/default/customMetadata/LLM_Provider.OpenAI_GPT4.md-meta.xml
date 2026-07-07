@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>MaxTokens__c</field>
-        <value xsi:type="xsd:double">4096.0</value>
+        <value xsi:type="xsd:double">16384.0</value>
     </values>
     <values>
         <field>Model_Name__c</field>

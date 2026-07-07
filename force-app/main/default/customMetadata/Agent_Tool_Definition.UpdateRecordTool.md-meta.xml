@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Update Record</label>
+    <protected>true</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Bulk-updates Salesforce records by Id.</value>
+    </values>
+    <values>
+        <field>InputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;object&quot;: &quot;string&quot;,
+  &quot;records&quot;: [
+    {
+      &quot;id&quot;: &quot;string&quot;,
+      &quot;fields&quot;: {
+        &quot;*&quot;: &quot;any&quot;
+      }
+    }
+  ]
+}</value>
+    </values>
+    <values>
+        <field>IsEnabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>OutputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;results&quot;: {
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;id&quot;: { &quot;type&quot;: &quot;string&quot; },
+          &quot;success&quot;: { &quot;type&quot;: &quot;boolean&quot; },
+          &quot;message&quot;: { &quot;type&quot;: &quot;string&quot; }
+        }
+      }
+    }
+  }
+}</value>
+    </values>
+    <values>
+        <field>PromptGuidance__c</field>
+        <value xsi:type="xsd:string">Only call this after validating the target object (via DescribeObjectTool) and every field you are setting (via ValidateField) earlier in this run. Every record Id must come from a prior QuerySalesforceTool result in this run — never fabricate one.</value>
+    </values>
+    <values>
+        <field>Tool_Class__c</field>
+        <value xsi:type="xsd:string">UpdateRecordTool</value>
+    </values>
+</CustomMetadata>

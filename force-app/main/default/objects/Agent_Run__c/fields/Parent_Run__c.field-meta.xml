@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Parent_Run__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The Agent Run that spawned this run via SubAgentTool. Null for top-level runs.</description>
+    <inlineHelpText>The parent Agent Run that spawned this run as a sub-agent.</inlineHelpText>
+    <label>Parent Run</label>
+    <referenceTo>Agent_Run__c</referenceTo>
+    <relationshipLabel>Child Runs</relationshipLabel>
+    <relationshipName>Child_Runs</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -97,6 +97,14 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Agent__c</fields>
+        <fields>Status__c</fields>
+        <fields>Started_At__c</fields>
+        <fields>Finished_At__c</fields>
+        <relatedList>Agent_Run__c.Parent_Step__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

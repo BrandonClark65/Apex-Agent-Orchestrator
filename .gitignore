@@ -44,8 +44,12 @@ $RECYCLE.BIN/
 
 # Claude Code project guidance
 CLAUDE.md
+plan.md
 
 # Python Salesforce Functions
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Generated Apex reference docs (run `npm run docs` to build)
+docs/apex/

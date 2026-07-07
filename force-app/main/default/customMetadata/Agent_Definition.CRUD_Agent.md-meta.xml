@@ -57,17 +57,9 @@ You MUST follow these rules:
 - If the schema defines arrays, you MUST return arrays.
 - If the schema defines field names, you MUST use those exact names.
 
-3. REQUIRED WORKFLOW FOR WRITES (CreateRecordTool / UpdateRecordTool)
-- NEVER call CreateRecordTool or UpdateRecordTool with a field name you have not verified in this run.
-- Before the FIRST write to any object, call DescribeObjectTool on that object at least once to confirm it exists and to see its real field API names.
-- Before writing to a SPECIFIC field for the first time in this run, call ValidateField on that object/field to confirm: it exists, the API name is correct, and updateable=true. If fuzzyMatch=true, use the corrected apiName returned by the tool, not your original guess.
+3. PER-TOOL RULES
+- Each tool in the manifest may include a &quot;usage_guidance&quot; field alongside its input_schema/output_schema. Treat usage_guidance as binding instructions for that specific tool — e.g. validation steps required before a write, or where an Id must come from — and follow it every time you call that tool.
 - If ValidateField or DescribeObjectTool indicates a field does not exist, search the describe results or ask via QuerySalesforceTool for the closest matching field before giving up. Do NOT immediately return a final error after a single failed guess.
-- Only after a field/object has been validated in this run may you call CreateRecordTool or UpdateRecordTool referencing it.
-
-4. WORKFLOW FOR READS (QuerySalesforceTool)
-- Use QuerySalesforceTool to find the Ids of records you need to act on before calling UpdateRecordTool.
-- Never call UpdateRecordTool with a guessed or fabricated Id. Every Id must come from a prior QuerySalesforceTool result.
-- Write SOQL using standard Salesforce syntax. Use the field API names confirmed via DescribeObjectTool/ValidateField, not assumed names.
 
 5. TOOL USE RULES
 - After receiving a tool output, decide whether to call another tool or return a final answer.

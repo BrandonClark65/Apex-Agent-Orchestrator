@@ -1,38 +1,143 @@
+/**
+ * @description Bulk-creates records of any sObject type from LLM-supplied field maps.
+ * Expects `args` shaped as `{"object": "Account", "records": [{"fields": {...}}, ...]}`.
+ * Validates each record's fields against the object's describe (existence + createability)
+ * before attempting DML; per-record results (including DML errors) are returned individually
+ * so a partial failure in one record doesn't fail the whole batch.
+ * @group Agent Tools
+ */
 public with sharing class CreateRecordTool implements AgentTool {
+  public String getName() {
+    return 'CreateRecordTool';
+  }
 
-    public String getName() {
-        return 'CreateRecordTool';
-    }
+  public String getDescription() {
+    return 'Bulk-creates Salesforce records of any object type.';
+  }
 
-    public String getDescription() {
-        return 'Creates a Salesforce record of any object type.';
-    }
+  /**
+   * @description Validates and bulk-inserts the requested records.
+   * @param args Must contain `object` (sObject API name) and `records` (list of `{"fields": {...}}` maps).
+   * @return Success result containing a results list with per-record id/success/message.
+   */
+  public AgentToolResult run(Map<String, Object> args) {
+    try {
+      String objectType = (String) args.get('object');
+      List<Object> recordsInput = (List<Object>) args.get('records');
 
-    public AgentToolResult run(Map<String, Object> args) {
-        try {
-            String objectType = (String)args.get('object');
-            Map<String, Object> fields = (Map<String, Object>)args.get('fields');
+      if (String.isBlank(objectType) || recordsInput == null) {
+        return AgentToolResult.error('Missing object or records list');
+      }
 
-            if (String.isBlank(objectType) || fields == null) {
-                return AgentToolResult.error('Missing object or fields');
+      Schema.SObjectType typeRef = Schema.getGlobalDescribe().get(objectType);
+      if (typeRef == null) {
+        return AgentToolResult.error('Object not found: ' + objectType);
+      }
+
+      Schema.DescribeSObjectResult describe = typeRef.getDescribe();
+      Map<String, Schema.SObjectField> fieldMap = describe.fields.getMap();
+
+      List<SObject> toInsert = new List<SObject>();
+      List<Map<String, Object>> results = new List<Map<String, Object>>();
+
+      for (Object o : recordsInput) {
+        Map<String, Object> rec = (Map<String, Object>) o;
+        Map<String, Object> fields = (Map<String, Object>) rec.get('fields');
+
+        if (fields == null) {
+          results.add(
+            new Map<String, Object>{
+              'id' => null,
+              'success' => false,
+              'message' => 'Missing fields'
             }
-
-            SObject record = (SObject)Type.forName('Schema.' + objectType).newInstance();
-
-            for (String key : fields.keySet()) {
-                record.put(key, fields.get(key));
-            }
-
-            insert record;
-
-            Map<String, Object> data = new Map<String, Object>{
-                'id' => record.Id
-            };
-
-            return AgentToolResult.success('Record created', data);
-
-        } catch (Exception e) {
-            return AgentToolResult.error(e.getMessage());
+          );
+          continue;
         }
+
+        Boolean valid = true;
+
+        for (String key : fields.keySet()) {
+          if (!fieldMap.containsKey(key)) {
+            results.add(
+              new Map<String, Object>{
+                'id' => null,
+                'success' => false,
+                'message' => 'Invalid field: ' + key
+              }
+            );
+            valid = false;
+            break;
+          }
+
+          Schema.DescribeFieldResult f = fieldMap.get(key).getDescribe();
+          if (!f.isCreateable()) {
+            results.add(
+              new Map<String, Object>{
+                'id' => null,
+                'success' => false,
+                'message' => 'Field not createable: ' + key
+              }
+            );
+            valid = false;
+            break;
+          }
+        }
+
+        if (!valid)
+          continue;
+
+        SObject sobj = typeRef.newSObject();
+        for (String key : fields.keySet()) {
+          sobj.put(key, fields.get(key));
+        }
+        toInsert.add(sobj);
+
+        results.add(
+          new Map<String, Object>{
+            'id' => null,
+            'success' => true,
+            'message' => 'Pending insert'
+          }
+        );
+      }
+
+      if (!toInsert.isEmpty()) {
+        try {
+          insert toInsert;
+
+          Integer insertIdx = 0;
+          for (Map<String, Object> r : results) {
+            if (
+              (Boolean) r.get('success') == true &&
+              r.get('message') == 'Pending insert'
+            ) {
+              r.put('id', toInsert[insertIdx].Id);
+              r.put('message', 'Created successfully');
+              insertIdx++;
+            }
+          }
+        } catch (DmlException d) {
+          Integer insertIdx = 0;
+          for (Map<String, Object> r : results) {
+            if (
+              (Boolean) r.get('success') == true &&
+              r.get('message') == 'Pending insert'
+            ) {
+              r.put('success', false);
+              r.put('message', d.getDmlMessage(insertIdx));
+              insertIdx++;
+            }
+          }
+        }
+      }
+
+      return AgentToolResult.success(
+        'Records created',
+        new Map<String, Object>{ 'results' => results }
+      );
+    } catch (Exception e) {
+      return AgentToolResult.error(e.getMessage());
     }
+  }
 }
