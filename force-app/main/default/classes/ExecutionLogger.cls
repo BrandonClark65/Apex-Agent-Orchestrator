@@ -220,6 +220,13 @@ public with sharing class ExecutionLogger {
 
     Boolean firstTermination =
       !current.isEmpty() && current[0].aao__Status__c == 'Running';
+
+    // Release the conversation thread (Busy -> Active) now that this turn is over.
+    // Sub-agent runs never hold a session; SessionService no-ops for them.
+    if (firstTermination) {
+      SessionService.onRunFinished(runId);
+    }
+
     if (firstTermination && current[0].Parent_Run__c != null) {
       AgentEngine.resumeParentRun(
         current[0].Parent_Run__c,

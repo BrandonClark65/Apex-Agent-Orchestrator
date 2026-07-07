@@ -65,6 +65,93 @@ public with sharing class AgentEngine {
     return runId;
   }
 
+  /**
+   * @description Starts the next turn of a multi-turn conversation: creates the session on
+   * first send, seeds history from the previous turn (minus its system message, so the next
+   * LLM step rebuilds a fresh system prompt against the current tool manifest), appends the
+   * new user message, and enqueues the run exactly like `runAgent`. The session is locked
+   * `Busy` while the turn is in flight — concurrent sends throw — and is released by
+   * `ExecutionLogger.finishRun` via `SessionService.onRunFinished`.
+   * @param agentDeveloperName DeveloperName of the `Agent_Definition__mdt` record to run.
+   * @param userMessage The user's chat message for this turn.
+   * @param sessionId Existing `Agent_Session__c` to continue, or null to start a new thread.
+   * @return Id of the newly created Agent_Run__c record for this turn.
+   */
+  @AuraEnabled
+  public static Id runAgentInSession(
+    String agentDeveloperName,
+    String userMessage,
+    Id sessionId,
+    String triggerType
+  ) {
+    if (String.isBlank(userMessage)) {
+      throw new AuraHandledException('userMessage is required');
+    }
+
+    List<LLMMessage> history = new List<LLMMessage>();
+    Integer turnNumber = 1;
+
+    if (sessionId == null) {
+      sessionId = SessionService.startSession(
+        agentDeveloperName,
+        userMessage
+      );
+      update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
+    } else {
+      // Lock the session so two simultaneous sends can't both pass the Busy check.
+      Agent_Session__c session = [
+        SELECT Status__c, Agent__c, Turn_Count__c
+        FROM Agent_Session__c
+        WHERE Id = :sessionId
+        LIMIT 1
+        FOR UPDATE
+      ];
+      if (session.Status__c == 'Busy') {
+        throw new AuraHandledException(
+          'This session already has a run in flight. Wait for it to finish before sending another message.'
+        );
+      }
+      if (session.Status__c == 'Closed') {
+        throw new AuraHandledException(
+          'This session is closed. Start a new session to continue.'
+        );
+      }
+      agentDeveloperName = session.Agent__c;
+      turnNumber =
+        (session.Turn_Count__c == null
+          ? 0
+          : Integer.valueOf(session.Turn_Count__c)) + 1;
+      update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
+
+      history = SessionService.loadSeedHistory(sessionId);
+    }
+
+    history.add(new LLMMessage('user', userMessage));
+
+    Id runId = ExecutionLogger.startRun(
+      agentDeveloperName,
+      userMessage,
+      String.isBlank(triggerType) ? 'UI' : triggerType
+    );
+    update new aao__Agent_Run__c(
+      Id = runId,
+      Session__c = sessionId,
+      Turn_Number__c = turnNumber
+    );
+
+    System.enqueueJob(
+      new AgentRunQueueable(
+        agentDeveloperName,
+        userMessage,
+        triggerType,
+        runId,
+        history
+      )
+    );
+
+    return runId;
+  }
+
   //
   // ───────────────────────────────────────────────────────────────
   // 2. LLM STEP (CALLOUTS ALLOWED)
@@ -180,6 +267,15 @@ public with sharing class AgentEngine {
           'final'
         );
         Boolean isError = finalResult.containsKey('error');
+
+        // Persist the completed transcript (including the final assistant reply) —
+        // History_Json__c is otherwise only written when a *next* step is scheduled,
+        // and follow-up session turns seed from it.
+        history.add(new LLMMessage('assistant', res.text));
+        update new aao__Agent_Run__c(
+          Id = runId,
+          aao__History_Json__c = JSON.serialize(history)
+        );
 
         ExecutionLogger.finishRun(
           runId,
