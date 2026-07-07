@@ -1,0 +1,34 @@
+<template>
+    <template lwc:if={isTool}>
+        <li class="slds-chat-listitem slds-chat-listitem_event">
+            <div class="slds-chat-event">
+                <div class="slds-chat-event__body">
+                    <lightning-icon
+                        icon-name="utility:apex"
+                        size="x-small"
+                        class="slds-m-right_x-small"
+                    ></lightning-icon>
+                    <span class="tool-chip">{toolLabel}</span>
+                </div>
+            </div>
+        </li>
+    </template>
+    <template lwc:if={isUser}>
+        <li class={listItemClass}>
+            <div class="slds-chat-message">
+                <div class="slds-chat-message__body">
+                    <div class={bubbleClass}>{message.text}</div>
+                </div>
+            </div>
+        </li>
+    </template>
+    <template lwc:if={isAssistant}>
+        <li class={listItemClass}>
+            <div class="slds-chat-message">
+                <div class="slds-chat-message__body">
+                    <div class={bubbleClass}>{message.text}</div>
+                </div>
+            </div>
+        </li>
+    </template>
+</template>

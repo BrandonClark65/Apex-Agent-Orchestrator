@@ -1,0 +1,10 @@
+.bubble {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 80%;
+}
+
+.tool-chip {
+    font-size: 0.75rem;
+    color: var(--lwc-colorTextWeak, #706e6b);
+}

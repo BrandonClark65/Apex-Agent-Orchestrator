@@ -1,0 +1,41 @@
+.chat-layout {
+    min-height: 24rem;
+}
+
+.thread {
+    flex: 1 1 auto;
+    max-height: 32rem;
+}
+
+.sidebar {
+    max-height: 40rem;
+    overflow-y: auto;
+}
+
+.session-item {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.session-item:hover {
+    background: var(--lwc-colorBackgroundRowHover, #f3f3f3);
+}
+
+.session-item.selected {
+    background: var(--lwc-colorBackgroundRowSelected, #ecebea);
+}
+
+.session-title {
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.session-meta {
+    font-size: 0.6875rem;
+}
+
+.thinking {
+    display: flex;
+    align-items: center;
+}
