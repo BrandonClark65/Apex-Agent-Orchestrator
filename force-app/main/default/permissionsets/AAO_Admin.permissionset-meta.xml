@@ -152,6 +152,10 @@
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
+        <tab>Agent_Session__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
         <tab>Agent_Step__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
