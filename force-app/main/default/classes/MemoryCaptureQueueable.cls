@@ -138,7 +138,8 @@ public with sharing class MemoryCaptureQueueable implements Queueable, Database.
     LLMClient client,
     aao__Agent_Run__c run
   ) {
-    // Cap active reflections per agent (consolidation is a future pass; for now stop adding).
+    // At the cap, consolidate existing lessons down before adding a new one — the
+    // agent self-prunes instead of accumulating (or dropping) lessons forever.
     Integer active = [
       SELECT COUNT()
       FROM Agent_Memory__c
@@ -148,7 +149,7 @@ public with sharing class MemoryCaptureQueueable implements Queueable, Database.
         AND Is_Active__c = TRUE
     ];
     if (active >= MAX_ACTIVE_REFLECTIONS) {
-      return new List<MemoryRecord>();
+      consolidateReflections(client);
     }
 
     LLMRequest req = new LLMRequest();
@@ -185,6 +186,77 @@ public with sharing class MemoryCaptureQueueable implements Queueable, Database.
     );
     rec.sourceRunId = runId;
     return new List<MemoryRecord>{ rec };
+  }
+
+  /**
+   * @description Merges the agent's active reflections into a smaller set (target
+   * half the cap) via one LLM call: old lessons are deactivated and the merged
+   * replacements inserted. Best-effort — on any failure the originals stay active.
+   */
+  private void consolidateReflections(LLMClient client) {
+    try {
+      List<Agent_Memory__c> reflections = [
+        SELECT Id, Content__c
+        FROM Agent_Memory__c
+        WHERE
+          Agent__c = :agentDeveloperName
+          AND Type__c = 'Reflection'
+          AND Is_Active__c = TRUE
+        ORDER BY CreatedDate ASC
+      ];
+
+      List<String> lessons = new List<String>();
+      for (Agent_Memory__c row : reflections) {
+        lessons.add('- ' + row.Content__c);
+      }
+
+      LLMRequest req = new LLMRequest();
+      req.messages.add(
+        new LLMMessage(
+          'system',
+          'You maintain an agent\'s lessons-learned list. Merge overlapping lessons, ' +
+            'drop obsolete or one-off ones, and keep at most ' +
+            (MAX_ACTIVE_REFLECTIONS / 2) +
+            ' short, general lessons. Respond with a JSON array of strings only.'
+        )
+      );
+      req.messages.add(new LLMMessage('user', String.join(lessons, '\n')));
+
+      LLMResponse res = client.complete(req);
+      List<Object> merged = (List<Object>) JSON.deserializeUntyped(res.text);
+      if (merged.isEmpty()) {
+        return; // don't wipe lessons for an empty (likely bad) response
+      }
+
+      List<Agent_Memory__c> deactivate = new List<Agent_Memory__c>();
+      for (Agent_Memory__c row : reflections) {
+        deactivate.add(new Agent_Memory__c(Id = row.Id, Is_Active__c = false));
+      }
+      List<Agent_Memory__c> replacements = new List<Agent_Memory__c>();
+      for (Object lessonObj : merged) {
+        replacements.add(
+          new MemoryRecord(
+              agentDeveloperName,
+              null,
+              'Agent',
+              'Reflection',
+              String.valueOf(lessonObj),
+              null
+            )
+            .toSObject()
+        );
+      }
+      update deactivate;
+      insert replacements;
+    } catch (Exception e) {
+      System.debug(
+        LoggingLevel.WARN,
+        'Reflection consolidation skipped for ' +
+          agentDeveloperName +
+          ': ' +
+          e.getMessage()
+      );
+    }
   }
 
   private LLMClient resolveClient() {

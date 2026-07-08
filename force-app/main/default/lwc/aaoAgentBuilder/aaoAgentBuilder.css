@@ -1,0 +1,39 @@
+.agent-item {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.agent-item:hover {
+    background: var(--lwc-colorBackgroundRowHover, #f3f3f3);
+}
+
+.agent-item.selected {
+    background: var(--lwc-colorBackgroundRowSelected, #ecebea);
+}
+
+.agent-name {
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.field-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #706e6b;
+}
+
+.tool-name {
+    font-weight: 600;
+}
+
+.prompt-pre,
+.schema-pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.6875rem;
+    background: #fafaf9;
+    padding: 0.5rem;
+    max-height: 20rem;
+    overflow-y: auto;
+}

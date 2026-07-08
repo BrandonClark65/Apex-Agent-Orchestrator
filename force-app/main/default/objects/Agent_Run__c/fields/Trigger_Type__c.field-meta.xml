@@ -61,6 +61,11 @@
                 <default>false</default>
                 <label>Chat</label>
             </value>
+            <value>
+                <fullName>TestBench</fullName>
+                <default>false</default>
+                <label>TestBench</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

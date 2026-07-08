@@ -1141,7 +1141,8 @@ public with sharing class AgentEngine {
   // TOOL MANIFEST
   // ───────────────────────────────────────────────────────────────
   //
-  private static String buildToolManifest(
+  // Public so AgentBuilderController can render the "what the LLM sees" preview.
+  public static String buildToolManifest(
     Map<String, aao__Agent_Tool_Definition__mdt> toolDefs
   ) {
     List<String> entries = new List<String>();

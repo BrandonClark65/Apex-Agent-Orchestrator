@@ -1,0 +1,72 @@
+<template>
+    <lightning-card title="Test Bench" icon-name="standard:performance">
+        <div class="slds-p-horizontal_small">
+            <div class="slds-grid slds-gutters slds-m-bottom_x-small">
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning-combobox
+                        label="Agent"
+                        value={selectedAgent}
+                        options={agentOptions}
+                        onchange={handleAgentChange}
+                    ></lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+                    <template lwc:if={hasCases}>
+                        <lightning-combobox
+                            label="Saved Inputs"
+                            placeholder="Load a saved input…"
+                            value={selectedCaseId}
+                            options={caseOptions}
+                            onchange={handleCaseChange}
+                        ></lightning-combobox>
+                    </template>
+                </div>
+            </div>
+
+            <lightning-textarea
+                label="Input Context JSON"
+                value={inputJson}
+                onchange={handleInputChange}
+                class="input-area"
+            ></lightning-textarea>
+
+            <div class="slds-grid slds-gutters slds-m-top_x-small slds-grid_vertical-align-end">
+                <div class="slds-col slds-size_1-of-3">
+                    <lightning-input
+                        label="Save as"
+                        placeholder="Sample name"
+                        value={caseName}
+                        onchange={handleNameChange}
+                    ></lightning-input>
+                </div>
+                <div class="slds-col">
+                    <lightning-button
+                        label="Save Input"
+                        disabled={saveDisabled}
+                        onclick={handleSave}
+                        class="slds-m-right_x-small"
+                    ></lightning-button>
+                    <lightning-button
+                        label="Run"
+                        variant="brand"
+                        icon-name="utility:play"
+                        disabled={runDisabled}
+                        onclick={handleRun}
+                    ></lightning-button>
+                </div>
+            </div>
+
+            <template lwc:if={errorText}>
+                <div class="slds-text-color_error slds-m-top_x-small">
+                    {errorText}
+                </div>
+            </template>
+
+            <template lwc:if={runId}>
+                <div class="slds-m-top_small">
+                    <c-aao-run-detail record-id={runId}></c-aao-run-detail>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -11,3 +11,19 @@ if (existing.isEmpty()) {
 } else {
   System.debug('Watchdog already scheduled.');
 }
+
+List<CronTrigger> janitor = [
+  SELECT Id
+  FROM CronTrigger
+  WHERE CronJobDetail.Name = 'AAO Memory Janitor'
+];
+if (janitor.isEmpty()) {
+  System.schedule(
+    'AAO Memory Janitor',
+    '0 0 3 * * ?',
+    new MemoryJanitorSchedulable()
+  );
+  System.debug('Memory janitor scheduled nightly at 3am.');
+} else {
+  System.debug('Memory janitor already scheduled.');
+}
