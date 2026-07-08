@@ -20,7 +20,7 @@
     </values>
     <values>
         <field>MemoryConfig__c</field>
-        <value xsi:type="xsd:string">NoMemory</value>
+        <value xsi:type="xsd:string">Default_Memory</value>
     </values>
     <values>
         <field>SystemPrompt__c</field>

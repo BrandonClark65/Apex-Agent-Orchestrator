@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Enable_Reflection__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When true, terminated runs (success and failure) enqueue an LLM pass that writes an Agent-scoped lesson to Agent_Memory__c (M3).</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Enable Reflection</label>
+    <type>Checkbox</type>
+</CustomField>

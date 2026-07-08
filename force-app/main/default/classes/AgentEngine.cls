@@ -182,7 +182,8 @@ public with sharing class AgentEngine {
           aao__Goal__c,
           aao__SystemPrompt__c,
           aao__LLMProvider__c,
-          aao__MaxSteps__c
+          aao__MaxSteps__c,
+          aao__MemoryConfig__c
         FROM aao__Agent_Definition__mdt
         WHERE DeveloperName = :agentDeveloperName
         LIMIT 1
@@ -197,6 +198,15 @@ public with sharing class AgentEngine {
         ExecutionLogger.finishRun(runId, null, 'Failed', 'Max steps exceeded');
         return;
       }
+
+      // Compact oversized histories before the main LLM call — this is the loop's only
+      // callout-enabled step, so the summarization callout must happen here.
+      history = HistoryCompactor.compactIfNeeded(
+        history,
+        agentDef.aao__MemoryConfig__c,
+        agentDef.aao__LLMProvider__c,
+        runId
+      );
 
       Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(
         agentDeveloperName
