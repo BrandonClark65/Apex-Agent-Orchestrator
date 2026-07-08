@@ -238,6 +238,15 @@ public with sharing class AgentEngine {
         '- {"final":{...}} — return the final answer';
 
       if (history.isEmpty() || history[0].role != 'system') {
+        // First LLM step of the run: recall relevant long-term memories into the prompt.
+        systemPrompt += MemoryService.buildRecallBlock(
+          agentDeveloperName,
+          agentDef.aao__MemoryConfig__c,
+          runId,
+          inputContextJson != null
+            ? inputContextJson
+            : (history.isEmpty() ? '' : history[history.size() - 1].content)
+        );
         history.add(0, new LLMMessage('system', systemPrompt));
       }
 

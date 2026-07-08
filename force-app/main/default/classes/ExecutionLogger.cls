@@ -261,6 +261,11 @@ public with sharing class ExecutionLogger {
         finalOutput,
         errorMessage
       );
+      // Post-run learning (fact extraction / reflection). Sub-agent runs are skipped:
+      // their transcript is part of the parent's task, not standalone knowledge.
+      if (current[0].Parent_Run__c == null) {
+        MemoryService.enqueueCapture(runId, current[0].aao__Agent__c, status);
+      }
     }
 
     if (firstTermination && current[0].Parent_Run__c != null) {
