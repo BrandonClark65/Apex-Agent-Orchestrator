@@ -1,0 +1,47 @@
+<template>
+    <lightning-card title="Agent Runs" icon-name="standard:record_lookup">
+        <div slot="actions">
+            <lightning-button
+                label="Refresh"
+                icon-name="utility:refresh"
+                onclick={handleRefresh}
+            ></lightning-button>
+        </div>
+        <div class="slds-p-horizontal_small">
+            <div class="slds-grid slds-gutters slds-m-bottom_x-small">
+                <div class="slds-col slds-size_1-of-4">
+                    <lightning-combobox
+                        label="Status"
+                        variant="label-hidden"
+                        placeholder="All statuses"
+                        value={statusFilter}
+                        options={statusOptions}
+                        onchange={handleStatusFilter}
+                    ></lightning-combobox>
+                </div>
+                <div class="slds-col slds-size_1-of-4">
+                    <lightning-input
+                        label="Agent"
+                        variant="label-hidden"
+                        placeholder="Filter by agent (Enter)"
+                        value={agentFilter}
+                        onchange={handleAgentFilter}
+                        onkeydown={handleAgentFilterCommit}
+                    ></lightning-input>
+                </div>
+            </div>
+            <template lwc:if={errorText}>
+                <div class="slds-text-color_error slds-m-bottom_x-small">
+                    {errorText}
+                </div>
+            </template>
+            <lightning-datatable
+                key-field="runId"
+                data={rows}
+                columns={columns}
+                hide-checkbox-column
+                onrowaction={handleRowAction}
+            ></lightning-datatable>
+        </div>
+    </lightning-card>
+</template>

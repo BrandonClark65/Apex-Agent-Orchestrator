@@ -1,0 +1,163 @@
+<template>
+    <lightning-card title="Run Trace" icon-name="standard:flow">
+        <div slot="actions">
+            <lightning-button-group>
+                <lightning-button
+                    label="Refresh"
+                    icon-name="utility:refresh"
+                    onclick={handleRefresh}
+                ></lightning-button>
+                <template lwc:if={canCancel}>
+                    <lightning-button
+                        label="Cancel Run"
+                        variant="destructive"
+                        onclick={handleCancel}
+                    ></lightning-button>
+                </template>
+                <lightning-button
+                    label="Re-run"
+                    onclick={handleRerun}
+                ></lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <div class="slds-p-horizontal_small">
+            <template lwc:if={errorText}>
+                <div class="slds-text-color_error slds-m-bottom_x-small">
+                    {errorText}
+                </div>
+            </template>
+
+            <template lwc:if={detail}>
+                <div class="slds-m-bottom_small">
+                    <span class={statusBadgeClass}
+                        >{detail.summary.status}</span
+                    >
+                    <span class="slds-m-left_small slds-text-color_weak"
+                        >{detail.summary.agentDeveloperName}</span
+                    >
+                </div>
+
+                <template lwc:if={detail.errorMessage}>
+                    <div
+                        class="slds-box slds-theme_error slds-m-bottom_small error-box"
+                    >
+                        {detail.errorMessage}
+                    </div>
+                </template>
+
+                <!-- step timeline -->
+                <ul class="slds-timeline">
+                    <template for:each={steps} for:item="step">
+                        <li key={step.stepId} class="slds-m-bottom_x-small">
+                            <div
+                                class="step-row slds-grid slds-grid_vertical-align-center"
+                                data-id={step.stepId}
+                                onclick={handleToggleStep}
+                            >
+                                <lightning-icon
+                                    icon-name={step.icon}
+                                    size="x-small"
+                                    class="slds-m-right_x-small"
+                                ></lightning-icon>
+                                <span class="step-title slds-truncate"
+                                    >{step.title}</span
+                                >
+                                <span class={step.statusClass}
+                                    >{step.status}</span
+                                >
+                                <template lwc:if={step.isPending}>
+                                    <span
+                                        class="slds-m-left_x-small slds-text-color_weak"
+                                        >waiting on sub-agent</span
+                                    >
+                                </template>
+                            </div>
+                            <template lwc:if={step.expanded}>
+                                <div
+                                    class="step-detail slds-box slds-box_xx-small slds-m-top_xx-small"
+                                >
+                                    <template lwc:if={step.fullDetail}>
+                                        <template
+                                            lwc:if={step.fullDetail.llmRequest}
+                                        >
+                                            <p class="detail-label">
+                                                LLM Request
+                                            </p>
+                                            <pre
+                                                class="detail-pre"
+                                            >{step.fullDetail.llmRequest}</pre>
+                                        </template>
+                                        <template
+                                            lwc:if={step.fullDetail.llmResponse}
+                                        >
+                                            <p class="detail-label">
+                                                LLM Response
+                                            </p>
+                                            <pre
+                                                class="detail-pre"
+                                            >{step.fullDetail.llmResponse}</pre>
+                                        </template>
+                                        <template
+                                            lwc:if={step.fullDetail.toolInput}
+                                        >
+                                            <p class="detail-label">
+                                                Tool Input
+                                            </p>
+                                            <pre
+                                                class="detail-pre"
+                                            >{step.fullDetail.toolInput}</pre>
+                                        </template>
+                                        <template
+                                            lwc:if={step.fullDetail.toolOutput}
+                                        >
+                                            <p class="detail-label">
+                                                Tool Output
+                                            </p>
+                                            <pre
+                                                class="detail-pre"
+                                            >{step.fullDetail.toolOutput}</pre>
+                                        </template>
+                                    </template>
+                                    <template lwc:else>
+                                        <lightning-spinner
+                                            size="small"
+                                            alternative-text="Loading"
+                                        ></lightning-spinner>
+                                    </template>
+                                </div>
+                            </template>
+                        </li>
+                    </template>
+                </ul>
+
+                <!-- sub-agent family -->
+                <template lwc:if={showFamily}>
+                    <h3
+                        class="slds-text-heading_small slds-m-top_small slds-m-bottom_x-small"
+                    >
+                        Run Family
+                    </h3>
+                    <ul>
+                        <template for:each={family} for:item="run">
+                            <li key={run.runId} style={run.indentStyle}>
+                                <template lwc:if={run.isCurrent}>
+                                    <span class="current-run"
+                                        >{run.name} — {run.agentDeveloperName}
+                                        ({run.status})</span
+                                    >
+                                </template>
+                                <template lwc:else>
+                                    <a href={run.recordUrl}
+                                        >{run.name} — {run.agentDeveloperName}
+                                        ({run.status})</a
+                                    >
+                                </template>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template>

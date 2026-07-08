@@ -177,6 +177,18 @@ public with sharing class AgentEngine {
     List<LLMMessage> history
   ) {
     try {
+      // A cancelled (or otherwise terminated) run makes no more LLM calls.
+      List<Agent_Run__c> statusCheck = [
+        SELECT Status__c
+        FROM Agent_Run__c
+        WHERE Id = :runId
+        LIMIT 1
+      ];
+      if (!statusCheck.isEmpty() && statusCheck[0].Status__c != 'Running') {
+        logCancelledStep(runId, 'LLMCall', null);
+        return;
+      }
+
       aao__Agent_Definition__mdt agentDef = [
         SELECT
           aao__Goal__c,
@@ -429,11 +441,17 @@ public with sharing class AgentEngine {
     // Non-locking read to detect parallel mode before tool execution.
     // The actual atomic decrement happens later under FOR UPDATE.
     Agent_Run__c runCheck = [
-      SELECT PendingToolCount__c, Depth__c
+      SELECT PendingToolCount__c, Depth__c, Status__c
       FROM Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
     ];
+
+    // A cancelled (or otherwise terminated) run executes no more tools.
+    if (runCheck.Status__c != 'Running') {
+      logCancelledStep(runId, 'ToolCall', toolName);
+      return;
+    }
     Boolean isParallel =
       runCheck.PendingToolCount__c != null &&
       runCheck.PendingToolCount__c > 0;
@@ -883,6 +901,40 @@ public with sharing class AgentEngine {
 
   // Suspends the run after a tool returned a pending result: logs the ToolCall step as
   // 'Pending', links the child run back to that step, and only then starts the child's
+  /**
+   * @description Logs a `Cancelled` step marking where a terminated run's in-flight work
+   * was dropped. Best-effort: cancellation must stop the run even if the log insert fails.
+   * @param runId Id of the terminated run.
+   * @param stepType `'LLMCall'` or `'ToolCall'`.
+   * @param toolName Tool that was about to run, or null for LLM steps.
+   */
+  private static void logCancelledStep(
+    Id runId,
+    String stepType,
+    String toolName
+  ) {
+    try {
+      ExecutionLogger.logStep(
+        runId,
+        new AgentStepLog(
+          ExecutionLogger.nextStepNumber(runId),
+          stepType,
+          null,
+          null,
+          null,
+          null,
+          'Cancelled',
+          toolName
+        )
+      );
+    } catch (Exception e) {
+      System.debug(
+        LoggingLevel.WARN,
+        'Could not log cancelled step for run ' + runId + ': ' + e.getMessage()
+      );
+    }
+  }
+
   // first LLM step. The FOR UPDATE lock serializes the step insert with sibling parallel
   // jobs, same as completeParallelToolStep. PendingToolCount__c is left untouched — for a
   // parallel batch the child's completion performs this tool's decrement in resumeParentRun.
