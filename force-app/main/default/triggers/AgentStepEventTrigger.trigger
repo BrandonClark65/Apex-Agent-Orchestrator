@@ -12,11 +12,16 @@ trigger AgentStepEventTrigger on Agent_Step_Event__e(after insert) {
   for (Agent_Step_Event__e evt : Trigger.new) {
     try {
       Agent_Run__c run = [
-        SELECT History_Json__c
+        SELECT History_Json__c, Status__c
         FROM Agent_Run__c
         WHERE Id = :evt.Run_Id__c
         LIMIT 1
       ];
+
+      // A cancelled (or otherwise terminated) run stops here: don't enqueue the next step.
+      if (run.Status__c != 'Running') {
+        continue;
+      }
 
       List<LLMMessage> history = (List<LLMMessage>) JSON.deserialize(
         run.History_Json__c,

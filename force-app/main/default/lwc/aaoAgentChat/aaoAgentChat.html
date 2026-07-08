@@ -1,0 +1,114 @@
+<template>
+    <lightning-card title="Agent Chat" icon-name="standard:bot">
+        <div class="chat-layout slds-grid">
+            <!-- session sidebar -->
+            <div
+                class="sidebar slds-col slds-size_1-of-4 slds-border_right slds-p-around_x-small"
+            >
+                <lightning-button
+                    label="New Chat"
+                    variant="brand"
+                    icon-name="utility:add"
+                    class="slds-m-bottom_x-small"
+                    onclick={handleNewChat}
+                ></lightning-button>
+                <ul>
+                    <template for:each={sessions} for:item="session">
+                        <li
+                            key={session.sessionId}
+                            data-id={session.sessionId}
+                            class={session.cssClass}
+                            onclick={handleSessionClick}
+                        >
+                            <p class="session-title slds-truncate">
+                                {session.title}
+                            </p>
+                            <p
+                                class="session-meta slds-text-color_weak slds-truncate"
+                            >
+                                {session.agentDeveloperName} ·
+                                {session.status}
+                            </p>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- thread -->
+            <div class="slds-col slds-size_3-of-4 slds-grid slds-grid_vertical">
+                <template lwc:if={showAgentPicker}>
+                    <div class="slds-p-around_x-small">
+                        <lightning-combobox
+                            label="Agent"
+                            value={selectedAgent}
+                            options={agentOptions}
+                            onchange={handleAgentChange}
+                        ></lightning-combobox>
+                    </div>
+                </template>
+
+                <div class="thread slds-p-around_small slds-scrollable_y">
+                    <template lwc:if={hasMessages}>
+                        <ul class="slds-chat-list">
+                            <template for:each={messages} for:item="msg">
+                                <c-aao-chat-message
+                                    key={msg.key}
+                                    message={msg}
+                                ></c-aao-chat-message>
+                            </template>
+                        </ul>
+                    </template>
+                    <template lwc:else>
+                        <p
+                            class="slds-text-color_weak slds-text-align_center slds-p-vertical_large"
+                        >
+                            Ask the agent anything to start a conversation.
+                        </p>
+                    </template>
+
+                    <template lwc:if={thinkingText}>
+                        <div
+                            class="thinking slds-text-color_weak slds-p-vertical_x-small"
+                        >
+                            <lightning-spinner
+                                size="small"
+                                alternative-text="Working"
+                                class="slds-is-relative slds-m-right_x-small"
+                            ></lightning-spinner>
+                            <span data-id="thinking-text">{thinkingText}</span>
+                        </div>
+                    </template>
+
+                    <template lwc:if={errorText}>
+                        <div
+                            class="slds-text-color_error slds-p-vertical_x-small"
+                            data-id="error-text"
+                        >
+                            {errorText}
+                        </div>
+                    </template>
+                </div>
+
+                <!-- composer -->
+                <div class="composer slds-p-around_x-small slds-border_top">
+                    <lightning-textarea
+                        label="Message"
+                        variant="label-hidden"
+                        placeholder="Type a message…"
+                        value={inputText}
+                        disabled={composerDisabled}
+                        onchange={handleInputChange}
+                        onkeydown={handleKeyDown}
+                    ></lightning-textarea>
+                    <lightning-button
+                        label="Send"
+                        variant="brand"
+                        class="slds-m-top_x-small"
+                        disabled={sendDisabled}
+                        onclick={handleSend}
+                    ></lightning-button>
+                </div>
+            </div>
+        </div>
+    </lightning-card>
+</template>

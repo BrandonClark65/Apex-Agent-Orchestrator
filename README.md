@@ -1,33 +1,50 @@
 # Apex Agent Orchestrator (AAO)
 
-A Salesforce‑native framework for building, running, and monitoring AI agents that take actions across Salesforce and external systems.
+A Salesforce‑native framework for building, running, and monitoring AI agents that take actions across Salesforce and external systems — with multi‑turn chat, long‑term memory, and full run observability built in.
 
 ## What This Project Is
-A managed‑package‑ready orchestration layer that enables:
-- Multi‑step agent reasoning
-- Apex‑based tool execution
-- LLM provider abstraction (OpenAI, Azure, Anthropic, etc.)
-- Memory integration (Salesforce data + external vector stores)
-- Full execution logging and observability
-- Admin‑configurable agents via Custom Metadata
+
+A managed‑package‑ready orchestration layer that provides:
+
+- **Multi‑step agent reasoning** — an async ReAct loop where each LLM/tool step runs in its own transaction, chained by platform events (no queueable depth limits)
+- **Apex‑based tool execution** — CRUD, query, describe, and validation tools out of the box; new tools are one class + two Custom Metadata records
+- **Multi‑agent collaboration** — agents delegate to sub‑agents via suspend/resume, with parallel tool fan‑out
+- **Conversational sessions** — ChatGPT‑style threads: users reply and the agent remembers the conversation, with automatic history compaction for long threads
+- **Long‑term memory** — agents extract durable facts and preferences from runs, recall them into future prompts, and learn lessons from their own successes and failures (pluggable store, Salesforce‑native today, vector‑ready)
+- **LLM provider abstraction** — provider configs in Custom Metadata; OpenAI today, new providers are one class + one factory branch
+- **Full observability** — every run and step persisted, live progress events, a run monitor with cancel/re‑run, and a step‑by‑step trace viewer
+- **Admin‑configurable agents** via Custom Metadata — prompts, tool grants, providers, and memory behavior are records, not code
+
+## The Agent Orchestrator App
+
+The included Lightning app ships five UI surfaces (LWCs):
+
+| Tab              | What it does                                                                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto‑attaches the record as context). |
+| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re‑run actions.                                                                                                                     |
+| **Agents**       | Read‑only builder view: each agent's prompt, tools, schemas, and a "what the LLM actually sees" manifest preview.                                                                      |
+| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per‑agent grants.                                                                                                |
+| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace.                                                                                          |
+
+Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response detail and the sub‑agent family tree.
 
 ## Core Components
-- **AgentRunner** — Executes agent loops and manages LLM interactions.
-- **ToolRegistry** — Discovers and invokes Apex tools.
-- **LLMClient** — Provider‑agnostic LLM interface.
-- **ExecutionLogger** — Stores reasoning, steps, and results.
-- **Custom Metadata** — Defines agents, tools, and provider configs.
-- **LWCs** — Agent Builder UI, Execution Viewer, Tool Catalog.
 
-## Package Layout
-force-app/
-main/
-default/
-classes/
-lwc/
-customMetadata/
-permissionsets/
+- **AgentEngine** — the execution state machine: `runAgent` (one‑shot) and `runAgentInSession` (conversational) entry points, LLM/tool steps, parallel fan‑out, sub‑agent suspend/resume, cancel guards.
+- **ToolRegistry / AgentTool** — discovers and invokes Apex tools; access is granted per agent via `Agent_Tool_Mapping__mdt`.
+- **LLMClient / LLMClientFactory** — provider‑agnostic LLM interface driven by `LLM_Provider__mdt`.
+- **MemoryProvider / MemoryService** — pluggable memory store (`Agent_Memory__c` + `SalesforceMemoryProvider` today); recall injects "Relevant memories" and "Lessons from previous runs" into prompts, `MemoryCaptureQueueable` extracts facts and reflections after runs.
+- **HistoryCompactor** — summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
+- **ExecutionLogger** — persists every run (`Agent_Run__c`) and step (`Agent_Step__c`); the single termination choke point that releases sessions, resumes parents, and publishes UI events.
+- **UIEventPublisher / Agent_UI_Event\_\_e** — live progress channel the LWCs subscribe to (with polling fallback).
+- **AgentWatchdogSchedulable / MemoryJanitorSchedulable** — hourly timeout of stuck runs and orphaned sessions; nightly pruning of expired/stale memories.
+- **Custom Metadata** — `Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`.
 
+## Permission Sets
+
+- **AAO_Admin** — full access: all objects, all tabs, monitoring, builder, test bench.
+- **AAO_User** — chat only: start sessions and converse with agents.
 
 ## Apex Reference Documentation
 
@@ -38,13 +55,14 @@ npm install
 npm run docs
 ```
 
-This reads `apexdocs.config.mjs` and writes a Markdown reference guide to `docs/apex/`, grouped by architecture area (Agent Engine, Agent Tools, LLM Integration, Tests). Open `docs/apex/index.md` as the entry point.
+This reads `apexdocs.config.mjs` and writes a Markdown reference guide to `docs/apex/`, grouped by architecture area (Agent Engine, Agent Tools, LLM Integration, Memory, UI, Tests). Open `docs/apex/index.md` as the entry point.
 
 When adding or changing a public class, method, or constructor, add/update its `@description`/`@param`/`@return` ApexDoc comment so the generated docs stay accurate.
 
 ## Post-Install Setup
 
-### Grant the Automated Process User access to LLM credentials
+### 1. Grant the Automated Process User access to LLM credentials
+
 Agent steps are chained via a Platform Event (`Agent_Step_Event__e`) so that long-running agents aren't limited by Apex's queueable chain-depth cap. As a side effect, the Queueable that performs the LLM callout is enqueued from the event trigger and therefore executes as the **Automated Process User**, not the user who started the run.
 
 If your LLM provider's Named/External Credential (e.g. `OpenAI_Credential`) uses per-principal access control, you'll see a run fail with:
@@ -52,6 +70,7 @@ If your LLM provider's Named/External Credential (e.g. `OpenAI_Credential`) uses
 > We couldn't access the credential(s). You might not have the required permissions, or the external credential "..." might not exist.
 
 To fix this, after installing the package:
+
 1. Setup → Named Credentials → External Credentials → select your LLM provider's external credential.
 2. Note the permission set(s) listed under **Permission Set Mappings**.
 3. The Automated Process User is a restricted system user — you cannot open its User Detail page (you'll get an "Insufficient Privileges" error if you try). Instead, assign the permission set from the **permission set's** side:
@@ -67,13 +86,39 @@ To fix this, after installing the package:
 
 If your external credential uses **Per-User** authentication, switch it to a **Named Principal** instead — the Automated Process User cannot complete a per-user OAuth flow.
 
+### 2. Schedule the background jobs
+
+Two scheduled jobs keep runs and memories healthy: the **watchdog** (hourly — times out runs stuck `Running`, resumes suspended parents, releases stuck sessions) and the **memory janitor** (nightly — deactivates expired and stale memories). Schedule both with:
+
+```bash
+sf apex run --file scripts/apex/ScheduleWatchdog.apex --target-org <alias>
+```
+
+> **Deploy note:** scheduled Apex blocks class deployments. Either run `scripts/apex/UnscheduleWatchdog.apex` before deploying (and re-run the schedule script after), or enable _Allow deployments with active Apex jobs_ under Setup → Deployment Settings.
+
+### 3. Assign permission sets
+
+Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should chat with agents, then open the **Agent Orchestrator** app from the App Launcher.
+
+### 4. Configure memory (optional)
+
+Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config__mdt` record:
+
+- **NoMemory** — recall and capture disabled.
+- **Default_Memory** — fact extraction + reflection on, compaction at 90k chars, recall of up to 10 memories per run.
+
+To cut token costs, set `Maintenance_Provider__c` on the config to a cheap model's `LLM_Provider__mdt` record — compaction, extraction, and reflection calls route there instead of the agent's main model.
+
 ## Roadmap
-- Agent execution loop (MVP)
-- Tool interface + registry
-- LLM provider abstraction
-- Execution logs + dashboard
-- Memory integration
-- Sample agents
-- Managed package release
 
-
+- ✅ Agent execution loop (async, event-chained)
+- ✅ Tool interface + registry
+- ✅ LLM provider abstraction
+- ✅ Error-aware retries, parallel tools, multi-agent delegation
+- ✅ Execution logs + run monitor with cancel/re-run
+- ✅ Conversational sessions + chat UI
+- ✅ Memory: compaction, long-term store, reflection
+- ✅ Builder viewer, tool catalog, test bench
+- ⏳ Vector/hybrid memory recall (provider seam in place)
+- ⏳ Additional LLM providers
+- ⏳ Managed package release

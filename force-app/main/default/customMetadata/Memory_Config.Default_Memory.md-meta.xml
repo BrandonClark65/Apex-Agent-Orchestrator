@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Default Memory</label>
+    <protected>true</protected>
+    <values>
+        <field>Index_Name__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Memory_Type__c</field>
+        <value xsi:type="xsd:string">SalesforceOnly</value>
+    </values>
+    <values>
+        <field>VectorDB_API_Key_NC__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>VectorDB_Endpoint__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Compaction_Threshold__c</field>
+        <value xsi:type="xsd:double">90000</value>
+    </values>
+    <values>
+        <field>Max_Recall_Items__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Recall_Scopes__c</field>
+        <value xsi:type="xsd:string">User,Agent,Global</value>
+    </values>
+    <values>
+        <field>Enable_Fact_Extraction__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Enable_Reflection__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Embedding_Provider__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Maintenance_Provider__c</field>
+        <value xsi:nil="true"/>
+    </values>
+</CustomMetadata>

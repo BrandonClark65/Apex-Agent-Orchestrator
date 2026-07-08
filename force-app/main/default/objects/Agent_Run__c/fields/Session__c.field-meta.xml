@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Session__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The Agent Session (conversation thread) this run is a turn of. Null for one-shot runs.</description>
+    <label>Session</label>
+    <referenceTo>Agent_Session__c</referenceTo>
+    <relationshipLabel>Turns</relationshipLabel>
+    <relationshipName>Turns</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

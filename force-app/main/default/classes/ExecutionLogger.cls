@@ -175,7 +175,31 @@ public with sharing class ExecutionLogger {
       aao__Tool__c = log.toolName
     );
     insert step;
+
+    UIEventPublisher.publishStepCompleted(
+      runId,
+      getSessionId(runId),
+      log.stepType,
+      log.toolName,
+      log.status
+    );
+
     return step.Id;
+  }
+
+  /**
+   * @description Returns the run's session Id, or null for one-shot / sub-agent runs.
+   * @param runId Id of the Agent_Run__c to look up.
+   * @return Session__c value or null.
+   */
+  private static Id getSessionId(Id runId) {
+    List<aao__Agent_Run__c> runs = [
+      SELECT Session__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+      LIMIT 1
+    ];
+    return runs.isEmpty() ? null : runs[0].Session__c;
   }
   //
   // ───────────────────────────────────────────────────────────────
@@ -203,7 +227,12 @@ public with sharing class ExecutionLogger {
     String errorMessage
   ) {
     List<aao__Agent_Run__c> current = [
-      SELECT aao__Status__c, Parent_Run__c, Parent_Step__c, aao__Agent__c
+      SELECT
+        aao__Status__c,
+        Parent_Run__c,
+        Parent_Step__c,
+        aao__Agent__c,
+        Session__c
       FROM aao__Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
@@ -220,6 +249,25 @@ public with sharing class ExecutionLogger {
 
     Boolean firstTermination =
       !current.isEmpty() && current[0].aao__Status__c == 'Running';
+
+    // Release the conversation thread (Busy -> Active) now that this turn is over.
+    // Sub-agent runs never hold a session; SessionService no-ops for them.
+    if (firstTermination) {
+      SessionService.onRunFinished(runId);
+      UIEventPublisher.publishRunFinished(
+        runId,
+        current[0].Session__c,
+        status,
+        finalOutput,
+        errorMessage
+      );
+      // Post-run learning (fact extraction / reflection). Sub-agent runs are skipped:
+      // their transcript is part of the parent's task, not standalone knowledge.
+      if (current[0].Parent_Run__c == null) {
+        MemoryService.enqueueCapture(runId, current[0].aao__Agent__c, status);
+      }
+    }
+
     if (firstTermination && current[0].Parent_Run__c != null) {
       AgentEngine.resumeParentRun(
         current[0].Parent_Run__c,

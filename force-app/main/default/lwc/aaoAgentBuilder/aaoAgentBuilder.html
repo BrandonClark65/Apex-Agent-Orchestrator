@@ -1,0 +1,91 @@
+<template>
+    <lightning-card title="Agents" icon-name="standard:bot">
+        <div class="slds-grid slds-p-horizontal_small">
+            <!-- agent list -->
+            <div class="slds-col slds-size_1-of-4 slds-border_right slds-p-right_small">
+                <ul>
+                    <template for:each={agents} for:item="agent">
+                        <li
+                            key={agent.developerName}
+                            data-name={agent.developerName}
+                            class={agent.cssClass}
+                            onclick={handleSelect}
+                        >
+                            <p class="agent-name slds-truncate">{agent.label}</p>
+                            <span class={agent.badgeClass}>{agent.statusLabel}</span>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- detail -->
+            <div class="slds-col slds-size_3-of-4 slds-p-left_small">
+                <template lwc:if={errorText}>
+                    <div class="slds-text-color_error">{errorText}</div>
+                </template>
+                <template lwc:if={selected}>
+                    <div class="slds-grid slds-gutters slds-m-bottom_small">
+                        <div class="slds-col">
+                            <p class="field-label">LLM Provider</p>
+                            <p>{selected.llmProvider}</p>
+                        </div>
+                        <div class="slds-col">
+                            <p class="field-label">Memory Config</p>
+                            <p>{selected.memoryConfig}</p>
+                        </div>
+                        <div class="slds-col">
+                            <p class="field-label">Max Steps</p>
+                            <p>{selected.maxSteps}</p>
+                        </div>
+                    </div>
+
+                    <p class="field-label">Goal</p>
+                    <p class="slds-m-bottom_small">{selected.goal}</p>
+
+                    <p class="field-label">System Prompt</p>
+                    <pre class="prompt-pre slds-m-bottom_small">{selected.systemPrompt}</pre>
+
+                    <p class="field-label">Granted Tools</p>
+                    <template lwc:if={hasTools}>
+                        <template for:each={selected.tools} for:item="tool">
+                            <div
+                                key={tool.developerName}
+                                class="slds-box slds-box_x-small slds-m-bottom_x-small"
+                            >
+                                <p class="tool-name">
+                                    {tool.label}
+                                    <span class="slds-text-color_weak slds-m-left_x-small"
+                                        >{tool.toolClass}</span
+                                    >
+                                </p>
+                                <p class="slds-m-bottom_xx-small">{tool.description}</p>
+                                <template lwc:if={tool.promptGuidance}>
+                                    <p class="field-label">Prompt Guidance</p>
+                                    <p class="slds-m-bottom_xx-small">{tool.promptGuidance}</p>
+                                </template>
+                                <template lwc:if={tool.inputSchema}>
+                                    <p class="field-label">Input Schema</p>
+                                    <pre class="schema-pre">{tool.inputSchema}</pre>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-color_weak">No tools granted.</p>
+                    </template>
+
+                    <lightning-button
+                        label="Show what the LLM sees"
+                        icon-name="utility:preview"
+                        class="slds-m-top_small"
+                        onclick={handleShowManifest}
+                    ></lightning-button>
+                    <template lwc:if={manifest}>
+                        <p class="field-label slds-m-top_small">Tool Manifest (as sent to the model)</p>
+                        <pre class="prompt-pre">{manifest}</pre>
+                    </template>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+</template>

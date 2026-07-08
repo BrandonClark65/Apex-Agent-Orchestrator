@@ -1,0 +1,46 @@
+<template>
+    <lightning-card title="Tool Catalog" icon-name="standard:apex">
+        <div class="slds-p-horizontal_small">
+            <template lwc:if={errorText}>
+                <div class="slds-text-color_error">{errorText}</div>
+            </template>
+            <template for:each={tools} for:item="tool">
+                <div
+                    key={tool.developerName}
+                    class="slds-box slds-box_x-small slds-m-bottom_x-small"
+                >
+                    <div
+                        class="tool-header"
+                        data-name={tool.developerName}
+                        onclick={handleToggle}
+                    >
+                        <p class="tool-name">
+                            {tool.label}
+                            <span class="slds-text-color_weak slds-m-left_x-small"
+                                >{tool.toolClass}</span
+                            >
+                        </p>
+                        <p>{tool.description}</p>
+                        <p class="grants slds-text-color_weak">
+                            Granted to: {tool.grantedAgents}
+                        </p>
+                    </div>
+                    <template lwc:if={tool.expanded}>
+                        <template lwc:if={tool.promptGuidance}>
+                            <p class="field-label">Prompt Guidance</p>
+                            <p class="slds-m-bottom_xx-small">{tool.promptGuidance}</p>
+                        </template>
+                        <template lwc:if={tool.inputSchema}>
+                            <p class="field-label">Input Schema</p>
+                            <pre class="schema-pre">{tool.inputSchema}</pre>
+                        </template>
+                        <template lwc:if={tool.outputSchema}>
+                            <p class="field-label">Output Schema</p>
+                            <pre class="schema-pre">{tool.outputSchema}</pre>
+                        </template>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

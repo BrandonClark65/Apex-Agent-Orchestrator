@@ -65,6 +65,93 @@ public with sharing class AgentEngine {
     return runId;
   }
 
+  /**
+   * @description Starts the next turn of a multi-turn conversation: creates the session on
+   * first send, seeds history from the previous turn (minus its system message, so the next
+   * LLM step rebuilds a fresh system prompt against the current tool manifest), appends the
+   * new user message, and enqueues the run exactly like `runAgent`. The session is locked
+   * `Busy` while the turn is in flight — concurrent sends throw — and is released by
+   * `ExecutionLogger.finishRun` via `SessionService.onRunFinished`.
+   * @param agentDeveloperName DeveloperName of the `Agent_Definition__mdt` record to run.
+   * @param userMessage The user's chat message for this turn.
+   * @param sessionId Existing `Agent_Session__c` to continue, or null to start a new thread.
+   * @return Id of the newly created Agent_Run__c record for this turn.
+   */
+  @AuraEnabled
+  public static Id runAgentInSession(
+    String agentDeveloperName,
+    String userMessage,
+    Id sessionId,
+    String triggerType
+  ) {
+    if (String.isBlank(userMessage)) {
+      throw new AuraHandledException('userMessage is required');
+    }
+
+    List<LLMMessage> history = new List<LLMMessage>();
+    Integer turnNumber = 1;
+
+    if (sessionId == null) {
+      sessionId = SessionService.startSession(
+        agentDeveloperName,
+        userMessage
+      );
+      update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
+    } else {
+      // Lock the session so two simultaneous sends can't both pass the Busy check.
+      Agent_Session__c session = [
+        SELECT Status__c, Agent__c, Turn_Count__c
+        FROM Agent_Session__c
+        WHERE Id = :sessionId
+        LIMIT 1
+        FOR UPDATE
+      ];
+      if (session.Status__c == 'Busy') {
+        throw new AuraHandledException(
+          'This session already has a run in flight. Wait for it to finish before sending another message.'
+        );
+      }
+      if (session.Status__c == 'Closed') {
+        throw new AuraHandledException(
+          'This session is closed. Start a new session to continue.'
+        );
+      }
+      agentDeveloperName = session.Agent__c;
+      turnNumber =
+        (session.Turn_Count__c == null
+          ? 0
+          : Integer.valueOf(session.Turn_Count__c)) + 1;
+      update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
+
+      history = SessionService.loadSeedHistory(sessionId);
+    }
+
+    history.add(new LLMMessage('user', userMessage));
+
+    Id runId = ExecutionLogger.startRun(
+      agentDeveloperName,
+      userMessage,
+      String.isBlank(triggerType) ? 'UI' : triggerType
+    );
+    update new aao__Agent_Run__c(
+      Id = runId,
+      Session__c = sessionId,
+      Turn_Number__c = turnNumber
+    );
+
+    System.enqueueJob(
+      new AgentRunQueueable(
+        agentDeveloperName,
+        userMessage,
+        triggerType,
+        runId,
+        history
+      )
+    );
+
+    return runId;
+  }
+
   //
   // ───────────────────────────────────────────────────────────────
   // 2. LLM STEP (CALLOUTS ALLOWED)
@@ -90,12 +177,25 @@ public with sharing class AgentEngine {
     List<LLMMessage> history
   ) {
     try {
+      // A cancelled (or otherwise terminated) run makes no more LLM calls.
+      List<Agent_Run__c> statusCheck = [
+        SELECT Status__c
+        FROM Agent_Run__c
+        WHERE Id = :runId
+        LIMIT 1
+      ];
+      if (!statusCheck.isEmpty() && statusCheck[0].Status__c != 'Running') {
+        logCancelledStep(runId, 'LLMCall', null);
+        return;
+      }
+
       aao__Agent_Definition__mdt agentDef = [
         SELECT
           aao__Goal__c,
           aao__SystemPrompt__c,
           aao__LLMProvider__c,
-          aao__MaxSteps__c
+          aao__MaxSteps__c,
+          aao__MemoryConfig__c
         FROM aao__Agent_Definition__mdt
         WHERE DeveloperName = :agentDeveloperName
         LIMIT 1
@@ -110,6 +210,15 @@ public with sharing class AgentEngine {
         ExecutionLogger.finishRun(runId, null, 'Failed', 'Max steps exceeded');
         return;
       }
+
+      // Compact oversized histories before the main LLM call — this is the loop's only
+      // callout-enabled step, so the summarization callout must happen here.
+      history = HistoryCompactor.compactIfNeeded(
+        history,
+        agentDef.aao__MemoryConfig__c,
+        agentDef.aao__LLMProvider__c,
+        runId
+      );
 
       Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(
         agentDeveloperName
@@ -129,6 +238,15 @@ public with sharing class AgentEngine {
         '- {"final":{...}} — return the final answer';
 
       if (history.isEmpty() || history[0].role != 'system') {
+        // First LLM step of the run: recall relevant long-term memories into the prompt.
+        systemPrompt += MemoryService.buildRecallBlock(
+          agentDeveloperName,
+          agentDef.aao__MemoryConfig__c,
+          runId,
+          inputContextJson != null
+            ? inputContextJson
+            : (history.isEmpty() ? '' : history[history.size() - 1].content)
+        );
         history.add(0, new LLMMessage('system', systemPrompt));
       }
 
@@ -180,6 +298,15 @@ public with sharing class AgentEngine {
           'final'
         );
         Boolean isError = finalResult.containsKey('error');
+
+        // Persist the completed transcript (including the final assistant reply) —
+        // History_Json__c is otherwise only written when a *next* step is scheduled,
+        // and follow-up session turns seed from it.
+        history.add(new LLMMessage('assistant', res.text));
+        update new aao__Agent_Run__c(
+          Id = runId,
+          aao__History_Json__c = JSON.serialize(history)
+        );
 
         ExecutionLogger.finishRun(
           runId,
@@ -323,11 +450,17 @@ public with sharing class AgentEngine {
     // Non-locking read to detect parallel mode before tool execution.
     // The actual atomic decrement happens later under FOR UPDATE.
     Agent_Run__c runCheck = [
-      SELECT PendingToolCount__c, Depth__c
+      SELECT PendingToolCount__c, Depth__c, Status__c
       FROM Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
     ];
+
+    // A cancelled (or otherwise terminated) run executes no more tools.
+    if (runCheck.Status__c != 'Running') {
+      logCancelledStep(runId, 'ToolCall', toolName);
+      return;
+    }
     Boolean isParallel =
       runCheck.PendingToolCount__c != null &&
       runCheck.PendingToolCount__c > 0;
@@ -777,6 +910,40 @@ public with sharing class AgentEngine {
 
   // Suspends the run after a tool returned a pending result: logs the ToolCall step as
   // 'Pending', links the child run back to that step, and only then starts the child's
+  /**
+   * @description Logs a `Cancelled` step marking where a terminated run's in-flight work
+   * was dropped. Best-effort: cancellation must stop the run even if the log insert fails.
+   * @param runId Id of the terminated run.
+   * @param stepType `'LLMCall'` or `'ToolCall'`.
+   * @param toolName Tool that was about to run, or null for LLM steps.
+   */
+  private static void logCancelledStep(
+    Id runId,
+    String stepType,
+    String toolName
+  ) {
+    try {
+      ExecutionLogger.logStep(
+        runId,
+        new AgentStepLog(
+          ExecutionLogger.nextStepNumber(runId),
+          stepType,
+          null,
+          null,
+          null,
+          null,
+          'Cancelled',
+          toolName
+        )
+      );
+    } catch (Exception e) {
+      System.debug(
+        LoggingLevel.WARN,
+        'Could not log cancelled step for run ' + runId + ': ' + e.getMessage()
+      );
+    }
+  }
+
   // first LLM step. The FOR UPDATE lock serializes the step insert with sibling parallel
   // jobs, same as completeParallelToolStep. PendingToolCount__c is left untouched — for a
   // parallel batch the child's completion performs this tool's decrement in resumeParentRun.
@@ -974,7 +1141,8 @@ public with sharing class AgentEngine {
   // TOOL MANIFEST
   // ───────────────────────────────────────────────────────────────
   //
-  private static String buildToolManifest(
+  // Public so AgentBuilderController can render the "what the LLM sees" preview.
+  public static String buildToolManifest(
     Map<String, aao__Agent_Tool_Definition__mdt> toolDefs
   ) {
     List<String> entries = new List<String>();

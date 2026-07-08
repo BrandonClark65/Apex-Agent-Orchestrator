@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Type__c</fullName>
+    <description>What kind of memory: Fact (org/world knowledge), Preference (how the user likes things), Reflection (lesson the agent learned), Summary (condensed conversation).</description>
+    <label>Type</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Fact</fullName>
+                <default>true</default>
+                <label>Fact</label>
+            </value>
+            <value>
+                <fullName>Preference</fullName>
+                <default>false</default>
+                <label>Preference</label>
+            </value>
+            <value>
+                <fullName>Reflection</fullName>
+                <default>false</default>
+                <label>Reflection</label>
+            </value>
+            <value>
+                <fullName>Summary</fullName>
+                <default>false</default>
+                <label>Summary</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
