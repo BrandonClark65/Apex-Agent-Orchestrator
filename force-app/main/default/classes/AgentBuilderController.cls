@@ -12,7 +12,8 @@ public with sharing class AgentBuilderController {
    * for the builder's agent list + detail pane.
    * @return One AgentConfig per Agent_Definition__mdt.
    */
-  @AuraEnabled(cacheable=true)
+  // Not cacheable: the builder re-fetches right after a metadata deploy lands.
+  @AuraEnabled
   public static List<AgentConfig> getAgents() {
     List<AgentConfig> configs = new List<AgentConfig>();
     for (aao__Agent_Definition__mdt def : [
@@ -150,6 +151,58 @@ public with sharing class AgentBuilderController {
     );
     insert tc;
     return tc.Id;
+  }
+
+  /**
+   * @description Deploys agent configuration changes (definition + tool grants) via the
+   * Metadata API. Returns the deployment job id; completion arrives as an
+   * `Agent_UI_Event__e` with `Event_Type__c = 'DeployFinished'` and that id in
+   * `Run_Id__c`.
+   * @param requestJson Serialized AgentDeployService.AgentSaveRequest from the edit form.
+   * @return Deployment job Id as a string (null inside tests).
+   */
+  @AuraEnabled
+  public static String saveAgent(String requestJson) {
+    AgentDeployService.AgentSaveRequest request = (AgentDeployService.AgentSaveRequest) JSON.deserialize(
+      requestJson,
+      AgentDeployService.AgentSaveRequest.class
+    );
+    Id jobId = AgentDeployService.deployAgent(request);
+    return jobId == null ? null : String.valueOf(jobId);
+  }
+
+  /**
+   * @description LLM provider options for the edit form.
+   * @return DeveloperNames of all LLM_Provider__mdt records.
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<String> getProviderOptions() {
+    List<String> names = new List<String>();
+    for (aao__LLM_Provider__mdt provider : [
+      SELECT DeveloperName
+      FROM aao__LLM_Provider__mdt
+      ORDER BY DeveloperName
+    ]) {
+      names.add(provider.DeveloperName);
+    }
+    return names;
+  }
+
+  /**
+   * @description Memory config options for the edit form.
+   * @return DeveloperNames of all Memory_Config__mdt records.
+   */
+  @AuraEnabled(cacheable=true)
+  public static List<String> getMemoryConfigOptions() {
+    List<String> names = new List<String>();
+    for (aao__Memory_Config__mdt config : [
+      SELECT DeveloperName
+      FROM aao__Memory_Config__mdt
+      ORDER BY DeveloperName
+    ]) {
+      names.add(config.DeveloperName);
+    }
+    return names;
   }
 
   /**
