@@ -20,6 +20,10 @@
         <apexClass>AgentMonitorController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>MemoryManagerController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
         <name>Agent_Definition__mdt</name>
@@ -203,6 +207,10 @@
     </tabSettings>
     <tabSettings>
         <tab>Agent_Chat</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Agent_Memories</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>

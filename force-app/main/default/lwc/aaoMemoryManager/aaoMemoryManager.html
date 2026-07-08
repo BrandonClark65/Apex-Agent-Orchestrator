@@ -1,0 +1,115 @@
+<template>
+    <lightning-card title="Agent Memories" icon-name="standard:knowledge">
+        <div class="slds-p-horizontal_small">
+            <!-- view switch + filters -->
+            <div class="slds-grid slds-gutters slds-grid_vertical-align-end slds-m-bottom_x-small">
+                <div class="slds-col slds-grow-none">
+                    <lightning-button-group>
+                        <lightning-button
+                            label="My Memories"
+                            variant={mineVariant}
+                            onclick={handleShowMine}
+                        ></lightning-button>
+                        <template lwc:if={isAdmin}>
+                            <lightning-button
+                                label="All Memories"
+                                variant={allVariant}
+                                onclick={handleShowAll}
+                            ></lightning-button>
+                        </template>
+                    </lightning-button-group>
+                </div>
+                <template lwc:if={isAll}>
+                    <div class="slds-col slds-size_1-of-5">
+                        <lightning-input
+                            label="Agent"
+                            variant="label-hidden"
+                            placeholder="Filter by agent (Enter)"
+                            value={agentFilter}
+                            onchange={handleAgentFilter}
+                            onkeydown={handleAgentFilterCommit}
+                        ></lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-5">
+                        <lightning-combobox
+                            label="Type"
+                            variant="label-hidden"
+                            placeholder="All types"
+                            value={typeFilter}
+                            options={typeOptions}
+                            onchange={handleTypeFilter}
+                        ></lightning-combobox>
+                    </div>
+                </template>
+                <div class="slds-col slds-grow-none">
+                    <lightning-input
+                        type="checkbox"
+                        label="Show inactive"
+                        checked={includeInactive}
+                        onchange={handleIncludeInactive}
+                    ></lightning-input>
+                </div>
+            </div>
+
+            <template lwc:if={errorText}>
+                <div class="slds-text-color_error slds-m-bottom_x-small">
+                    {errorText}
+                </div>
+            </template>
+
+            <template lwc:if={hasRows}>
+                <template for:each={rows} for:item="memory">
+                    <div
+                        key={memory.memoryId}
+                        class="slds-box slds-box_x-small slds-m-bottom_x-small"
+                    >
+                        <div class="memory-header slds-grid slds-grid_vertical-align-center">
+                            <span class="slds-badge slds-m-right_x-small"
+                                >{memory.memoryType}</span
+                            >
+                            <span class="slds-badge slds-m-right_x-small"
+                                >{memory.scope}</span
+                            >
+                            <span class={memory.statusClass}
+                                >{memory.statusLabel}</span
+                            >
+                            <template lwc:if={memory.agentDeveloperName}>
+                                <span
+                                    class="slds-m-left_x-small slds-text-color_weak agent-name"
+                                    >{memory.agentDeveloperName}</span
+                                >
+                            </template>
+                            <span class="spacer"></span>
+                            <lightning-button
+                                label={memory.toggleLabel}
+                                data-id={memory.memoryId}
+                                data-active={memory.isActive}
+                                onclick={handleToggleActive}
+                                class="slds-m-right_x-small"
+                            ></lightning-button>
+                            <lightning-button
+                                label="Delete"
+                                variant="destructive-text"
+                                data-id={memory.memoryId}
+                                onclick={handleDelete}
+                            ></lightning-button>
+                        </div>
+                        <p class="memory-content slds-m-top_xx-small">
+                            {memory.content}
+                        </p>
+                        <p class="memory-meta slds-text-color_weak">
+                            Recalled {memory.accessCount} times
+                        </p>
+                    </div>
+                </template>
+            </template>
+            <template lwc:else>
+                <p
+                    class="slds-text-color_weak slds-text-align_center slds-p-vertical_large"
+                >
+                    No memories yet. Agents store what they learn here.
+                </p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

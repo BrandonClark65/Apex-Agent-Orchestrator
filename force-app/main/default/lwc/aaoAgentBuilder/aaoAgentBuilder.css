@@ -27,6 +27,20 @@
     font-weight: 600;
 }
 
+.deploy-status {
+    display: flex;
+    align-items: center;
+}
+
+.tool-grant {
+    margin-bottom: 0.25rem;
+}
+
+.tool-desc {
+    font-size: 0.75rem;
+    margin-left: 1.75rem;
+}
+
 .prompt-pre,
 .schema-pre {
     white-space: pre-wrap;
