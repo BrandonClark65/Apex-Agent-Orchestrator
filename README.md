@@ -11,21 +11,22 @@ A managed‑package‑ready orchestration layer that provides:
 - **Multi‑agent collaboration** — agents delegate to sub‑agents via suspend/resume, with parallel tool fan‑out
 - **Conversational sessions** — ChatGPT‑style threads: users reply and the agent remembers the conversation, with automatic history compaction for long threads
 - **Long‑term memory** — agents extract durable facts and preferences from runs, recall them into future prompts, and learn lessons from their own successes and failures (pluggable store, Salesforce‑native today, vector‑ready)
-- **LLM provider abstraction** — provider configs in Custom Metadata; OpenAI today, new providers are one class + one factory branch
+- **LLM provider abstraction** — provider configs in Custom Metadata; OpenAI, Anthropic (Claude), and Azure OpenAI out of the box, new providers are one class + one factory branch
 - **Full observability** — every run and step persisted, live progress events, a run monitor with cancel/re‑run, and a step‑by‑step trace viewer
 - **Admin‑configurable agents** via Custom Metadata — prompts, tool grants, providers, and memory behavior are records, not code
 
 ## The Agent Orchestrator App
 
-The included Lightning app ships five UI surfaces (LWCs):
+The included Lightning app ships six UI surfaces (LWCs):
 
-| Tab              | What it does                                                                                                                                                                           |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto‑attaches the record as context). |
-| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re‑run actions.                                                                                                                     |
-| **Agents**       | Read‑only builder view: each agent's prompt, tools, schemas, and a "what the LLM actually sees" manifest preview.                                                                      |
-| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per‑agent grants.                                                                                                |
-| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace.                                                                                          |
+| Tab              | What it does                                                                                                                                                                                         |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto‑attaches the record as context).               |
+| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re‑run actions.                                                                                                                                   |
+| **Agents**       | Agent builder: view or edit each agent's prompt, tools, provider, and memory config — edits deploy through the Metadata API with live status — plus a "what the LLM actually sees" manifest preview. |
+| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                       |
+| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per‑agent grants.                                                                                                              |
+| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace.                                                                                                        |
 
 Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response detail and the sub‑agent family tree.
 
@@ -33,7 +34,8 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 
 - **AgentEngine** — the execution state machine: `runAgent` (one‑shot) and `runAgentInSession` (conversational) entry points, LLM/tool steps, parallel fan‑out, sub‑agent suspend/resume, cancel guards.
 - **ToolRegistry / AgentTool** — discovers and invokes Apex tools; access is granted per agent via `Agent_Tool_Mapping__mdt`.
-- **LLMClient / LLMClientFactory** — provider‑agnostic LLM interface driven by `LLM_Provider__mdt`.
+- **LLMClient / LLMClientFactory** — provider‑agnostic LLM interface driven by `LLM_Provider__mdt`; ships `OpenAIClient`, `AnthropicClient`, and `AzureOpenAIClient`.
+- **AgentDeployService / AgentDeployCallback** — deploys agent definitions and tool grants from the builder UI via `Metadata.Operations`, reporting completion over the UI event channel.
 - **MemoryProvider / MemoryService** — pluggable memory store (`Agent_Memory__c` + `SalesforceMemoryProvider` today); recall injects "Relevant memories" and "Lessons from previous runs" into prompts, `MemoryCaptureQueueable` extracts facts and reflections after runs.
 - **HistoryCompactor** — summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
 - **ExecutionLogger** — persists every run (`Agent_Run__c`) and step (`Agent_Step__c`); the single termination choke point that releases sessions, resumes parents, and publishes UI events.
@@ -44,7 +46,7 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 ## Permission Sets
 
 - **AAO_Admin** — full access: all objects, all tabs, monitoring, builder, test bench.
-- **AAO_User** — chat only: start sessions and converse with agents.
+- **AAO_User** — chat + own memories: start sessions, converse with agents, and curate what agents remember about them.
 
 ## Apex Reference Documentation
 
@@ -86,6 +88,8 @@ To fix this, after installing the package:
 
 If your external credential uses **Per-User** authentication, switch it to a **Named Principal** instead — the Automated Process User cannot complete a per-user OAuth flow.
 
+**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header — `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`, with your deployment name and `api-version` in the record's endpoint path). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
+
 ### 2. Schedule the background jobs
 
 Two scheduled jobs keep runs and memories healthy: the **watchdog** (hourly — times out runs stuck `Running`, resumes suspended parents, releases stuck sessions) and the **memory janitor** (nightly — deactivates expired and stale memories). Schedule both with:
@@ -119,6 +123,8 @@ To cut token costs, set `Maintenance_Provider__c` on the config to a cheap model
 - ✅ Conversational sessions + chat UI
 - ✅ Memory: compaction, long-term store, reflection
 - ✅ Builder viewer, tool catalog, test bench
+- ✅ Additional LLM providers (Anthropic Claude, Azure OpenAI)
+- ✅ Agent authoring from the builder (Metadata API deploys)
+- ✅ Memory management UI
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ⏳ Additional LLM providers
 - ⏳ Managed package release
