@@ -17,7 +17,15 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>AgentFlowActions</apexClass>
+        <apexClass>AgentFlowGetRunResultAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AgentFlowRunAgentAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AgentFlowSendMessageAction</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>

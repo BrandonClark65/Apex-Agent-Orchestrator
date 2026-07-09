@@ -1,7 +1,8 @@
 /**
- * @description Tests `AgentFlowActions`: one-shot runs, session start/continue via
- * `sendAgentMessage`, result polling (running/succeeded/failed), bulk polling of multiple
- * runs in one call, and input validation. Uses `LLMClientMock` throughout.
+ * @description Tests the Flow integration actions (`AgentFlowRunAgentAction`,
+ * `AgentFlowSendMessageAction`, `AgentFlowGetRunResultAction`): one-shot runs, session
+ * start/continue, result polling (succeeded/failed), bulk polling of multiple runs in one
+ * call, and input validation. Uses `LLMClientMock` throughout.
  * @group Tests
  */
 @IsTest
@@ -12,23 +13,23 @@ private class AgentFlowActionsTest {
     mock.addResponse('{"final":{"message":"one-shot done"}}');
     LLMClientFactory.setMock(mock);
 
-    AgentFlowActions.RunAgentRequest request = new AgentFlowActions.RunAgentRequest();
+    AgentFlowRunAgentAction.Request request = new AgentFlowRunAgentAction.Request();
     request.agentDeveloperName = 'CRUD_Agent';
     request.inputContext = '{"task":"say hi"}';
 
     Test.startTest();
-    List<AgentFlowActions.RunAgentResult> results = AgentFlowActions.runAgent(
-      new List<AgentFlowActions.RunAgentRequest>{ request }
+    List<AgentFlowRunAgentAction.Result> results = AgentFlowRunAgentAction.run(
+      new List<AgentFlowRunAgentAction.Request>{ request }
     );
     Test.stopTest();
 
     System.assertEquals(1, results.size());
     System.assertNotEquals(null, results[0].runId);
 
-    AgentFlowActions.GetAgentRunResultRequest pollRequest = new AgentFlowActions.GetAgentRunResultRequest();
+    AgentFlowGetRunResultAction.Request pollRequest = new AgentFlowGetRunResultAction.Request();
     pollRequest.runId = results[0].runId;
-    AgentFlowActions.GetAgentRunResultResult status = AgentFlowActions.getAgentRunResult(
-      new List<AgentFlowActions.GetAgentRunResultRequest>{ pollRequest }
+    AgentFlowGetRunResultAction.Result status = AgentFlowGetRunResultAction.getResult(
+      new List<AgentFlowGetRunResultAction.Request>{ pollRequest }
     )[0];
 
     System.assertEquals('Succeeded', status.status);
@@ -39,22 +40,22 @@ private class AgentFlowActionsTest {
 
   @IsTest
   static void testRunAgentRequiresAgentNameAndInput() {
-    AgentFlowActions.RunAgentRequest missingAgent = new AgentFlowActions.RunAgentRequest();
+    AgentFlowRunAgentAction.Request missingAgent = new AgentFlowRunAgentAction.Request();
     missingAgent.inputContext = 'hi';
     try {
-      AgentFlowActions.runAgent(
-        new List<AgentFlowActions.RunAgentRequest>{ missingAgent }
+      AgentFlowRunAgentAction.run(
+        new List<AgentFlowRunAgentAction.Request>{ missingAgent }
       );
       System.assert(false, 'expected AgentException for missing agent name');
     } catch (AgentException e) {
       System.assert(e.getMessage().contains('Agent Developer Name'));
     }
 
-    AgentFlowActions.RunAgentRequest missingInput = new AgentFlowActions.RunAgentRequest();
+    AgentFlowRunAgentAction.Request missingInput = new AgentFlowRunAgentAction.Request();
     missingInput.agentDeveloperName = 'CRUD_Agent';
     try {
-      AgentFlowActions.runAgent(
-        new List<AgentFlowActions.RunAgentRequest>{ missingInput }
+      AgentFlowRunAgentAction.run(
+        new List<AgentFlowRunAgentAction.Request>{ missingInput }
       );
       System.assert(false, 'expected AgentException for missing input context');
     } catch (AgentException e) {
@@ -68,13 +69,13 @@ private class AgentFlowActionsTest {
     mock.addResponse('{"final":{"message":"first turn"}}');
     LLMClientFactory.setMock(mock);
 
-    AgentFlowActions.SendAgentMessageRequest first = new AgentFlowActions.SendAgentMessageRequest();
+    AgentFlowSendMessageAction.Request first = new AgentFlowSendMessageAction.Request();
     first.agentDeveloperName = 'CRUD_Agent';
     first.message = 'Hello';
 
     Test.startTest();
-    AgentFlowActions.SendAgentMessageResult firstResult = AgentFlowActions.sendAgentMessage(
-      new List<AgentFlowActions.SendAgentMessageRequest>{ first }
+    AgentFlowSendMessageAction.Result firstResult = AgentFlowSendMessageAction.send(
+      new List<AgentFlowSendMessageAction.Request>{ first }
     )[0];
     Test.stopTest();
 
@@ -87,13 +88,13 @@ private class AgentFlowActionsTest {
     mock2.addResponse('{"final":{"message":"second turn"}}');
     LLMClientFactory.setMock(mock2);
 
-    AgentFlowActions.SendAgentMessageRequest second = new AgentFlowActions.SendAgentMessageRequest();
+    AgentFlowSendMessageAction.Request second = new AgentFlowSendMessageAction.Request();
     second.agentDeveloperName = 'CRUD_Agent';
     second.message = 'Follow up';
     second.sessionId = firstResult.sessionId;
 
-    AgentFlowActions.SendAgentMessageResult secondResult = AgentFlowActions.sendAgentMessage(
-      new List<AgentFlowActions.SendAgentMessageRequest>{ second }
+    AgentFlowSendMessageAction.Result secondResult = AgentFlowSendMessageAction.send(
+      new List<AgentFlowSendMessageAction.Request>{ second }
     )[0];
 
     System.assertEquals(
@@ -108,7 +109,7 @@ private class AgentFlowActionsTest {
     // AgentEngine's retry-to-hard-fail path spans multiple platform-event hops that don't
     // fully drain within one Test.stopTest() (see AgentEngineTest's class doc) — simulate
     // the terminal state directly instead, the same way MemoryServiceTest does, since this
-    // test only needs to verify getAgentRunResult's field mapping for a Failed run.
+    // test only needs to verify getResult's field mapping for a Failed run.
     Id runId = ExecutionLogger.startRun(
       'CRUD_Agent',
       '{"task":"trigger a failure"}',
@@ -120,10 +121,10 @@ private class AgentFlowActionsTest {
       aao__Error_Message__c = 'Simulated failure'
     );
 
-    AgentFlowActions.GetAgentRunResultRequest pollRequest = new AgentFlowActions.GetAgentRunResultRequest();
+    AgentFlowGetRunResultAction.Request pollRequest = new AgentFlowGetRunResultAction.Request();
     pollRequest.runId = runId;
-    AgentFlowActions.GetAgentRunResultResult status = AgentFlowActions.getAgentRunResult(
-      new List<AgentFlowActions.GetAgentRunResultRequest>{ pollRequest }
+    AgentFlowGetRunResultAction.Result status = AgentFlowGetRunResultAction.getResult(
+      new List<AgentFlowGetRunResultAction.Request>{ pollRequest }
     )[0];
 
     System.assertEquals('Failed', status.status);
@@ -139,36 +140,36 @@ private class AgentFlowActionsTest {
     mock.addResponse('{"final":{"message":"run B"}}');
     LLMClientFactory.setMock(mock);
 
-    AgentFlowActions.RunAgentRequest reqA = new AgentFlowActions.RunAgentRequest();
+    AgentFlowRunAgentAction.Request reqA = new AgentFlowRunAgentAction.Request();
     reqA.agentDeveloperName = 'CRUD_Agent';
     reqA.inputContext = '{"task":"A"}';
-    AgentFlowActions.RunAgentRequest reqB = new AgentFlowActions.RunAgentRequest();
+    AgentFlowRunAgentAction.Request reqB = new AgentFlowRunAgentAction.Request();
     reqB.agentDeveloperName = 'CRUD_Agent';
     reqB.inputContext = '{"task":"B"}';
 
     Test.startTest();
-    List<AgentFlowActions.RunAgentResult> runResults = AgentFlowActions.runAgent(
-      new List<AgentFlowActions.RunAgentRequest>{ reqA, reqB }
+    List<AgentFlowRunAgentAction.Result> runResults = AgentFlowRunAgentAction.run(
+      new List<AgentFlowRunAgentAction.Request>{ reqA, reqB }
     );
     Test.stopTest();
 
-    AgentFlowActions.GetAgentRunResultRequest pollA = new AgentFlowActions.GetAgentRunResultRequest();
+    AgentFlowGetRunResultAction.Request pollA = new AgentFlowGetRunResultAction.Request();
     pollA.runId = runResults[0].runId;
-    AgentFlowActions.GetAgentRunResultRequest pollB = new AgentFlowActions.GetAgentRunResultRequest();
+    AgentFlowGetRunResultAction.Request pollB = new AgentFlowGetRunResultAction.Request();
     pollB.runId = runResults[1].runId;
 
-    List<AgentFlowActions.GetAgentRunResultResult> statuses = AgentFlowActions.getAgentRunResult(
-      new List<AgentFlowActions.GetAgentRunResultRequest>{ pollA, pollB }
+    List<AgentFlowGetRunResultAction.Result> statuses = AgentFlowGetRunResultAction.getResult(
+      new List<AgentFlowGetRunResultAction.Request>{ pollA, pollB }
     );
 
     System.assertEquals(2, statuses.size());
     System.assertEquals('run A', statuses[0].finalMessage);
     System.assertEquals('run B', statuses[1].finalMessage);
 
-    AgentFlowActions.GetAgentRunResultRequest blankRequest = new AgentFlowActions.GetAgentRunResultRequest();
+    AgentFlowGetRunResultAction.Request blankRequest = new AgentFlowGetRunResultAction.Request();
     try {
-      AgentFlowActions.getAgentRunResult(
-        new List<AgentFlowActions.GetAgentRunResultRequest>{ blankRequest }
+      AgentFlowGetRunResultAction.getResult(
+        new List<AgentFlowGetRunResultAction.Request>{ blankRequest }
       );
       System.assert(false, 'expected AgentException for missing Run Id');
     } catch (AgentException e) {
