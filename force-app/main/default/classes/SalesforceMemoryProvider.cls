@@ -3,12 +3,19 @@
  * rows in the requested scopes and ranks them by keyword overlap with the query text,
  * breaking ties by access count then recency. Callout-free, so it is safe in every
  * engine context. Recalled rows get `Access_Count__c`/`Last_Accessed__c` bumped
- * best-effort for future ranking and pruning.
+ * best-effort for future ranking and pruning — deferred rather than written inline (see
+ * `flushAccessBookkeeping`), since `recall` runs from `AgentEngine.runLLMStep` before its
+ * own LLM callout, and Salesforce forbids callouts once a transaction has uncommitted DML.
  * @group Memory
  */
 public with sharing class SalesforceMemoryProvider implements MemoryProvider {
   // How many candidates to load before ranking client-side.
   private static final Integer CANDIDATE_LIMIT = 200;
+
+  // Transaction-scoped queue of access-count bumps from `recall` calls so far, flushed by
+  // `flushAccessBookkeeping` only once every callout for the transaction is done.
+  @TestVisible
+  private static List<Agent_Memory__c> pendingAccessBookkeeping = new List<Agent_Memory__c>();
 
   /**
    * @description See `MemoryProvider.recall`.
@@ -87,15 +94,30 @@ public with sharing class SalesforceMemoryProvider implements MemoryProvider {
       );
     }
 
+    pendingAccessBookkeeping.addAll(touched);
+    return results;
+  }
+
+  /**
+   * @description Writes the access-count/last-accessed bumps queued by `recall` calls so
+   * far in this transaction. Safe to call only once every callout for the current
+   * transaction has already completed — it performs DML, and Salesforce forbids callouts
+   * afterward. No-ops when nothing is pending.
+   */
+  public static void flushAccessBookkeeping() {
+    if (pendingAccessBookkeeping.isEmpty()) {
+      return;
+    }
+    List<Agent_Memory__c> toUpdate = pendingAccessBookkeeping;
+    pendingAccessBookkeeping = new List<Agent_Memory__c>();
     try {
-      update touched;
+      update toUpdate;
     } catch (Exception e) {
       System.debug(
         LoggingLevel.WARN,
         'Memory access bookkeeping failed: ' + e.getMessage()
       );
     }
-    return results;
   }
 
   /**

@@ -51,14 +51,16 @@ private class HistoryCompactorTest {
     String lastOriginalContent = history[history.size() - 1].content;
 
     Test.startTest();
-    List<LLMMessage> compacted = HistoryCompactor.compactIfNeeded(
+    HistoryCompactor.CompactionOutcome outcome = HistoryCompactor.compactIfNeeded(
       history,
       'Default_Memory',
       'OpenAI_GPT4',
       runId
     );
+    HistoryCompactor.persistPending(outcome.pending);
     Test.stopTest();
 
+    List<LLMMessage> compacted = outcome.history;
     System.assert(
       JSON.serialize(compacted).length() < originalSize,
       'compacted history must be smaller'
@@ -109,14 +111,16 @@ private class HistoryCompactorTest {
       new LLMMessage('assistant', 'anytime')
     };
 
-    List<LLMMessage> result = HistoryCompactor.compactIfNeeded(
+    HistoryCompactor.CompactionOutcome outcome = HistoryCompactor.compactIfNeeded(
       history,
       'Default_Memory',
       'OpenAI_GPT4',
       runId
     );
+    HistoryCompactor.persistPending(outcome.pending);
 
-    System.assertEquals(history.size(), result.size(), 'unchanged');
+    System.assertEquals(history.size(), outcome.history.size(), 'unchanged');
+    System.assertEquals(null, outcome.pending, 'no compaction pending');
     System.assertEquals(
       0,
       [
@@ -143,12 +147,13 @@ private class HistoryCompactorTest {
     );
 
     Test.startTest();
-    HistoryCompactor.compactIfNeeded(
+    HistoryCompactor.CompactionOutcome outcome = HistoryCompactor.compactIfNeeded(
       bigHistory(30),
       'Default_Memory',
       'OpenAI_GPT4',
       runId
     );
+    HistoryCompactor.persistPending(outcome.pending);
     Test.stopTest();
 
     Agent_Session__c session = [
@@ -171,7 +176,7 @@ private class HistoryCompactorTest {
     Id runId = ExecutionLogger.startRun('CRUD_Agent', '{}', 'Apex');
     List<LLMMessage> history = bigHistory(30);
 
-    List<LLMMessage> result = HistoryCompactor.compactIfNeeded(
+    HistoryCompactor.CompactionOutcome outcome = HistoryCompactor.compactIfNeeded(
       history,
       'Default_Memory',
       'OpenAI_GPT4',
@@ -180,8 +185,13 @@ private class HistoryCompactorTest {
 
     System.assertEquals(
       history.size(),
-      result.size(),
+      outcome.history.size(),
       'failed compaction returns the original history untouched'
+    );
+    System.assertEquals(
+      null,
+      outcome.pending,
+      'a failed compaction has nothing pending to persist'
     );
   }
 }

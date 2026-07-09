@@ -50,6 +50,7 @@ private class MemoryServiceTest {
 
     List<MemoryRecord> results = new SalesforceMemoryProvider()
       .recall(query);
+    SalesforceMemoryProvider.flushAccessBookkeeping();
 
     System.assertEquals(2, results.size(), 'maxItems respected');
     System.assertEquals(
