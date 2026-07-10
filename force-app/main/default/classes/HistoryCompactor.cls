@@ -6,6 +6,13 @@
  * uses the memory config's `Maintenance_Provider__c` when set — cheap models summarize
  * fine — falling back to the agent's own provider. Compaction failures are swallowed and
  * the original history returned: a run must never die because its summary call failed.
+ *
+ * Compaction's own bookkeeping (the `Summary` step row and the session summary write) is
+ * DML, and `runLLMStep` still has its own LLM callout to make after compaction returns —
+ * Salesforce forbids any callout once a transaction has uncommitted DML, so that
+ * bookkeeping must NOT happen inline here. `compactIfNeeded`/`compact` return it as a
+ * `PendingCompaction` instead; the caller must invoke `persistPending` only after every
+ * callout for the transaction has completed (see `AgentEngine.runLLMStep`).
  * @group Agent Engine
  */
 public with sharing class HistoryCompactor {
@@ -17,17 +24,35 @@ public with sharing class HistoryCompactor {
 
   private static final String SUMMARY_PREFIX = '[Conversation summary] ';
 
+  /** @description Result of `compact`: the history to continue with, plus any deferred DML. */
+  public class CompactionOutcome {
+    public List<LLMMessage> history;
+    // Null when no compaction happened. Must be flushed via `persistPending` after all
+    // callouts for the transaction are done.
+    public PendingCompaction pending;
+  }
+
+  /** @description Deferred `Summary` step log + session summary write for one compaction. */
+  public class PendingCompaction {
+    private Id runId;
+    private String requestJson;
+    private String rawResponse;
+    private String summaryText;
+  }
+
   /**
    * @description Compacts the history if the agent's memory config demands it; otherwise
-   * returns it unchanged. Also logs a `Summary` step and, when the run belongs to a
-   * session, refreshes `Agent_Session__c.Summary__c`.
+   * returns it unchanged. When compaction runs, the `Summary` step log and session summary
+   * write are NOT performed inline — they come back as `CompactionOutcome.pending` for the
+   * caller to flush (via `persistPending`) once it's done making callouts for this
+   * transaction.
    * @param history Conversation history for the step about to run.
    * @param memoryConfigDeveloperName `Agent_Definition__mdt.MemoryConfig__c` value (may be blank).
    * @param fallbackProviderDeveloperName The agent's own `LLMProvider__c`, used when the config has no maintenance provider.
    * @param runId Id of the Agent_Run__c the step belongs to.
-   * @return The (possibly compacted) history to continue with.
+   * @return A CompactionOutcome carrying the (possibly compacted) history and any pending DML.
    */
-  public static List<LLMMessage> compactIfNeeded(
+  public static CompactionOutcome compactIfNeeded(
     List<LLMMessage> history,
     String memoryConfigDeveloperName,
     String fallbackProviderDeveloperName,
@@ -41,7 +66,7 @@ public with sharing class HistoryCompactor {
         : DEFAULT_THRESHOLD;
 
       if (!needsCompaction(history, threshold)) {
-        return history;
+        return unchanged(history);
       }
 
       String providerName = config != null &&
@@ -56,8 +81,42 @@ public with sharing class HistoryCompactor {
         LoggingLevel.WARN,
         'HistoryCompactor skipped for run ' + runId + ': ' + e.getMessage()
       );
-      return history;
+      return unchanged(history);
     }
+  }
+
+  private static CompactionOutcome unchanged(List<LLMMessage> history) {
+    CompactionOutcome outcome = new CompactionOutcome();
+    outcome.history = history;
+    outcome.pending = null;
+    return outcome;
+  }
+
+  /**
+   * @description Writes the deferred `Summary` step row and session summary update for a
+   * compaction. Safe to call only once every callout for the current transaction has
+   * already completed (successfully or not) — it performs DML, and Salesforce forbids
+   * callouts afterward. No-ops when `pending` is null (compaction didn't run).
+   * @param pending The pending compaction returned by `compactIfNeeded`/`compact`, or null.
+   */
+  public static void persistPending(PendingCompaction pending) {
+    if (pending == null) {
+      return;
+    }
+    ExecutionLogger.logStep(
+      pending.runId,
+      new AgentStepLog(
+        ExecutionLogger.nextStepNumber(pending.runId),
+        'Summary',
+        pending.requestJson,
+        pending.rawResponse,
+        null,
+        null,
+        'Completed',
+        null
+      )
+    );
+    writeSessionSummary(pending.runId, pending.summaryText);
   }
 
   /**
@@ -82,9 +141,9 @@ public with sharing class HistoryCompactor {
    * @param history Conversation history to compact.
    * @param client LLM client for the summarization call.
    * @param runId Id of the Agent_Run__c, for step logging and the session summary write.
-   * @return New history: [system?] + summary + recent tail.
+   * @return A CompactionOutcome with the new history ([system?] + summary + recent tail) and the pending step/summary DML.
    */
-  public static List<LLMMessage> compact(
+  public static CompactionOutcome compact(
     List<LLMMessage> history,
     LLMClient client,
     Id runId
@@ -126,26 +185,21 @@ public with sharing class HistoryCompactor {
     LLMResponse res = client.complete(req);
     String summaryText = SUMMARY_PREFIX + res.text;
 
-    ExecutionLogger.logStep(
-      runId,
-      new AgentStepLog(
-        ExecutionLogger.nextStepNumber(runId),
-        'Summary',
-        JSON.serialize(req),
-        res.rawResponse,
-        null,
-        null,
-        'Completed',
-        null
-      )
-    );
-    writeSessionSummary(runId, summaryText);
+    PendingCompaction pending = new PendingCompaction();
+    pending.runId = runId;
+    pending.requestJson = JSON.serialize(req);
+    pending.rawResponse = res.rawResponse;
+    pending.summaryText = summaryText;
 
     List<LLMMessage> compacted = new List<LLMMessage>();
     compacted.addAll(systemMessages);
     compacted.add(new LLMMessage('assistant', summaryText));
     compacted.addAll(toKeep);
-    return compacted;
+
+    CompactionOutcome outcome = new CompactionOutcome();
+    outcome.history = compacted;
+    outcome.pending = pending;
+    return outcome;
   }
 
   private static Integer countNonSystem(List<LLMMessage> history) {

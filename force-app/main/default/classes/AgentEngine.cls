@@ -176,6 +176,10 @@ public with sharing class AgentEngine {
     Id runId,
     List<LLMMessage> history
   ) {
+    // Set by HistoryCompactor when it compacts; must only be flushed (it's DML) once every
+    // callout below has completed, since Salesforce forbids callouts after uncommitted DML
+    // in the same transaction. Declared here so both the try and catch below can reach it.
+    HistoryCompactor.PendingCompaction pendingCompaction = null;
     try {
       // A cancelled (or otherwise terminated) run makes no more LLM calls.
       List<Agent_Run__c> statusCheck = [
@@ -212,13 +216,16 @@ public with sharing class AgentEngine {
       }
 
       // Compact oversized histories before the main LLM call — this is the loop's only
-      // callout-enabled step, so the summarization callout must happen here.
-      history = HistoryCompactor.compactIfNeeded(
+      // callout-enabled step, so the summarization callout must happen here. Its DML
+      // (pendingCompaction) is deliberately not written yet — see the flush below.
+      HistoryCompactor.CompactionOutcome compactionOutcome = HistoryCompactor.compactIfNeeded(
         history,
         agentDef.aao__MemoryConfig__c,
         agentDef.aao__LLMProvider__c,
         runId
       );
+      history = compactionOutcome.history;
+      pendingCompaction = compactionOutcome.pending;
 
       Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(
         agentDeveloperName
@@ -257,6 +264,13 @@ public with sharing class AgentEngine {
       req.messages = history;
 
       LLMResponse res = client.complete(req);
+
+      // Every callout for this step is now done — safe to write the compaction's
+      // deferred Summary step/session-summary DML, and memory recall's deferred
+      // access-count bookkeeping, before any of our own DML below.
+      HistoryCompactor.persistPending(pendingCompaction);
+      pendingCompaction = null;
+      MemoryService.flushPendingRecallBookkeeping();
 
       Map<String, Object> parsed = new Map<String, Object>();
       String parseError = null;
@@ -401,6 +415,34 @@ public with sharing class AgentEngine {
         llmMsg
       );
     } catch (Exception e) {
+      // The main callout (if reached) already ran — or was attempted and threw — so no
+      // further callouts happen from here. Safe to flush any still-pending compaction and
+      // memory-recall DML before handleStepError's own.
+      if (pendingCompaction != null) {
+        try {
+          HistoryCompactor.persistPending(pendingCompaction);
+        } catch (Exception flushEx) {
+          System.debug(
+            LoggingLevel.WARN,
+            'Could not persist pending compaction for run ' +
+              runId +
+              ': ' +
+              flushEx.getMessage()
+          );
+        }
+      }
+      try {
+        MemoryService.flushPendingRecallBookkeeping();
+      } catch (Exception flushEx) {
+        System.debug(
+          LoggingLevel.WARN,
+          'Could not flush recall bookkeeping for run ' +
+            runId +
+            ': ' +
+            flushEx.getMessage()
+        );
+      }
+
       String runAsUser =
         '[DIAGNOSTIC] Running as: ' +
         UserInfo.getName() +

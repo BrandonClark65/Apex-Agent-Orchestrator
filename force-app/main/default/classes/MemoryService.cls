@@ -4,6 +4,10 @@
  * `enqueueCapture` fires the post-run fact-extraction queueable from
  * `ExecutionLogger.finishRun`. Both are best-effort — memory must never break a run —
  * and both no-op for the `NoMemory` config (extraction disabled).
+ *
+ * `buildRecallBlock` queues access-count bookkeeping DML rather than writing it inline
+ * (see `SalesforceMemoryProvider.recall`); `flushPendingRecallBookkeeping` must be called
+ * by the caller once every callout for the transaction is done.
  * @group Memory
  */
 public with sharing class MemoryService {
@@ -137,6 +141,15 @@ public with sharing class MemoryService {
         'Memory capture not enqueued for run ' + runId + ': ' + e.getMessage()
       );
     }
+  }
+
+  /**
+   * @description Flushes any recall access-count bookkeeping queued so far in this
+   * transaction. Safe to call only once every callout for the current transaction has
+   * already completed — it performs DML, and Salesforce forbids callouts afterward.
+   */
+  public static void flushPendingRecallBookkeeping() {
+    SalesforceMemoryProvider.flushAccessBookkeeping();
   }
 
   private static Id resolveSessionId(Id runId) {
