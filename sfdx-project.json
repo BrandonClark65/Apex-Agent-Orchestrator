@@ -6,7 +6,7 @@
     }
   ],
   "name": "apex-agent-orchestrator",
-  "namespace": "",
+  "namespace": "aao",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "66.0"
 }
