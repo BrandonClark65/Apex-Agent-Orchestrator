@@ -5,46 +5,46 @@
  * allowed per Apex class, so this is split out from those rather than combined.
  * @group Flow Integration
  */
-public with sharing class AgentFlowGetRunResultAction {
-  public class Request {
+global with sharing class AgentFlowGetRunResultAction {
+  global class Request {
     @InvocableVariable(
       label='Run Id'
       description='Run Id returned by "Run Agent" or "Send Chat Message".'
       required=true
     )
-    public Id runId;
+    global Id runId;
   }
 
-  public class Result {
+  global class Result {
     @InvocableVariable(label='Status')
-    public String status;
+    global String status;
 
     @InvocableVariable(
       label='Is Done'
       description='True once the run has left the Running state (Succeeded, Failed, or Cancelled).'
     )
-    public Boolean isDone;
+    global Boolean isDone;
 
     @InvocableVariable(label='Is Success')
-    public Boolean isSuccess;
+    global Boolean isSuccess;
 
     @InvocableVariable(
       label='Final Message'
       description='Human-readable answer extracted from the final output, when present.'
     )
-    public String finalMessage;
+    global String finalMessage;
 
     @InvocableVariable(
       label='Final Output JSON'
       description='Raw serialized final output.'
     )
-    public String finalOutputJson;
+    global String finalOutputJson;
 
     @InvocableVariable(label='Error Message')
-    public String errorMessage;
+    global String errorMessage;
 
     @InvocableVariable(label='Session Id')
-    public Id sessionId;
+    global Id sessionId;
   }
 
   /**
@@ -58,7 +58,7 @@ public with sharing class AgentFlowGetRunResultAction {
     description='Checks the current status of an agent run. Loop this behind a Wait element until Is Done is true, then read Final Message or Error Message.'
     category='Apex Agent Orchestrator'
   )
-  public static List<Result> getResult(List<Request> requests) {
+  global static List<Result> getResult(List<Request> requests) {
     Set<Id> runIds = new Set<Id>();
     for (Request request : requests) {
       if (request.runId == null) {

@@ -7,41 +7,41 @@
  * split out from `AgentFlowRunAgentAction`/`AgentFlowGetRunResultAction` rather than combined.
  * @group Flow Integration
  */
-public with sharing class AgentFlowSendMessageAction {
-  public class Request {
+global with sharing class AgentFlowSendMessageAction {
+  global class Request {
     @InvocableVariable(
       label='Agent Developer Name'
       description='Agent to converse with. Ignored on follow-up turns — the session pins the agent.'
       required=true
     )
-    public String agentDeveloperName;
+    global String agentDeveloperName;
 
     @InvocableVariable(
       label='Message'
       description='The user message for this turn.'
       required=true
     )
-    public String message;
+    global String message;
 
     @InvocableVariable(
       label='Session Id'
       description='Existing Agent_Session__c to continue, or blank to start a new conversation.'
     )
-    public Id sessionId;
+    global Id sessionId;
 
     @InvocableVariable(
       label='Trigger Type'
       description='Free-text label stored for observability. Defaults to "Flow".'
     )
-    public String triggerType;
+    global String triggerType;
   }
 
-  public class Result {
+  global class Result {
     @InvocableVariable(label='Run Id')
-    public Id runId;
+    global Id runId;
 
     @InvocableVariable(label='Session Id')
-    public Id sessionId;
+    global Id sessionId;
   }
 
   /**
@@ -55,7 +55,7 @@ public with sharing class AgentFlowSendMessageAction {
     description='Sends one turn of a conversation: starts a new session (blank Session Id) or continues an existing one. The turn completes asynchronously — pass the returned Run Id to "Apex Agent: Get Run Result" to poll for completion.'
     category='Apex Agent Orchestrator'
   )
-  public static List<Result> send(List<Request> requests) {
+  global static List<Result> send(List<Request> requests) {
     List<Result> results = new List<Result>();
     for (Request request : requests) {
       if (String.isBlank(request.agentDeveloperName)) {

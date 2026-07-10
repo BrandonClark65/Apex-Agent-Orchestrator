@@ -6,32 +6,32 @@
  * from `AgentFlowSendMessageAction`/`AgentFlowGetRunResultAction` rather than combined.
  * @group Flow Integration
  */
-public with sharing class AgentFlowRunAgentAction {
-  public class Request {
+global with sharing class AgentFlowRunAgentAction {
+  global class Request {
     @InvocableVariable(
       label='Agent Developer Name'
       description='DeveloperName of the Agent_Definition__mdt record to run.'
       required=true
     )
-    public String agentDeveloperName;
+    global String agentDeveloperName;
 
     @InvocableVariable(
       label='Input Context'
       description='JSON (or plain text) passed to the agent as its first user message.'
       required=true
     )
-    public String inputContext;
+    global String inputContext;
 
     @InvocableVariable(
       label='Trigger Type'
       description='Free-text label stored for observability. Defaults to "Flow".'
     )
-    public String triggerType;
+    global String triggerType;
   }
 
-  public class Result {
+  global class Result {
     @InvocableVariable(label='Run Id')
-    public Id runId;
+    global Id runId;
   }
 
   /**
@@ -44,7 +44,7 @@ public with sharing class AgentFlowRunAgentAction {
     description='Starts a one-shot agent run (no conversation session). The run completes asynchronously — pass the returned Run Id to "Apex Agent: Get Run Result" to poll for completion.'
     category='Apex Agent Orchestrator'
   )
-  public static List<Result> run(List<Request> requests) {
+  global static List<Result> run(List<Request> requests) {
     List<Result> results = new List<Result>();
     for (Request request : requests) {
       if (String.isBlank(request.agentDeveloperName)) {

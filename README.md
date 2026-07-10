@@ -113,6 +113,16 @@ Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config_
 
 To cut token costs, set `Maintenance_Provider__c` on the config to a cheap model's `LLM_Provider__mdt` record — compaction, extraction, and reflection calls route there instead of the agent's main model.
 
+### 5. Using agents from Flow (optional)
+
+Three invocable actions are available in Flow Builder under the **Apex Agent Orchestrator** category:
+
+- **Apex Agent: Run Agent** — starts a one-shot run (no conversation session).
+- **Apex Agent: Send Chat Message** — starts or continues a conversation (pass a blank Session Id to start a new one).
+- **Apex Agent: Get Run Result** — checks a run's status.
+
+Both `Run Agent` and `Send Chat Message` return immediately with a Run Id — the agent loop finishes asynchronously via platform events. Poll with a Wait element that loops **Get Run Result** until `Is Done` is true, then read `Final Message` (or `Error Message` on failure).
+
 ## Roadmap
 
 - ✅ Agent execution loop (async, event-chained)
