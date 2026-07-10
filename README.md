@@ -61,6 +61,12 @@ This reads `apexdocs.config.mjs` and writes a Markdown reference guide to `docs/
 
 When adding or changing a public class, method, or constructor, add/update its `@description`/`@param`/`@return` ApexDoc comment so the generated docs stay accurate.
 
+## Installation
+
+**Current version: 1.0 Beta.** This is a managed package Beta — install into a sandbox, scratch org, or Developer Edition org for testing, not a production org (Beta versions can't be installed into production).
+
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000Uvbx
+
 ## Post-Install Setup
 
 ### 1. Grant the Automated Process User access to LLM credentials
