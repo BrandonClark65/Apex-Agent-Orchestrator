@@ -54,6 +54,7 @@
         <members>OpenAIRequestDTO</members>
         <members>OpenAIResponseDTO</members>
         <members>QuerySalesforceTool</members>
+        <members>QuerySalesforceToolTest</members>
         <members>SalesforceMemoryProvider</members>
         <members>SessionService</members>
         <members>SessionServiceTest</members>
