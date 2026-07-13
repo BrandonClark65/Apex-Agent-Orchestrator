@@ -114,7 +114,9 @@ The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__
 
 Both (a) and (b) are required - having only the user permissions still throws the same error until the Apex Setting is enabled too.
 
-Note that `Agent_Definition__mdt` and its sibling types don't show up under Setup → Custom Metadata Types for subscribers at all, independent of the above - every record this package ships is marked `protected`, which is namespace-scoped by design. The Agent Builder is the only supported way to manage them; that's not a permission gap to fix.
+All five custom metadata types (`Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`) ship with `visibility` set to **Public**, so once your org is on a package version that includes it, admins with the permissions above can view and manage records for them directly under Setup → Custom Metadata Types - not just through the Agent Builder / Tool Catalog UI. Object and field *definitions* stay locked to the package either way; only records are editable. The individual seed records this package ships (e.g. `LLM_Provider.OpenAI_GPT4`, `Agent_Definition.Orchestrator_Agent`) are still marked `protected`, so those specific rows stay read-only for subscribers - anything a subscriber creates themselves is fully theirs to edit or delete.
+
+Visibility is packaged metadata, not a subscriber-side setting - if you're upgrading from an earlier package version where these types weren't Public, the org needs to install the new version before they'll appear in Setup.
 
 ### 3. Schedule the background jobs
 
