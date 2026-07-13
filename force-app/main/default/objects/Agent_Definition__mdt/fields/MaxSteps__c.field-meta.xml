@@ -3,7 +3,7 @@
     <fullName>MaxSteps__c</fullName>
     <description>safety limit</description>
     <externalId>false</externalId>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>safety limit</inlineHelpText>
     <label>Max Steps</label>
     <precision>3</precision>

@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>MemoryConfig__c</fullName>
     <description>Stores DeveloperName of Memory Config</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Stores DeveloperName of Memory Config</inlineHelpText>
     <label>Memory Config</label>
     <required>true</required>

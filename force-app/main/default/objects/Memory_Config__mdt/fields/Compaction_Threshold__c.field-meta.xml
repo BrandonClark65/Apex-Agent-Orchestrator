@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Compaction_Threshold__c</fullName>
     <description>Serialized history size (chars) above which HistoryCompactor summarizes older messages. History_Json__c caps at 131,072. Blank uses the code default (90,000).</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Compaction Threshold</label>
     <precision>9</precision>
     <required>false</required>
