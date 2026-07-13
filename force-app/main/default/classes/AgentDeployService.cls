@@ -83,19 +83,19 @@ public with sharing class AgentDeployService {
     AgentSaveRequest request
   ) {
     Metadata.CustomMetadata record = new Metadata.CustomMetadata();
-    record.fullName = 'Agent_Definition.' + request.developerName;
+    record.fullName = 'aao__Agent_Definition.' + request.developerName;
     record.label = request.label;
-    record.values.add(value('Goal__c', request.goal));
-    record.values.add(value('SystemPrompt__c', request.systemPrompt));
-    record.values.add(value('LLMProvider__c', request.llmProvider));
+    record.values.add(value('aao__Goal__c', request.goal));
+    record.values.add(value('aao__SystemPrompt__c', request.systemPrompt));
+    record.values.add(value('aao__LLMProvider__c', request.llmProvider));
     record.values.add(
       value(
-        'MaxSteps__c',
+        'aao__MaxSteps__c',
         request.maxSteps == null ? 10 : (Object) request.maxSteps
       )
     );
-    record.values.add(value('MemoryConfig__c', request.memoryConfig));
-    record.values.add(value('IsActive__c', request.isActive == true));
+    record.values.add(value('aao__MemoryConfig__c', request.memoryConfig));
+    record.values.add(value('aao__IsActive__c', request.isActive == true));
     return record;
   }
 
@@ -113,11 +113,11 @@ public with sharing class AgentDeployService {
     }
 
     Metadata.CustomMetadata record = new Metadata.CustomMetadata();
-    record.fullName = 'Agent_Tool_Mapping.' + mappingName;
+    record.fullName = 'aao__Agent_Tool_Mapping.' + mappingName;
     record.label = mappingName.replace('_', ' ');
-    record.values.add(value('Agent__c', agentDeveloperName));
-    record.values.add(value('Tool__c', grant.toolDeveloperName));
-    record.values.add(value('IsAllowed__c', grant.allowed == true));
+    record.values.add(value('aao__Agent__c', agentDeveloperName));
+    record.values.add(value('aao__Tool__c', grant.toolDeveloperName));
+    record.values.add(value('aao__IsAllowed__c', grant.allowed == true));
     return record;
   }
 
