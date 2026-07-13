@@ -145,11 +145,13 @@
         <members>Agent_UI_Event__e.Payload_Json__c</members>
         <members>Agent_UI_Event__e.Run_Id__c</members>
         <members>Agent_UI_Event__e.Session_Id__c</members>
+        <members>LLM_Provider__mdt.API_Endpoint__c</members>
         <members>LLM_Provider__mdt.Base_URL__c</members>
         <members>LLM_Provider__mdt.MaxTokens__c</members>
         <members>LLM_Provider__mdt.Model_Name__c</members>
         <members>LLM_Provider__mdt.Named_Credential__c</members>
         <members>LLM_Provider__mdt.Provider_Type__c</members>
+        <members>LLM_Provider__mdt.Temperature__c</members>
         <members>Memory_Config__mdt.Compaction_Threshold__c</members>
         <members>Memory_Config__mdt.Embedding_Provider__c</members>
         <members>Memory_Config__mdt.Enable_Fact_Extraction__c</members>
