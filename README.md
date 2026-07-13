@@ -98,18 +98,23 @@ If your external credential uses **Per-User** authentication, switch it to a **N
 
 ### 2. Grant Metadata API access for the Agent Builder
 
-The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__mdt`/`Agent_Tool_Mapping__mdt` records through the Apex Metadata API (`Metadata.Operations.enqueueDeployment`). That API requires two system permissions - **Customize Application** and **Modify Metadata Through Metadata API Functions** - which Salesforce does not allow a managed package to grant via a packaged permission set. `AAO_Admin` intentionally ships without them, so every subscriber org must grant them manually, even to System Administrators, or the builder fails with:
+The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__mdt`/`Agent_Tool_Mapping__mdt` records through the Apex Metadata API (`Metadata.Operations.enqueueDeployment`). Every subscriber org needs to satisfy two *independent* requirements, or the builder fails with:
 
 > Not allowed to install or modify metadata via Apex
 
-The same two permissions gate whether Custom Metadata Types show up under Setup at all, so a user missing them also can't see `Agent_Definition__mdt` and friends in Setup.
-
-To fix it, as a System Administrator in the subscriber org:
+**a. User permissions.** The running user needs **Customize Application** and **Modify Metadata Through Metadata API Functions**. Salesforce does not allow a managed package to grant these via a packaged permission set, so `AAO_Admin` intentionally ships without them - grant them manually:
 
 1. Setup → Profiles (not Permission Sets - Salesforce has a known issue where **Modify Metadata Through Metadata API Functions** granted via a permission set doesn't actually take effect) → open the builder user's profile → System Permissions.
 2. Enable **Customize Application** and **Modify Metadata Through Metadata API Functions**, then save.
 
-If your org's security model requires a permission set instead of a profile edit, try it there first - it works in most orgs - and fall back to the profile if the builder still throws the error.
+**b. Org-wide Apex Setting for non-certified packages.** While this package is Beta and not AppExchange security-reviewed, the org must separately opt in to letting *any* code from it call the Metadata API:
+
+1. Setup → Quick Find → **Apex Settings**.
+2. Enable **Deploy Metadata from Non-Certified Package Version via Apex**, then save.
+
+Both (a) and (b) are required - having only the user permissions still throws the same error until the Apex Setting is enabled too.
+
+Note that `Agent_Definition__mdt` and its sibling types don't show up under Setup → Custom Metadata Types for subscribers at all, independent of the above - every record this package ships is marked `protected`, which is namespace-scoped by design. The Agent Builder is the only supported way to manage them; that's not a permission gap to fix.
 
 ### 3. Schedule the background jobs
 
