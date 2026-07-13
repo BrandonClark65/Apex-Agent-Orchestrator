@@ -3,7 +3,7 @@
     <fullName>Enable_Reflection__c</fullName>
     <defaultValue>false</defaultValue>
     <description>When true, terminated runs (success and failure) enqueue an LLM pass that writes an Agent-scoped lesson to Agent_Memory__c (M3).</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Enable Reflection</label>
     <type>Checkbox</type>
 </CustomField>

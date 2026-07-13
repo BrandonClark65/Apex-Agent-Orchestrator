@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Maintenance_Provider__c</fullName>
     <description>LLM_Provider__mdt DeveloperName for maintenance calls (compaction, fact extraction, reflection, consolidation). Point at a cheap/mini model; blank falls back to the agent's own provider.</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Maintenance Provider</label>
     <length>255</length>
     <required>false</required>

@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Recall_Scopes__c</fullName>
     <description>CSV of Agent_Memory__c scopes to recall (M2), e.g. "User,Agent,Global". Blank recalls all scopes.</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Recall Scopes</label>
     <length>255</length>
     <required>false</required>

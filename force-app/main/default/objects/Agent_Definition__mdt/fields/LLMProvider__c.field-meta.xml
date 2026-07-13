@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>LLMProvider__c</fullName>
     <description>Stores DeveloperName of LLM Provider</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText>Stores DeveloperName of LLM Provider</inlineHelpText>
     <label>LLM Provider</label>
     <required>true</required>

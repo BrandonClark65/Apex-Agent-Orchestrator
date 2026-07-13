@@ -3,7 +3,7 @@
     <fullName>Enable_Fact_Extraction__c</fullName>
     <defaultValue>false</defaultValue>
     <description>When true, successful runs enqueue an LLM pass that extracts durable facts/preferences into Agent_Memory__c (M2).</description>
-    <fieldManageability>DeveloperControlled</fieldManageability>
+    <fieldManageability>SubscriberControlled</fieldManageability>
     <label>Enable Fact Extraction</label>
     <type>Checkbox</type>
 </CustomField>
