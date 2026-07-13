@@ -146,7 +146,6 @@
         <members>Agent_UI_Event__e.Run_Id__c</members>
         <members>Agent_UI_Event__e.Session_Id__c</members>
         <members>LLM_Provider__mdt.API_Endpoint__c</members>
-        <members>LLM_Provider__mdt.Base_URL__c</members>
         <members>LLM_Provider__mdt.MaxTokens__c</members>
         <members>LLM_Provider__mdt.Model_Name__c</members>
         <members>LLM_Provider__mdt.Named_Credential__c</members>

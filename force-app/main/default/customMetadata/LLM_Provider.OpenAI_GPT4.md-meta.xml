@@ -7,10 +7,6 @@
         <value xsi:type="xsd:string">/v1/chat/completions</value>
     </values>
     <values>
-        <field>Base_URL__c</field>
-        <value xsi:type="xsd:string">/v1/chat/completions</value>
-    </values>
-    <values>
         <field>MaxTokens__c</field>
         <value xsi:type="xsd:double">16384.0</value>
     </values>
