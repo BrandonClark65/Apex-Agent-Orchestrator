@@ -96,7 +96,29 @@ If your external credential uses **Per-User** authentication, switch it to a **N
 
 **Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`, with your deployment name and `api-version` in the record's endpoint path). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
 
-### 2. Schedule the background jobs
+### 2. Grant Metadata API access for the Agent Builder
+
+The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__mdt`/`Agent_Tool_Mapping__mdt` records through the Apex Metadata API (`Metadata.Operations.enqueueDeployment`). Every subscriber org needs to satisfy two *independent* requirements, or the builder fails with:
+
+> Not allowed to install or modify metadata via Apex
+
+**a. User permissions.** The running user needs **Customize Application** and **Modify Metadata Through Metadata API Functions**. Salesforce does not allow a managed package to grant these via a packaged permission set, so `AAO_Admin` intentionally ships without them - grant them manually:
+
+1. Setup → Profiles (not Permission Sets - Salesforce has a known issue where **Modify Metadata Through Metadata API Functions** granted via a permission set doesn't actually take effect) → open the builder user's profile → System Permissions.
+2. Enable **Customize Application** and **Modify Metadata Through Metadata API Functions**, then save.
+
+**b. Org-wide Apex Setting for non-certified packages.** While this package is Beta and not AppExchange security-reviewed, the org must separately opt in to letting *any* code from it call the Metadata API:
+
+1. Setup → Quick Find → **Apex Settings**.
+2. Enable **Deploy Metadata from Non-Certified Package Version via Apex**, then save.
+
+Both (a) and (b) are required - having only the user permissions still throws the same error until the Apex Setting is enabled too.
+
+All five custom metadata types (`Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`) ship with `visibility` set to **Public**, so once your org is on a package version that includes it, admins with the permissions above can view and manage records for them directly under Setup → Custom Metadata Types - not just through the Agent Builder / Tool Catalog UI. Object and field *definitions* stay locked to the package either way; only records are editable. The individual seed records this package ships (e.g. `LLM_Provider.OpenAI_GPT4`, `Agent_Definition.Orchestrator_Agent`) are still marked `protected`, so those specific rows stay read-only for subscribers - anything a subscriber creates themselves is fully theirs to edit or delete.
+
+Visibility is packaged metadata, not a subscriber-side setting - if you're upgrading from an earlier package version where these types weren't Public, the org needs to install the new version before they'll appear in Setup.
+
+### 3. Schedule the background jobs
 
 Two scheduled jobs keep runs and memories healthy: the **watchdog** (hourly - times out runs stuck `Running`, resumes suspended parents, releases stuck sessions) and the **memory janitor** (nightly - deactivates expired and stale memories). Schedule both with:
 
@@ -106,11 +128,11 @@ sf apex run --file scripts/apex/ScheduleWatchdog.apex --target-org <alias>
 
 > **Deploy note:** scheduled Apex blocks class deployments. Either run `scripts/apex/UnscheduleWatchdog.apex` before deploying (and re-run the schedule script after), or enable _Allow deployments with active Apex jobs_ under Setup → Deployment Settings.
 
-### 3. Assign permission sets
+### 4. Assign permission sets
 
 Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should chat with agents, then open the **Agent Orchestrator** app from the App Launcher.
 
-### 4. Configure memory (optional)
+### 5. Configure memory (optional)
 
 Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config__mdt` record:
 
@@ -119,7 +141,7 @@ Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config_
 
 To cut token costs, set `Maintenance_Provider__c` on the config to a cheap model's `LLM_Provider__mdt` record - compaction, extraction, and reflection calls route there instead of the agent's main model.
 
-### 5. Using agents from Flow (optional)
+### 6. Using agents from Flow (optional)
 
 Three invocable actions are available in Flow Builder under the **Apex Agent Orchestrator** category:
 

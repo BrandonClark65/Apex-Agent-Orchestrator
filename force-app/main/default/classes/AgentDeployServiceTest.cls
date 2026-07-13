@@ -41,29 +41,29 @@ private class AgentDeployServiceTest {
     );
 
     Metadata.CustomMetadata definition = (Metadata.CustomMetadata) container.getMetadata()[0];
-    System.assertEquals('Agent_Definition.Sales_Agent', definition.fullName);
+    System.assertEquals('aao__Agent_Definition.Sales_Agent', definition.fullName);
     System.assertEquals('Sales Agent', definition.label);
     Map<String, Object> defValues = valueMap(definition);
-    System.assertEquals('You are a sales agent.', defValues.get('SystemPrompt__c'));
-    System.assertEquals('OpenAI_GPT4', defValues.get('LLMProvider__c'));
-    System.assertEquals(12, defValues.get('MaxSteps__c'));
-    System.assertEquals('Default_Memory', defValues.get('MemoryConfig__c'));
-    System.assertEquals(true, defValues.get('IsActive__c'));
+    System.assertEquals('You are a sales agent.', defValues.get('aao__SystemPrompt__c'));
+    System.assertEquals('OpenAI_GPT4', defValues.get('aao__LLMProvider__c'));
+    System.assertEquals(12, defValues.get('aao__MaxSteps__c'));
+    System.assertEquals('Default_Memory', defValues.get('aao__MemoryConfig__c'));
+    System.assertEquals(true, defValues.get('aao__IsActive__c'));
 
     Metadata.CustomMetadata mapping = (Metadata.CustomMetadata) container.getMetadata()[1];
     System.assertEquals(
-      'Agent_Tool_Mapping.Sales_Agent_QuerySalesforceTool',
+      'aao__Agent_Tool_Mapping.Sales_Agent_QuerySalesforceTool',
       mapping.fullName
     );
     Map<String, Object> mapValues = valueMap(mapping);
-    System.assertEquals('Sales_Agent', mapValues.get('Agent__c'));
-    System.assertEquals('QuerySalesforceTool', mapValues.get('Tool__c'));
-    System.assertEquals(true, mapValues.get('IsAllowed__c'));
+    System.assertEquals('Sales_Agent', mapValues.get('aao__Agent__c'));
+    System.assertEquals('QuerySalesforceTool', mapValues.get('aao__Tool__c'));
+    System.assertEquals(true, mapValues.get('aao__IsAllowed__c'));
 
     Metadata.CustomMetadata revokedMapping = (Metadata.CustomMetadata) container.getMetadata()[2];
     System.assertEquals(
       false,
-      valueMap(revokedMapping).get('IsAllowed__c'),
+      valueMap(revokedMapping).get('aao__IsAllowed__c'),
       'revoked grants deploy with IsAllowed=false rather than being skipped'
     );
   }
