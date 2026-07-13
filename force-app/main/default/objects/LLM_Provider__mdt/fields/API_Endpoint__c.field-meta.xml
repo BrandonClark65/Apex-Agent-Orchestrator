@@ -4,7 +4,7 @@
     <externalId>false</externalId>
     <fieldManageability>SubscriberControlled</fieldManageability>
     <label>API Endpoint</label>
-    <length>255</length>
+    <length>100</length>
     <required>false</required>
     <type>Text</type>
     <unique>false</unique>
