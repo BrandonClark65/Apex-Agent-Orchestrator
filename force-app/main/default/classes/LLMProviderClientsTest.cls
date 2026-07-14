@@ -38,6 +38,7 @@ private class LLMProviderClientsTest {
   private static aao__LLM_Provider__mdt azureProvider() {
     return new aao__LLM_Provider__mdt(
       aao__Provider_Type__c = 'Azure',
+      aao__Model_Name__c = 'gpt-4o-mini',
       aao__Named_Credential__c = 'AzureOpenAI_NC',
       aao__API_Endpoint__c = '/openai/deployments/gpt-4o-mini/chat/completions?api-version=2024-10-21',
       aao__MaxTokens__c = 2048,
@@ -173,9 +174,10 @@ private class LLMProviderClientsTest {
     Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(
       mock.captured.getBody()
     );
-    System.assert(
-      !sent.containsKey('model'),
-      'Azure routes by deployment in the URL, not a model field'
+    System.assertEquals(
+      'gpt-4o-mini',
+      sent.get('model'),
+      'the deployment name travels as model so both legacy and v1 endpoints work'
     );
     System.assertEquals(2048, sent.get('max_tokens'));
     System.assert(

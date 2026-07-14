@@ -94,7 +94,7 @@ To fix this, after installing the package:
 
 If your external credential uses **Per-User** authentication, switch it to a **Named Principal** instead - the Automated Process User cannot complete a per-user OAuth flow.
 
-**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`, with your deployment name and `api-version` in the record's endpoint path). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
+**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`; set `Model_Name__c` to **your Azure deployment name** — deployment names are per-resource, so the shipped `gpt-4o-mini` only works if you named your deployment that — and put the same name plus `api-version` in the record's endpoint path when using the legacy `/openai/deployments/...` style, or use the v1 path `/openai/v1/chat/completions`, which reads the deployment from `Model_Name__c`). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
 
 ### 2. Grant Metadata API access for the Agent Builder
 
