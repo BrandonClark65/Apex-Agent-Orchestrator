@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apex Agent Orchestrator — Framework Map</title>
+<style>
+  :root{
+    --bg:#F3F5F8; --surface:#FFFFFF; --ink:#17222E; --muted:#5D6C7B; --line:#D9E0E8;
+    --halo:#F3F5F8;
+    --accent:#0F7D6C;
+    --cfg-base:#A16A1F; --cfg-fill:#FBF5E9; --cfg-bd:#DDBE7E; --cfg-lane:rgba(193,146,58,.07);
+    --run-base:#2B5FD9; --run-fill:#EFF4FE; --run-bd:#A6BDF0; --run-lane:rgba(43,95,217,.055);
+    --evt-base:#7E4CCB; --evt-fill:#F5F0FC; --evt-bd:#C7B1E9; --evt-lane:rgba(126,76,203,.06);
+    --eng-base:#0F7D6C; --eng-fill:#EAF6F3; --eng-bd:#8FCEC2;
+    --edge-lookup:#3E5265;
+    --shadow:0 1px 2px rgba(15,25,40,.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0F151D; --surface:#182029; --ink:#E7EDF5; --muted:#98A7B8; --line:#2A3644;
+      --halo:#0F151D;
+      --accent:#43C2AC;
+      --cfg-base:#E0AC57; --cfg-fill:#221C10; --cfg-bd:#5D4A22; --cfg-lane:rgba(224,172,87,.06);
+      --run-base:#82A7F4; --run-fill:#161F30; --run-bd:#31497C; --run-lane:rgba(130,167,244,.05);
+      --evt-base:#B593EC; --evt-fill:#1F1830; --evt-bd:#4A3A70; --evt-lane:rgba(181,147,236,.055);
+      --eng-base:#43C2AC; --eng-fill:#0F211D; --eng-bd:#24564B;
+      --edge-lookup:#AEBECF;
+      --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F151D; --surface:#182029; --ink:#E7EDF5; --muted:#98A7B8; --line:#2A3644;
+    --halo:#0F151D;
+    --accent:#43C2AC;
+    --cfg-base:#E0AC57; --cfg-fill:#221C10; --cfg-bd:#5D4A22; --cfg-lane:rgba(224,172,87,.06);
+    --run-base:#82A7F4; --run-fill:#161F30; --run-bd:#31497C; --run-lane:rgba(130,167,244,.05);
+    --evt-base:#B593EC; --evt-fill:#1F1830; --evt-bd:#4A3A70; --evt-lane:rgba(181,147,236,.055);
+    --eng-base:#43C2AC; --eng-fill:#0F211D; --eng-bd:#24564B;
+    --edge-lookup:#AEBECF;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --bg:#F3F5F8; --surface:#FFFFFF; --ink:#17222E; --muted:#5D6C7B; --line:#D9E0E8;
+    --halo:#F3F5F8;
+    --accent:#0F7D6C;
+    --cfg-base:#A16A1F; --cfg-fill:#FBF5E9; --cfg-bd:#DDBE7E; --cfg-lane:rgba(193,146,58,.07);
+    --run-base:#2B5FD9; --run-fill:#EFF4FE; --run-bd:#A6BDF0; --run-lane:rgba(43,95,217,.055);
+    --evt-base:#7E4CCB; --evt-fill:#F5F0FC; --evt-bd:#C7B1E9; --evt-lane:rgba(126,76,203,.06);
+    --eng-base:#0F7D6C; --eng-fill:#EAF6F3; --eng-bd:#8FCEC2;
+    --edge-lookup:#3E5265;
+    --shadow:0 1px 2px rgba(15,25,40,.07);
+  }
+
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI Variable Text","Segoe UI","Avenir Next","Helvetica Neue",system-ui,sans-serif;
+    font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"Cascadia Code",Consolas,"SF Mono","Roboto Mono",monospace}
+
+  .wrap{max-width:1280px; margin:0 auto; padding:0 24px 64px}
+
+  header.page{padding:44px 0 8px}
+  .eyebrow{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-size:clamp(26px,3.4vw,38px); line-height:1.12; margin:8px 0 10px; font-weight:750; letter-spacing:-.015em; text-wrap:balance}
+  .lede{max-width:68ch; color:var(--muted); margin:0 0 18px}
+  .toc{display:flex; gap:10px; flex-wrap:wrap}
+  .toc a{
+    text-decoration:none; color:var(--ink); background:var(--surface); border:1px solid var(--line);
+    border-radius:999px; padding:6px 14px; font-size:13px; font-weight:600; box-shadow:var(--shadow);
+  }
+  .toc a:hover{border-color:var(--accent); color:var(--accent)}
+  .toc a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  section{margin-top:56px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+  h2{font-size:24px; font-weight:750; letter-spacing:-.01em; margin:0 0 6px}
+  .plain{
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0; padding:14px 18px; margin:14px 0 20px; max-width:86ch;
+  }
+  .plain strong{color:var(--accent)}
+  .plain p{margin:0; font-size:14.5px; color:var(--ink)}
+
+  .legend{display:flex; gap:18px 26px; flex-wrap:wrap; align-items:center; margin:0 0 14px; font-size:12.5px; color:var(--muted)}
+  .legend .item{display:inline-flex; align-items:center; gap:8px}
+  .swatch{width:14px; height:14px; border-radius:4px; border:1px solid; flex:none}
+  .sw-cfg{background:var(--cfg-fill); border-color:var(--cfg-bd)}
+  .sw-run{background:var(--run-fill); border-color:var(--run-bd)}
+  .sw-evt{background:var(--evt-fill); border-color:var(--evt-bd)}
+  .sw-eng{background:var(--eng-fill); border-color:var(--eng-bd)}
+  .linesample{width:38px; height:0; flex:none}
+  .ls-lookup{border-top:2px solid var(--edge-lookup)}
+  .ls-byname{border-top:2px dashed var(--cfg-base)}
+  .ls-event{border-top:2px dotted var(--evt-base)}
+
+  .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow)}
+  .canvas{position:relative}
+  #erd-canvas{width:1240px; height:1172px}
+  #flow-canvas{width:1140px; height:1175px}
+  .canvas svg.edges{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible}
+
+  .lane{position:absolute; border:1px dashed var(--line); border-radius:14px; z-index:0}
+  .lane-cfg{background:var(--cfg-lane)}
+  .lane-run{background:var(--run-lane)}
+  .lane-evt{background:var(--evt-lane)}
+  .lane-title{position:absolute; top:10px; left:16px; font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase}
+  .lane-sub{position:absolute; top:26px; left:16px; font-size:11px; color:var(--muted)}
+  .lt-cfg{color:var(--cfg-base)} .lt-run{color:var(--run-base)} .lt-evt{color:var(--evt-base)}
+
+  .card{
+    position:absolute; z-index:2; background:var(--surface); border:1px solid var(--line);
+    border-radius:9px; padding:9px 12px 11px; box-shadow:var(--shadow); font-size:11.5px;
+  }
+  .card .kind{font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin-bottom:2px}
+  .card h4{margin:0; font-size:13.5px; font-weight:700; letter-spacing:-.005em; line-height:1.25}
+  .card .api{display:block; font-family:"Cascadia Code",Consolas,monospace; font-size:9.5px; color:var(--muted); margin-top:1px}
+  .card .sub{margin:5px 0 0; font-size:11px; color:var(--muted); line-height:1.4}
+  .card ul{list-style:none; margin:7px 0 0; padding:6px 0 0; border-top:1px solid var(--line); display:grid; gap:2.5px}
+  .card li{font-family:"Cascadia Code",Consolas,monospace; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink)}
+  .card li .to{font-family:inherit; font-size:9.5px}
+  .to-cfg{color:var(--cfg-base)} .to-run{color:var(--run-base)} .to-eng{color:var(--eng-base)}
+  .card .foot{margin:7px 0 0; font-size:10px; color:var(--muted); line-height:1.4; border-top:1px dashed var(--line); padding-top:5px}
+
+  .c-cfg{background:var(--cfg-fill); border-color:var(--cfg-bd)} .c-cfg .kind{color:var(--cfg-base)}
+  .c-run{background:var(--run-fill); border-color:var(--run-bd)} .c-run .kind{color:var(--run-base)}
+  .c-evt{background:var(--evt-fill); border-color:var(--evt-bd)} .c-evt .kind{color:var(--evt-base)}
+  .c-eng{background:var(--eng-fill); border-color:var(--eng-bd)} .c-eng .kind{color:var(--eng-base)}
+  .c-std{border-style:dashed} .c-std .kind{color:var(--muted)}
+
+  /* edges */
+  .e{fill:none; stroke-width:1.6}
+  .e-lookup{stroke:var(--edge-lookup)}
+  .e-byname{stroke:var(--cfg-base); stroke-dasharray:6 5}
+  .e-event{stroke:var(--evt-base); stroke-dasharray:2 4.5; stroke-width:1.9; stroke-linecap:round}
+  .e-flow{stroke:var(--eng-base); stroke-width:2.2}
+  .e-flow-loop{stroke:var(--eng-base); stroke-width:2; stroke-dasharray:8 6}
+  .mk-lookup{fill:var(--edge-lookup)} .mk-byname{fill:var(--cfg-base)}
+  .mk-event{fill:var(--evt-base)} .mk-flow{fill:var(--eng-base)}
+  text.elabel{
+    font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; font-size:10.5px; font-weight:600;
+    fill:var(--muted); paint-order:stroke; stroke:var(--halo); stroke-width:4px; stroke-linejoin:round;
+  }
+  text.elabel.mono{font-family:"Cascadia Code",Consolas,monospace; font-size:9.5px}
+
+  .caption{font-size:12.5px; color:var(--muted); margin:12px 2px 0; max-width:100ch}
+
+  /* flow nodes */
+  .fnode{
+    position:absolute; z-index:2; background:var(--surface); border:1px solid var(--line);
+    border-radius:11px; padding:13px 16px 14px; box-shadow:var(--shadow);
+  }
+  .fnode .step-tag{display:flex; align-items:center; gap:9px; margin-bottom:5px}
+  .roundel{
+    flex:none; width:24px; height:24px; border-radius:50%; background:var(--accent); color:var(--bg);
+    display:grid; place-items:center; font-size:12px; font-weight:800;
+  }
+  .fnode h4{margin:0; font-size:15px; font-weight:750; letter-spacing:-.01em}
+  .fnode p{margin:0; font-size:12.5px; line-height:1.5; color:var(--ink)}
+  .fnode .tech{margin-top:7px; font-family:"Cascadia Code",Consolas,monospace; font-size:10px; color:var(--muted); line-height:1.5; border-top:1px dashed var(--line); padding-top:6px}
+  .branch{border-top:3px solid var(--line)}
+  .br-tool{border-top-color:var(--eng-base)} .br-tool .roundel{background:var(--eng-base)}
+  .br-sub{border-top-color:var(--evt-base)} .br-sub .roundel{background:var(--evt-base)}
+  .br-final{border-top-color:var(--run-base)} .br-final .roundel{background:var(--run-base)}
+  .chipnode{
+    position:absolute; z-index:2; background:var(--surface); border:1px dashed var(--line); border-radius:9px;
+    padding:9px 13px; font-size:12px; color:var(--muted); line-height:1.45;
+  }
+  .chipnode strong{color:var(--ink); font-size:12.5px}
+
+  .guards{
+    position:absolute; z-index:2; background:var(--surface); border:1px solid var(--line); border-radius:11px;
+    padding:14px 16px; box-shadow:var(--shadow);
+  }
+  .guards h4{margin:0 0 3px; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--accent)}
+  .guards .gsub{font-size:11.5px; color:var(--muted); margin:0 0 9px}
+  .guards ul{list-style:none; margin:0; padding:0; display:grid; gap:8px}
+  .guards li{font-size:12px; line-height:1.45; padding-left:16px; position:relative; color:var(--ink)}
+  .guards li::before{content:""; position:absolute; left:0; top:7px; width:7px; height:7px; border-radius:2px; background:var(--accent)}
+  .guards li .g-how{display:block; font-family:"Cascadia Code",Consolas,monospace; font-size:9.5px; color:var(--muted)}
+
+  .hopnote{
+    position:absolute; z-index:2; background:var(--eng-fill); border:1px solid var(--eng-bd); border-radius:10px;
+    padding:11px 14px; font-size:12px; line-height:1.5; color:var(--ink);
+  }
+  .hopnote strong{color:var(--eng-base)}
+
+  /* cast */
+  .cast{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; margin-top:16px}
+  .cast .member{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:11px 14px; box-shadow:var(--shadow)}
+  .cast dt{font-family:"Cascadia Code",Consolas,monospace; font-size:12px; font-weight:700; color:var(--accent); margin:0}
+  .cast dd{margin:3px 0 0; font-size:12.5px; color:var(--muted); line-height:1.45}
+
+  footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--line); font-size:12px; color:var(--muted)}
+
+  @media (prefers-reduced-motion: no-preference){
+    .toc a{transition:color .15s, border-color .15s}
+  }
+</style>
+
+<div class="wrap">
+
+<header class="page">
+  <div class="eyebrow">Apex Agent Orchestrator</div>
+  <h1>How the framework fits together</h1>
+  <p class="lede">
+    AAO lets you run AI agents natively inside Salesforce: you describe an agent in configuration,
+    grant it tools, and every conversation it has leaves a complete, queryable paper trail.
+    This page has two views — <strong>the parts</strong> (every object and how they connect) and
+    <strong>the process</strong> (what happens, step by step, when someone asks an agent a question).
+  </p>
+  <nav class="toc">
+    <a href="#objects">1 · Object map</a>
+    <a href="#process">2 · How a run works</a>
+    <a href="#cast">3 · Cast of classes</a>
+  </nav>
+</header>
+
+<!-- ============================ SECTION 1: OBJECT MAP ============================ -->
+<section id="objects">
+  <div class="sec-head"><h2>1 · The parts — every object, and how they connect</h2></div>
+
+  <div class="plain">
+    <p><strong>Plain English:</strong> think of an agent as a new employee.
+    The <strong style="color:var(--cfg-base)">blueprint</strong> (left) is their job description, their toolbox, and the list of tools they're allowed to touch —
+    all editable configuration, no code changes needed.
+    The <strong style="color:var(--run-base)">flight recorder</strong> (right) is the paper trail: every conversation, every question, and every single step the agent took gets its own record you can open and audit.
+    The <strong style="color:var(--evt-base)">signals</strong> (bottom) are the office intercom — instant broadcasts that keep the engine moving and the screens live; they aren't stored.</p>
+  </div>
+
+  <div class="legend" role="list">
+    <span class="item" role="listitem"><span class="swatch sw-cfg"></span>Blueprint · custom metadata</span>
+    <span class="item" role="listitem"><span class="swatch sw-run"></span>Flight recorder · custom objects</span>
+    <span class="item" role="listitem"><span class="swatch sw-evt"></span>Signals · platform events</span>
+    <span class="item" role="listitem"><span class="swatch sw-eng"></span>Apex code</span>
+    <span class="item" role="listitem"><span class="linesample ls-lookup"></span>lookup (enforced by Salesforce)</span>
+    <span class="item" role="listitem"><span class="linesample ls-byname"></span>reference by developer name (text)</span>
+    <span class="item" role="listitem"><span class="linesample ls-event"></span>event signal (transient)</span>
+  </div>
+
+  <div class="scroller">
+  <div class="canvas" id="erd-canvas">
+
+    <div class="lane lane-cfg" style="left:16px; top:16px; width:612px; height:830px">
+      <span class="lane-title lt-cfg">Blueprint — configuration</span>
+      <span class="lane-sub">Custom metadata: deploys with the package, editable by admins</span>
+    </div>
+    <div class="lane lane-run" style="left:644px; top:16px; width:580px; height:830px">
+      <span class="lane-title lt-run">Flight recorder — runtime records</span>
+      <span class="lane-sub">Created automatically as agents work; full audit trail</span>
+    </div>
+    <div class="lane lane-evt" style="left:16px; top:862px; width:1208px; height:284px">
+      <span class="lane-title lt-evt">Signals — platform events</span>
+      <span class="lane-sub">Fire-and-forget broadcasts; each one starts a fresh transaction (not stored)</span>
+    </div>
+
+    <!-- blueprint cards -->
+    <div class="card c-cfg" id="llm" style="left:40px; top:96px; width:252px">
+      <div class="kind">Custom metadata</div>
+      <h4>LLM Provider</h4><span class="api">LLM_Provider__mdt</span>
+      <p class="sub">Which AI model to call, and how to reach it securely.</p>
+      <ul>
+        <li>Provider_Type__c · Model_Name__c</li>
+        <li>Named_Credential__c <span class="to to-eng">(auth)</span></li>
+        <li>API_Endpoint__c</li>
+        <li>MaxTokens__c · Temperature__c</li>
+      </ul>
+      <div class="foot">Ships with: OpenAI_GPT4 · Anthropic_Claude · Azure_OpenAI</div>
+    </div>
+
+    <div class="card c-cfg" id="memcfg" style="left:40px; top:344px; width:252px">
+      <div class="kind">Custom metadata</div>
+      <h4>Memory Config</h4><span class="api">Memory_Config__mdt</span>
+      <p class="sub">What the agent remembers between conversations, and how.</p>
+      <ul>
+        <li>Memory_Type__c · Recall_Scopes__c</li>
+        <li>Max_Recall_Items__c</li>
+        <li>Enable_Fact_Extraction__c</li>
+        <li>Enable_Reflection__c</li>
+        <li>Compaction_Threshold__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-cfg" id="tooldef" style="left:40px; top:566px; width:252px">
+      <div class="kind">Custom metadata</div>
+      <h4>Tool Definition</h4><span class="api">Agent_Tool_Definition__mdt</span>
+      <p class="sub">Catalog entry for one tool: what it does and what it accepts.</p>
+      <ul>
+        <li>Tool_Class__c <span class="to to-eng">⇢ Apex class</span></li>
+        <li>Description__c · PromptGuidance__c</li>
+        <li>InputSchema__c / OutputSchema__c</li>
+        <li>IsEnabled__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-cfg" id="def" style="left:352px; top:96px; width:252px">
+      <div class="kind">Custom metadata</div>
+      <h4>Agent Definition</h4><span class="api">Agent_Definition__mdt</span>
+      <p class="sub">The agent's job description — one record per agent.</p>
+      <ul>
+        <li>Goal__c · SystemPrompt__c</li>
+        <li>MaxSteps__c <span class="to to-eng">(default 10)</span></li>
+        <li>LLMProvider__c <span class="to to-cfg">⇢ LLM Provider</span></li>
+        <li>MemoryConfig__c <span class="to to-cfg">⇢ Memory Config</span></li>
+        <li>IsActive__c</li>
+      </ul>
+      <div class="foot">Ships with: CRUD_Agent · Orchestrator_Agent</div>
+    </div>
+
+    <div class="card c-cfg" id="map" style="left:352px; top:438px; width:252px">
+      <div class="kind">Custom metadata</div>
+      <h4>Tool Mapping</h4><span class="api">Agent_Tool_Mapping__mdt</span>
+      <p class="sub">The permission slip: which agent may use which tool.</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ Agent Definition</span></li>
+        <li>Tool__c <span class="to to-cfg">⇢ Tool Definition</span></li>
+        <li>IsAllowed__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-eng" id="apex" style="left:352px; top:648px; width:252px">
+      <div class="kind">Apex classes</div>
+      <h4>Tool implementations</h4><span class="api">implement AgentTool</span>
+      <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
+        QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool
+      </p>
+    </div>
+
+    <!-- runtime cards -->
+    <div class="card c-run" id="session" style="left:680px; top:80px; width:242px">
+      <div class="kind">Custom object</div>
+      <h4>Agent Session</h4><span class="api">Agent_Session__c</span>
+      <p class="sub">One ongoing conversation with an agent (many turns).</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ by name</span> · User__c <span class="to to-run">→ User</span></li>
+        <li>Title__c · Status__c</li>
+        <li>Turn_Count__c · Last_Activity__c</li>
+        <li>Summary__c <span class="to to-eng">(compacted history)</span></li>
+      </ul>
+    </div>
+
+    <div class="card c-std c-run" id="user" style="left:985px; top:80px; width:215px">
+      <div class="kind">Standard object</div>
+      <h4>User</h4><span class="api">Salesforce standard</span>
+      <p class="sub">Who the conversation or memory belongs to.</p>
+    </div>
+
+    <div class="card c-run" id="test" style="left:985px; top:200px; width:215px">
+      <div class="kind">Custom object</div>
+      <h4>Test Case</h4><span class="api">Test_Case__c</span>
+      <p class="sub">A saved input for replaying an agent in the Test Bench.</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ by name</span></li>
+        <li>Input_Json__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-run" id="run" style="left:680px; top:308px; width:242px">
+      <div class="kind">Custom object</div>
+      <h4>Agent Run</h4><span class="api">Agent_Run__c</span>
+      <p class="sub">One question in, one answer out — the unit of work.</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ by name</span> · Status__c</li>
+        <li>Session__c <span class="to to-run">→ Session</span></li>
+        <li>Input_Context__c · Final_Output__c</li>
+        <li>History_Json__c <span class="to to-eng">(conversation)</span></li>
+        <li>Parent_Run__c <span class="to to-run">↺ this object</span></li>
+        <li>Parent_Step__c <span class="to to-run">→ Step</span> · Depth__c</li>
+        <li>PendingToolCount__c <span class="to to-eng">(parallel)</span></li>
+        <li>Turn_Number__c · Trigger_Type__c</li>
+        <li>Started_At__c · Finished_At__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-run" id="step" style="left:965px; top:358px; width:252px">
+      <div class="kind">Custom object</div>
+      <h4>Agent Step</h4><span class="api">Agent_Step__c</span>
+      <p class="sub">One step of a run: an LLM call or a tool call.</p>
+      <ul>
+        <li>Agent_Run__c <span class="to to-run">→ Run</span></li>
+        <li>Step_Number__c · Step_Type__c</li>
+        <li>Status__c <span class="to to-eng">(Pending = suspended)</span></li>
+        <li>LLM_Request__c / LLM_Response__c</li>
+        <li>Tool__c <span class="to to-cfg">⇢ by name</span></li>
+        <li>Tool_Input__c / Tool_Output__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-run" id="memory" style="left:965px; top:606px; width:252px">
+      <div class="kind">Custom object</div>
+      <h4>Agent Memory</h4><span class="api">Agent_Memory__c</span>
+      <p class="sub">A remembered fact, recalled into future prompts.</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ by name</span> · User__c <span class="to to-run">→ User</span></li>
+        <li>Scope__c · Type__c</li>
+        <li>Content__c · Keywords__c</li>
+        <li>Source_Run__c <span class="to to-run">→ Run</span></li>
+        <li>Expires_At__c · Is_Active__c</li>
+        <li>Access_Count__c</li>
+      </ul>
+    </div>
+
+    <!-- event cards -->
+    <div class="card c-evt" id="stepev" style="left:830px; top:940px; width:350px">
+      <div class="kind">Platform event</div>
+      <h4>Agent Step Event</h4><span class="api">Agent_Step_Event__e</span>
+      <p class="sub">The engine's relay baton — each step publishes one to schedule the next.</p>
+      <ul>
+        <li>Run_Id__c · Step_Type__c</li>
+        <li>Tool_Name__c · Tool_Args_Json__c</li>
+      </ul>
+      <div class="foot">Consumed by AgentStepEventTrigger → enqueues the next Queueable</div>
+    </div>
+
+    <div class="card c-evt" id="uiev" style="left:390px; top:940px; width:350px">
+      <div class="kind">Platform event</div>
+      <h4>Agent UI Event</h4><span class="api">Agent_UI_Event__e</span>
+      <p class="sub">Live progress broadcast so screens update without polling.</p>
+      <ul>
+        <li>Run_Id__c · Session_Id__c</li>
+        <li>Event_Type__c · Payload_Json__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-eng" id="lwc" style="left:80px; top:940px; width:270px">
+      <div class="kind">Lightning components</div>
+      <h4>Consoles</h4><span class="api">lwc/aao*</span>
+      <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
+        AgentChat · RunMonitor · RunDetail · AgentBuilder · ToolCatalog · MemoryManager · TestBench
+      </p>
+    </div>
+
+    <svg class="edges" id="erd-edges" aria-hidden="true"></svg>
+  </div>
+  </div>
+
+  <p class="caption">
+    Reading tip: solid arrows are true lookup relationships enforced by the database.
+    Dashed arrows are loose references — the record simply stores the target's developer name as text
+    (that's the standard pattern for pointing at custom metadata). To keep the picture readable, the dashed
+    <span class="mono">Agent__c</span> arrow is drawn once, from Agent Run; Session, Memory, and Test Case
+    carry the identical reference (marked <span class="mono">⇢ by name</span> on each card).
+  </p>
+</section>
+
+<!-- ============================ SECTION 2: PROCESS ============================ -->
+<section id="process">
+  <div class="sec-head"><h2>2 · The process — what happens when you ask an agent something</h2></div>
+
+  <div class="plain">
+    <p><strong>Plain English:</strong> the agent works like a careful assistant on a loop:
+    <em>think → act → look at the result → think again</em>, until it has enough to answer you.
+    Every arrow between steps below is a hand-off through a platform event, which means each step runs in its
+    own small transaction — a 40-step investigation is just as safe on the Salesforce platform as a 1-step one.
+    And every loop has hard safety rails (right side), so an agent can never run forever or fail silently.</p>
+  </div>
+
+  <div class="scroller">
+  <div class="canvas" id="flow-canvas">
+
+    <div class="chipnode" id="actors" style="left:40px; top:34px; width:250px">
+      <strong>Where a run starts</strong><br>
+      Chat console (LWC) · Flow automation · Apex / API
+      <span class="mono" style="display:block; font-size:9.5px; margin-top:3px; color:var(--muted)">AgentChatController · AgentFlowRunAgentAction</span>
+    </div>
+
+    <div class="hopnote" id="hopnote" style="left:40px; top:196px; width:250px">
+      <strong>⚡ Why the arrows matter:</strong> every hand-off is an
+      <span class="mono" style="font-size:10px">Agent_Step_Event__e</span> → fresh transaction.
+      The queueable chain depth resets on each hop, so long runs never hit platform limits.
+      The conversation travels between hops inside
+      <span class="mono" style="font-size:10px">Agent_Run__c.History_Json__c</span>.
+    </div>
+
+    <div class="fnode" id="n1" style="left:340px; top:60px; width:360px">
+      <div class="step-tag"><span class="roundel">1</span><h4>You ask</h4></div>
+      <p>Your message is saved, a new <strong>Agent Run</strong> record is created with status
+      <em>Running</em>, and the first hop is queued. If it's part of an ongoing chat, the
+      <strong>Session</strong> seeds prior turns into the conversation.</p>
+      <div class="tech">AgentEngine.runAgent() / runAgentInSession() → ExecutionLogger.startRun → AgentRunQueueable</div>
+    </div>
+
+    <div class="fnode" id="n2" style="left:340px; top:268px; width:360px">
+      <div class="step-tag"><span class="roundel">2</span><h4>The model thinks</h4></div>
+      <p>The engine assembles the prompt — the agent's goal and rules, the catalog of tools it's allowed
+      to use, and any relevant <strong>memories</strong> — compacts the history if it's grown long, then calls
+      the LLM through a Named Credential. The request and reply are logged as a <strong>Step</strong>.</p>
+      <div class="tech">runLLMStep → ToolRegistry manifest + MemoryService.buildRecallBlock + HistoryCompactor → LLMClientFactory → OpenAI / Anthropic / Azure client</div>
+    </div>
+
+    <div class="fnode" id="n3" style="left:340px; top:520px; width:360px">
+      <div class="step-tag"><span class="roundel">3</span><h4>It answers in exactly one of three ways</h4></div>
+      <p>The model must reply with a single JSON shape: <em>use a tool</em>, <em>use several tools at once</em>,
+      or <em>here's my final answer</em>. Anything else is treated as a recoverable error and fed back.</p>
+      <div class="tech">{"tool":…} · {"tools":[…]} · {"final":…}</div>
+    </div>
+
+    <div class="fnode branch br-tool" id="b1" style="left:40px; top:718px; width:330px">
+      <div class="step-tag"><span class="roundel">A</span><h4>Run a tool</h4></div>
+      <p>The Apex tool executes — query records, create or update data, describe an object, validate a field.
+      The result is appended to the conversation and the loop returns to step 2.
+      Parallel calls fan out one event per tool; the last to finish merges the results.</p>
+      <div class="tech">runToolStep → Type.forName(Tool_Class__c) → AgentToolResult · PendingToolCount__c countdown (FOR UPDATE)</div>
+    </div>
+
+    <div class="fnode branch br-sub" id="b2" style="left:410px; top:718px; width:330px">
+      <div class="step-tag"><span class="roundel">B</span><h4>Ask another agent</h4></div>
+      <p>SubAgentTool starts a <strong>child run</strong> and the parent <em>pauses</em> — its step is marked
+      Pending and nothing is scheduled. When the child finishes, its final answer wakes the parent,
+      which resumes thinking at step 2.</p>
+      <div class="tech">startSubAgentRun (Depth__c ≤ 3) → child finishRun → resumeParentRun merges output</div>
+    </div>
+
+    <div class="fnode branch br-final" id="b3" style="left:780px; top:718px; width:320px">
+      <div class="step-tag"><span class="roundel">C</span><h4>Final answer</h4></div>
+      <p>The model is done gathering and commits to an answer. The loop ends and the run wraps up below.</p>
+      <div class="tech">{"final":{…}} parsed by runLLMStep</div>
+    </div>
+
+    <div class="fnode" id="n6" style="left:390px; top:948px; width:430px">
+      <div class="step-tag"><span class="roundel">4</span><h4>Wrap up</h4></div>
+      <p>The run closes as <em>Succeeded</em> or <em>Failed</em> with the answer stored on the record.
+      The session's turn count updates, worthwhile facts are captured as <strong>memories</strong> (async),
+      and a UI event pushes the answer to the screen in real time.</p>
+      <div class="tech">ExecutionLogger.finishRun → SessionService.onRunFinished · MemoryService.enqueueCapture · UIEventPublisher → Agent_UI_Event__e</div>
+    </div>
+
+    <div class="guards" id="guards" style="left:780px; top:60px; width:322px">
+      <h4>Safety rails</h4>
+      <p class="gsub">Every loop is bounded — an agent cannot run away or fail silently.</p>
+      <ul>
+        <li>Step budget: the loop is capped per agent (default 10 steps).
+          <span class="g-how">Agent_Definition__mdt.MaxSteps__c</span></li>
+        <li>Stuck-in-a-rut detector: the same tool called twice in a row with identical arguments forces a final answer.
+          <span class="g-how">ExecutionLogger.hasIdenticalToolCall</span></li>
+        <li>Three strikes: 3 consecutive failed steps hard-fail the run; earlier failures are fed back to the model to recover from.
+          <span class="g-how">ExecutionLogger.getConsecutiveErrorCount</span></li>
+        <li>Delegation depth: agents calling agents is capped at 3 levels.
+          <span class="g-how">Agent_Run__c.Depth__c</span></li>
+        <li>Watchdog: a scheduled sweep fails runs that stall mid-flight.
+          <span class="g-how">AgentWatchdogSchedulable (cron)</span></li>
+        <li>Full audit: every LLM call and tool call is written as an Agent Step — nothing is invisible.
+          <span class="g-how">ExecutionLogger.logStep</span></li>
+      </ul>
+    </div>
+
+    <svg class="edges" id="flow-edges" aria-hidden="true"></svg>
+  </div>
+  </div>
+
+  <p class="caption">
+    Dashed green arrows are the loop: after a tool result or a sub-agent's answer comes back, the model thinks
+    again with the new information — as many times as the step budget allows.
+  </p>
+</section>
+
+<!-- ============================ SECTION 3: CAST ============================ -->
+<section id="cast">
+  <div class="sec-head"><h2>3 · Cast of classes — who does what</h2></div>
+  <p class="lede" style="margin-top:6px">For the engineers in the room: the Apex classes behind the diagrams, one line each.</p>
+  <dl class="cast">
+    <div class="member"><dt>AgentEngine</dt><dd>The conductor. Only public entry point (<span class="mono">runAgent</span> / <span class="mono">runAgentInSession</span>); owns the LLM step, the tool step, and parent-run resume.</dd></div>
+    <div class="member"><dt>AgentRunQueueable · AgentToolQueueable</dt><dd>One async hop each — the LLM step (with callouts) and the tool step (deliberately no callouts).</dd></div>
+    <div class="member"><dt>AgentStepEventTrigger</dt><dd>Hears each <span class="mono">Agent_Step_Event__e</span> and enqueues the next hop — the trick that resets chain depth.</dd></div>
+    <div class="member"><dt>ToolRegistry</dt><dd>Reads the tool metadata, builds the manifest the model sees, resolves classes via <span class="mono">Type.forName</span>.</dd></div>
+    <div class="member"><dt>ExecutionLogger</dt><dd>Writes Runs and Steps, finishes runs, and is the resume choke point for suspended parent runs.</dd></div>
+    <div class="member"><dt>LLMClientFactory → OpenAI / Anthropic / AzureOpenAI clients</dt><dd>Provider adapters behind the <span class="mono">LLMClient</span> interface; swapped for <span class="mono">LLMClientMock</span> in tests so tests never hit a real LLM.</dd></div>
+    <div class="member"><dt>MemoryService · SalesforceMemoryProvider · MemoryCaptureQueueable</dt><dd>Recall memories into the prompt before a run; capture new ones asynchronously after it.</dd></div>
+    <div class="member"><dt>SessionService</dt><dd>Multi-turn conversations: seeds prior history into each new turn, updates the session when a run ends.</dd></div>
+    <div class="member"><dt>HistoryCompactor</dt><dd>Summarizes long conversation histories before they blow past heap and prompt limits.</dd></div>
+    <div class="member"><dt>UIEventPublisher</dt><dd>Fires <span class="mono">Agent_UI_Event__e</span> on step completion and run finish; failures are swallowed so the UI can never break the engine.</dd></div>
+    <div class="member"><dt>AgentWatchdogSchedulable · MemoryJanitorSchedulable</dt><dd>Scheduled crons: sweep stuck runs; prune expired or inactive memories.</dd></div>
+    <div class="member"><dt>The tools</dt><dd><span class="mono">QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool</span> — all implement <span class="mono">AgentTool</span> and return <span class="mono">AgentToolResult</span>.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  Apex Agent Orchestrator · object map &amp; execution flow · generated from source, July 2026.
+  Objects carry the <span class="mono">aao__</span> namespace prefix in the packaged version.
+</footer>
+
+</div>
+
+<script>
+(function(){
+  function el(id){ return document.getElementById(id); }
+
+  function rectOf(id){
+    var e = el(id);
+    return { x:e.offsetLeft, y:e.offsetTop, w:e.offsetWidth, h:e.offsetHeight };
+  }
+  function anchor(r, side, t){
+    t = (t == null) ? .5 : t;
+    switch(side){
+      case 'l': return [r.x, r.y + r.h*t];
+      case 'r': return [r.x + r.w, r.y + r.h*t];
+      case 't': return [r.x + r.w*t, r.y];
+      case 'b': return [r.x + r.w*t, r.y + r.h];
+    }
+  }
+  function normal(side){
+    return {l:[-1,0], r:[1,0], t:[0,-1], b:[0,1]}[side];
+  }
+  function bezPoint(p0,c1,c2,p1,t){
+    var u = 1-t;
+    return [
+      u*u*u*p0[0] + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t*t*t*p1[0],
+      u*u*u*p0[1] + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t*t*t*p1[1]
+    ];
+  }
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function defs(svg){
+    var d = document.createElementNS(NS,'defs');
+    ['lookup','byname','event','flow'].forEach(function(k){
+      var m = document.createElementNS(NS,'marker');
+      m.setAttribute('id','m-'+k+'-'+svg.id);
+      m.setAttribute('viewBox','0 0 10 10');
+      m.setAttribute('refX','8'); m.setAttribute('refY','5');
+      m.setAttribute('markerWidth','7'); m.setAttribute('markerHeight','7');
+      m.setAttribute('orient','auto-start-reverse');
+      var p = document.createElementNS(NS,'path');
+      p.setAttribute('d','M0,0 L10,5 L0,10 z');
+      p.setAttribute('class','mk-'+k);
+      m.appendChild(p); d.appendChild(m);
+    });
+    svg.appendChild(d);
+  }
+
+  function drawEdge(svg, s){
+    var ra = rectOf(s.from), rb = rectOf(s.to);
+    var p0 = anchor(ra, s.fs, s.ft), p1 = anchor(rb, s.ts, s.tt);
+    var dist = Math.hypot(p1[0]-p0[0], p1[1]-p0[1]);
+    var d1 = (s.d1 != null) ? s.d1 : Math.min(90, Math.max(34, dist*.35));
+    var d2 = (s.d2 != null) ? s.d2 : d1;
+    var n0 = normal(s.fs), n1 = normal(s.ts);
+    var c1 = [p0[0]+n0[0]*d1, p0[1]+n0[1]*d1];
+    var c2 = [p1[0]+n1[0]*d2, p1[1]+n1[1]*d2];
+    var path = document.createElementNS(NS,'path');
+    path.setAttribute('d','M'+p0[0]+','+p0[1]+' C'+c1[0]+','+c1[1]+' '+c2[0]+','+c2[1]+' '+p1[0]+','+p1[1]);
+    path.setAttribute('class','e e-'+s.cls);
+    path.setAttribute('marker-end','url(#m-'+(s.mk||s.cls)+'-'+svg.id+')');
+    svg.appendChild(path);
+    if(s.label){
+      var lt = (s.lt != null) ? s.lt : .5;
+      var lp = bezPoint(p0,c1,c2,p1,lt);
+      var txt = document.createElementNS(NS,'text');
+      txt.setAttribute('x', lp[0] + (s.lx||0));
+      txt.setAttribute('y', lp[1] + (s.ly != null ? s.ly : -7));
+      txt.setAttribute('text-anchor', s.ta || 'middle');
+      txt.setAttribute('class','elabel' + (s.mono ? ' mono' : ''));
+      txt.textContent = s.label;
+      svg.appendChild(txt);
+    }
+  }
+
+  /* ---------------- diagram 1: object map ---------------- */
+  var erd = el('erd-edges');
+  defs(erd);
+  [
+    // blueprint wiring (by developer name)
+    {from:'def', to:'llm',     fs:'l', ft:.30, ts:'r', tt:.42, cls:'byname', label:'LLMProvider__c', mono:true, ly:-8},
+    {from:'def', to:'memcfg',  fs:'l', ft:.78, ts:'r', tt:.28, cls:'byname', label:'MemoryConfig__c', mono:true, lt:.45, ly:12},
+    {from:'map', to:'def',     fs:'t', ft:.5,  ts:'b', tt:.5,  cls:'byname', label:'Agent__c', mono:true, lx:4},
+    {from:'map', to:'tooldef', fs:'l', ft:.62, ts:'r', tt:.42, cls:'byname', label:'Tool__c', mono:true, ly:-8},
+    {from:'tooldef', to:'apex',fs:'r', ft:.88, ts:'l', tt:.45, cls:'byname', label:'Tool_Class__c', mono:true, ly:14},
+    // runtime lookups
+    {from:'step', to:'run',    fs:'l', ft:.18, ts:'r', tt:.22, cls:'lookup', label:'Agent_Run__c', mono:true, ly:-7},
+    {from:'run',  to:'step',   fs:'r', ft:.62, ts:'l', tt:.62, cls:'lookup', label:'Parent_Step__c', mono:true, ly:14},
+    {from:'run',  to:'session',fs:'t', ft:.4,  ts:'b', tt:.4,  cls:'lookup', label:'Session__c', mono:true, ta:'end', lx:-6},
+    {from:'session', to:'user',fs:'r', ft:.35, ts:'l', tt:.5,  cls:'lookup', label:'User__c', mono:true},
+    {from:'memory', to:'user', fs:'r', ft:.5,  ts:'r', tt:.62, cls:'lookup', d1:26, d2:26, label:'User__c', mono:true, lt:.5, lx:8, ta:'start'},
+    {from:'memory', to:'run',  fs:'l', ft:.42, ts:'b', tt:.72, cls:'lookup', label:'Source_Run__c', mono:true, lt:.45, ly:16},
+    // the one representative by-name edge into the blueprint
+    {from:'run', to:'def',     fs:'l', ft:.12, ts:'r', tt:.72, cls:'byname', label:'Agent__c', mono:true, ly:-8},
+    // events
+    {from:'stepev', to:'run',  fs:'t', ft:.2, ts:'b', tt:.3,  cls:'event', label:'Run_Id__c — schedules the next step', lt:.5, ly:-9},
+    {from:'uiev', to:'lwc',    fs:'l', ft:.45, ts:'r', tt:.5,  cls:'event', label:'live updates', ly:-8}
+  ].forEach(function(s){ drawEdge(erd, s); });
+
+  // self-loop on Agent_Run (Parent_Run__c)
+  (function(){
+    var r = rectOf('run');
+    var x0 = r.x + r.w*.82, y0 = r.y;           // top edge
+    var x1 = r.x + r.w,     y1 = r.y + r.h*.08; // right edge, near top
+    var p = document.createElementNS(NS,'path');
+    p.setAttribute('d','M'+x0+','+y0+' C'+x0+','+(y0-34)+' '+(x1+42)+','+(y1-30)+' '+x1+','+y1);
+    p.setAttribute('class','e e-lookup');
+    p.setAttribute('marker-end','url(#m-lookup-erd-edges)');
+    erd.appendChild(p);
+    var t = document.createElementNS(NS,'text');
+    t.setAttribute('x', x0-8); t.setAttribute('y', y0-22);
+    t.setAttribute('class','elabel mono'); t.setAttribute('text-anchor','end');
+    t.textContent = '↺ Parent_Run__c';
+    erd.appendChild(t);
+  })();
+
+  /* ---------------- diagram 2: process flow ---------------- */
+  var flow = el('flow-edges');
+  defs(flow);
+  [
+    {from:'actors', to:'n1', fs:'r', ft:.5, ts:'l', tt:.5, cls:'flow', mk:'flow'},
+    {from:'n1', to:'n2', fs:'b', ft:.5, ts:'t', tt:.5, cls:'flow', label:'⚡ event hop', ly:4, lx:74},
+    {from:'n2', to:'n3', fs:'b', ft:.5, ts:'t', tt:.5, cls:'flow', label:'⚡ event hop', ly:4, lx:74},
+    {from:'n3', to:'b1', fs:'b', ft:.18, ts:'t', tt:.62, cls:'flow', label:'one tool · parallel tools', ly:-2, lx:-40},
+    {from:'n3', to:'b2', fs:'b', ft:.5,  ts:'t', tt:.5,  cls:'flow', label:'delegate', lx:34, ly:0},
+    {from:'n3', to:'b3', fs:'b', ft:.85, ts:'t', tt:.4,  cls:'flow', label:'done', ly:-4, lx:30},
+    {from:'b3', to:'n6', fs:'b', ft:.5,  ts:'t', tt:.78, cls:'flow'},
+    // loops back to thinking
+    {from:'b1', to:'n2', fs:'t', ft:.28, ts:'l', tt:.62, cls:'flow-loop', mk:'flow',
+      d1:150, d2:120, label:'result appended → think again', lt:.5, lx:-64, ly:-6}
+  ].forEach(function(s){ drawEdge(flow, s); });
+
+  // delegate loop: hand-routed through the corridor between Decide and the branch row
+  (function(){
+    var rb2 = rectOf('b2'), rn2 = rectOf('n2'), rn3 = rectOf('n3');
+    var sx = rb2.x + 45, sy = rb2.y;
+    var cy = rn3.y + rn3.h + 12;
+    var ex = rn2.x, ey = rn2.y + rn2.h*.9;
+    var p = document.createElementNS(NS,'path');
+    p.setAttribute('d','M'+sx+','+sy+
+      ' C'+(sx-20)+','+cy+' '+(sx-90)+','+(cy-4)+' 330,'+(cy-8)+
+      ' C180,'+(cy-24)+' 150,'+(ey+120)+' '+ex+','+ey);
+    p.setAttribute('class','e e-flow-loop');
+    p.setAttribute('marker-end','url(#m-flow-flow-edges)');
+    flow.appendChild(p);
+    var t = document.createElementNS(NS,'text');
+    t.setAttribute('x','185'); t.setAttribute('y', (cy+ey)/2 - 40);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('class','elabel');
+    t.textContent = 'child’s answer wakes the parent';
+    flow.appendChild(t);
+  })();
+})();
+</script>
+
+</html>
