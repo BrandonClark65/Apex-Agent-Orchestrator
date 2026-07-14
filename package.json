@@ -14,7 +14,15 @@
     "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prepare": "husky || true",
     "precommit": "lint-staged",
-    "docs": "apexdocs markdown"
+    "docs": "apexdocs markdown",
+    "org:create": "sf org create scratch --definition-file config/project-scratch-def.json --alias aaoDev --set-default --duration-days 30",
+    "org:deploy": "sf project deploy start --target-org aaoDev",
+    "org:permset": "sf org assign permset --name AAO_Admin --target-org aaoDev",
+    "org:schedule": "sf apex run --file scripts/apex/ScheduleWatchdog.apex --target-org aaoDev",
+    "org:unschedule": "sf apex run --file scripts/apex/UnscheduleWatchdog.apex --target-org aaoDev",
+    "org:open": "sf org open --target-org aaoDev",
+    "org:redeploy": "npm run org:unschedule && npm run org:deploy",
+    "org:setup": "bash scripts/create-dev-org.sh"
   },
   "devDependencies": {
     "@cparra/apexdocs": "^3.23.1",

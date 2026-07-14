@@ -61,6 +61,30 @@ This reads `apexdocs.config.mjs` and writes a Markdown reference guide to `docs/
 
 When adding or changing a public class, method, or constructor, add/update its `@description`/`@param`/`@return` ApexDoc comment so the generated docs stay accurate.
 
+## Development (source-driven scratch org)
+
+When you're working on the package itself, **don't** iterate by reinstalling the managed package - uninstalling a managed package deletes its custom objects and every record in them (agent runs, memories, sessions, and any edits to the shipped Custom Metadata), and 1GP Beta versions can't be upgraded in place, so a reinstall is your only option. Instead, deploy source straight into a scratch org and redeploy on each change; metadata deploys never drop your objects or data.
+
+**One-time prerequisites:**
+
+1. A Dev Hub, authorized: `sf org login web --set-default-dev-hub --alias DevHub`
+2. The `aao` namespace (from `sfdx-project.json`) registered in a namespace registry org, and that org **linked to your Dev Hub**. This is required because the source references `aao__` components throughout - without the namespace, `sf org create scratch` and the deploy will fail. See [Create and Register Your Namespace](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_reg_namespace.htm).
+
+**Bootstrap a fresh dev org** (create → deploy → assign `AAO_Admin` → schedule jobs → open):
+
+```bash
+npm run org:setup
+```
+
+**Inner loop** - edit source, then:
+
+```bash
+npm run org:deploy      # push changes; data in your objects persists
+npm run org:open
+```
+
+If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, the scheduled jobs block class deployment - use `npm run org:redeploy`, which unschedules them first (re-run `npm run org:schedule` afterward). The `org:setup` bootstrap does **not** create the LLM named credentials; add the ones you use per [Post-Install Setup](#post-install-setup).
+
 ## Installation
 
 **Current version: 1.0 Beta.** This is a managed package Beta - install into a sandbox, scratch org, or Developer Edition org for testing, not a production org (Beta versions can't be installed into production).
