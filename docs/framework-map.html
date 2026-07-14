@@ -100,7 +100,7 @@
 
   .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow)}
   .canvas{position:relative}
-  #erd-canvas{width:1300px; height:1172px}
+  #erd-canvas{width:1370px; height:1172px}
   #flow-canvas{width:1140px; height:1175px}
   .canvas svg.edges{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible}
 
@@ -249,11 +249,11 @@
       <span class="lane-title lt-cfg">Blueprint - configuration</span>
       <span class="lane-sub">Custom metadata: deploys with the package, editable by admins</span>
     </div>
-    <div class="lane lane-run" style="left:644px; top:16px; width:580px; height:830px">
+    <div class="lane lane-run" style="left:644px; top:16px; width:660px; height:830px">
       <span class="lane-title lt-run">Flight recorder - runtime records</span>
       <span class="lane-sub">Created automatically as agents work; full audit trail</span>
     </div>
-    <div class="lane lane-evt" style="left:16px; top:862px; width:1208px; height:284px">
+    <div class="lane lane-evt" style="left:16px; top:862px; width:1288px; height:284px">
       <span class="lane-title lt-evt">Signals - platform events</span>
       <span class="lane-sub">Fire-and-forget broadcasts; each one starts a fresh transaction (not stored)</span>
     </div>
@@ -343,13 +343,13 @@
       </ul>
     </div>
 
-    <div class="card c-std c-run" id="user" style="left:985px; top:80px; width:215px">
+    <div class="card c-std c-run" id="user" style="left:1045px; top:80px; width:215px">
       <div class="kind">Standard object</div>
       <h4>User</h4><span class="api">Salesforce standard</span>
       <p class="sub">Who the conversation or memory belongs to.</p>
     </div>
 
-    <div class="card c-run" id="test" style="left:985px; top:200px; width:215px">
+    <div class="card c-run" id="test" style="left:1045px; top:200px; width:215px">
       <div class="kind">Custom object</div>
       <h4>Test Case</h4><span class="api">Test_Case__c</span>
       <p class="sub">A saved input for replaying an agent in the Test Bench.</p>
@@ -376,7 +376,7 @@
       </ul>
     </div>
 
-    <div class="card c-run" id="step" style="left:965px; top:358px; width:252px">
+    <div class="card c-run" id="step" style="left:1025px; top:358px; width:252px">
       <div class="kind">Custom object</div>
       <h4>Agent Step</h4><span class="api">Agent_Step__c</span>
       <p class="sub">One step of a run: an LLM call or a tool call.</p>
@@ -390,7 +390,7 @@
       </ul>
     </div>
 
-    <div class="card c-run" id="memory" style="left:965px; top:606px; width:252px">
+    <div class="card c-run" id="memory" style="left:1025px; top:606px; width:252px">
       <div class="kind">Custom object</div>
       <h4>Agent Memory</h4><span class="api">Agent_Memory__c</span>
       <p class="sub">A remembered fact, recalled into future prompts.</p>
@@ -405,7 +405,7 @@
     </div>
 
     <!-- event cards -->
-    <div class="card c-evt" id="stepev" style="left:830px; top:940px; width:350px">
+    <div class="card c-evt" id="stepev" style="left:900px; top:940px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent Step Event</h4><span class="api">Agent_Step_Event__e</span>
       <p class="sub">The engine's relay baton - each step publishes one to schedule the next.</p>
@@ -416,7 +416,7 @@
       <div class="foot">Consumed by AgentStepEventTrigger → enqueues the next Queueable</div>
     </div>
 
-    <div class="card c-evt" id="uiev" style="left:390px; top:940px; width:350px">
+    <div class="card c-evt" id="uiev" style="left:470px; top:940px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent UI Event</h4><span class="api">Agent_UI_Event__e</span>
       <p class="sub">Live progress broadcast so screens update without polling.</p>
@@ -426,7 +426,7 @@
       </ul>
     </div>
 
-    <div class="card c-eng" id="lwc" style="left:80px; top:940px; width:270px">
+    <div class="card c-eng" id="lwc" style="left:50px; top:940px; width:270px">
       <div class="kind">Lightning components</div>
       <h4>Consoles</h4><span class="api">lwc/aao*</span>
       <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
