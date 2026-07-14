@@ -1,12 +1,13 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT",
+      "versionName": "ver 0.2",
+      "versionNumber": "0.2.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "Apex Agent Orchestrator",
-      "versionDescription": ""
+      "versionDescription": "",
+      "ancestorVersion": "0.1.0.1"
     }
   ],
   "name": "apex-agent-orchestrator",
@@ -14,6 +15,7 @@
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "66.0",
   "packageAliases": {
-    "Apex Agent Orchestrator": "0Hofj0000002LpxCAE"
+    "Apex Agent Orchestrator": "0Hofj0000002LpxCAE",
+    "Apex Agent Orchestrator@0.1.0-1": "04tfj000000N4CbAAK"
   }
 }

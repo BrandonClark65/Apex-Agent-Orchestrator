@@ -89,7 +89,7 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 **Current version: 1.0 Beta.** This is a managed package Beta - install into a sandbox, scratch org, or Developer Edition org for testing, not a production org (Beta versions can't be installed into production).
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000Uvbx
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000N4CbAAK
 
 ## Post-Install Setup
 
