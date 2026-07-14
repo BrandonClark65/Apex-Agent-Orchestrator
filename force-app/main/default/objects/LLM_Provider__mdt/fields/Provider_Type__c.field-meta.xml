@@ -29,6 +29,11 @@
                 <default>false</default>
                 <label>OpenAI</label>
             </value>
+            <value>
+                <fullName>Responses</fullName>
+                <default>false</default>
+                <label>Responses API (OpenAI/Azure)</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

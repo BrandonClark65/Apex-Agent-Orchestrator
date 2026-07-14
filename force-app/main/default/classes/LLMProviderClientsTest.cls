@@ -1,6 +1,7 @@
 /**
- * @description Tests the Anthropic and Azure OpenAI clients (wire-format construction and
- * response parsing via `HttpCalloutMock`) and the `LLMClientFactory` provider branches.
+ * @description Tests the Anthropic, Azure OpenAI, and Responses API clients (wire-format
+ * construction and response parsing via `HttpCalloutMock`) and the `LLMClientFactory`
+ * provider branches.
  * @group Tests
  */
 @IsTest
@@ -38,8 +39,20 @@ private class LLMProviderClientsTest {
   private static aao__LLM_Provider__mdt azureProvider() {
     return new aao__LLM_Provider__mdt(
       aao__Provider_Type__c = 'Azure',
+      aao__Model_Name__c = 'gpt-4o-mini',
       aao__Named_Credential__c = 'AzureOpenAI_NC',
       aao__API_Endpoint__c = '/openai/deployments/gpt-4o-mini/chat/completions?api-version=2024-10-21',
+      aao__MaxTokens__c = 2048,
+      aao__Temperature__c = 0.1
+    );
+  }
+
+  private static aao__LLM_Provider__mdt responsesProvider() {
+    return new aao__LLM_Provider__mdt(
+      aao__Provider_Type__c = 'Responses',
+      aao__Model_Name__c = 'gpt-4o-mini',
+      aao__Named_Credential__c = 'AzureOpenAI_NC',
+      aao__API_Endpoint__c = '/openai/responses?api-version=2025-04-01-preview',
       aao__MaxTokens__c = 2048,
       aao__Temperature__c = 0.1
     );
@@ -173,15 +186,101 @@ private class LLMProviderClientsTest {
     Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(
       mock.captured.getBody()
     );
-    System.assert(
-      !sent.containsKey('model'),
-      'Azure routes by deployment in the URL, not a model field'
+    System.assertEquals(
+      'gpt-4o-mini',
+      sent.get('model'),
+      'the deployment name travels as model so both legacy and v1 endpoints work'
     );
     System.assertEquals(2048, sent.get('max_tokens'));
     System.assert(
       mock.captured.getEndpoint().contains('api-version='),
       'api-version travels in the endpoint'
     );
+  }
+
+  @IsTest
+  static void testResponsesRequestShapeAndResponseParsing() {
+    String responsesResponse = JSON.serialize(
+      new Map<String, Object>{
+        'status' => 'completed',
+        'output' => new List<Object>{
+          new Map<String, Object>{ 'type' => 'reasoning' },
+          new Map<String, Object>{
+            'type' => 'message',
+            'role' => 'assistant',
+            'content' => new List<Object>{
+              new Map<String, Object>{
+                'type' => 'output_text',
+                'text' => '{"final":{"message":"done"}}'
+              }
+            }
+          }
+        },
+        'usage' => new Map<String, Object>{
+          'input_tokens' => 100,
+          'output_tokens' => 10,
+          'total_tokens' => 110
+        }
+      }
+    );
+    CalloutMock mock = new CalloutMock(200, responsesResponse);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    Test.startTest();
+    LLMResponse res = new OpenAIResponsesClient(responsesProvider())
+      .complete(sampleRequest());
+    Test.stopTest();
+
+    System.assertEquals('{"final":{"message":"done"}}', res.text);
+    System.assertEquals(100, res.promptTokens);
+    System.assertEquals(10, res.completionTokens);
+    System.assertEquals(110, res.totalTokens);
+
+    Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(
+      mock.captured.getBody()
+    );
+    System.assertEquals(
+      'gpt-4o-mini',
+      sent.get('model'),
+      'the Responses API takes the model/deployment name in the body'
+    );
+    System.assertEquals(2048, sent.get('max_output_tokens'));
+    System.assertEquals(false, sent.get('store'), 'responses are not stored server-side');
+    System.assert(!sent.containsKey('messages'), 'history travels as input, not messages');
+    List<Object> input = (List<Object>) sent.get('input');
+    System.assertEquals(2, input.size());
+    System.assertEquals('system', ((Map<String, Object>) input[0]).get('role'));
+  }
+
+  @IsTest
+  static void testResponsesTruncationAndRefusalThrow() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new CalloutMock(
+        200,
+        '{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"output":[]}'
+      )
+    );
+    try {
+      new OpenAIResponsesClient(responsesProvider()).complete(sampleRequest());
+      System.assert(false, 'expected truncation AgentException');
+    } catch (AgentException e) {
+      System.assert(e.getMessage().contains('truncated'), e.getMessage());
+    }
+  }
+
+  @IsTest
+  static void testResponsesHttpErrorThrows() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new CalloutMock(400, '{"error":{"message":"missing model deployment"}}')
+    );
+    try {
+      new OpenAIResponsesClient(responsesProvider()).complete(sampleRequest());
+      System.assert(false, 'expected AgentException');
+    } catch (AgentException e) {
+      System.assert(e.getMessage().contains('400'), e.getMessage());
+    }
   }
 
   @IsTest
@@ -197,6 +296,10 @@ private class LLMProviderClientsTest {
     );
     System.assert(
       LLMClientFactory.forProvider('OpenAI_GPT4') instanceof OpenAIClient
+    );
+    System.assert(
+      LLMClientFactory.forProvider('Azure_OpenAI_Responses') instanceof OpenAIResponsesClient,
+      'Responses provider type resolves to OpenAIResponsesClient'
     );
   }
 }

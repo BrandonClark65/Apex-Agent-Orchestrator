@@ -11,7 +11,7 @@ A managed-package-ready orchestration layer that provides:
 - **Multi-agent collaboration** - agents delegate to sub-agents via suspend/resume, with parallel tool fan-out
 - **Conversational sessions** - ChatGPT-style threads: users reply and the agent remembers the conversation, with automatic history compaction for long threads
 - **Long-term memory** - agents extract durable facts and preferences from runs, recall them into future prompts, and learn lessons from their own successes and failures (pluggable store, Salesforce-native today, vector-ready)
-- **LLM provider abstraction** - provider configs in Custom Metadata; OpenAI, Anthropic (Claude), and Azure OpenAI out of the box, new providers are one class + one factory branch
+- **LLM provider abstraction** - provider configs in Custom Metadata; OpenAI, Anthropic (Claude), Azure OpenAI, and the OpenAI Responses API (OpenAI or Azure) out of the box, new providers are one class + one factory branch
 - **Full observability** - every run and step persisted, live progress events, a run monitor with cancel/re-run, and a step-by-step trace viewer
 - **Admin-configurable agents** via Custom Metadata - prompts, tool grants, providers, and memory behavior are records, not code
 
@@ -34,7 +34,7 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 
 - **AgentEngine** - the execution state machine: `runAgent` (one-shot) and `runAgentInSession` (conversational) entry points, LLM/tool steps, parallel fan-out, sub-agent suspend/resume, cancel guards.
 - **ToolRegistry / AgentTool** - discovers and invokes Apex tools; access is granted per agent via `Agent_Tool_Mapping__mdt`.
-- **LLMClient / LLMClientFactory** - provider-agnostic LLM interface driven by `LLM_Provider__mdt`; ships `OpenAIClient`, `AnthropicClient`, and `AzureOpenAIClient`.
+- **LLMClient / LLMClientFactory** - provider-agnostic LLM interface driven by `LLM_Provider__mdt`; ships `OpenAIClient`, `AnthropicClient`, `AzureOpenAIClient`, and `OpenAIResponsesClient` (Responses API on OpenAI or Azure).
 - **AgentDeployService / AgentDeployCallback** - deploys agent definitions and tool grants from the builder UI via `Metadata.Operations`, reporting completion over the UI event channel.
 - **MemoryProvider / MemoryService** - pluggable memory store (`Agent_Memory__c` + `SalesforceMemoryProvider` today); recall injects "Relevant memories" and "Lessons from previous runs" into prompts, `MemoryCaptureQueueable` extracts facts and reflections after runs.
 - **HistoryCompactor** - summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
@@ -94,7 +94,7 @@ To fix this, after installing the package:
 
 If your external credential uses **Per-User** authentication, switch it to a **Named Principal** instead - the Automated Process User cannot complete a per-user OAuth flow.
 
-**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`, with your deployment name and `api-version` in the record's endpoint path). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
+**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`; set `Model_Name__c` to **your Azure deployment name** — deployment names are per-resource, so the shipped `gpt-4o-mini` only works if you named your deployment that — and put the same name plus `api-version` in the record's endpoint path when using the legacy `/openai/deployments/...` style, or use the v1 path `/openai/v1/chat/completions`, which reads the deployment from `Model_Name__c`). The `Azure_OpenAI_Responses` record targets the same resource's **Responses API** (`/openai/responses?api-version=...`) through the same `AzureOpenAI_NC` credential; the `Responses` provider type also works against OpenAI directly (endpoint `/v1/responses` with a Bearer-auth credential). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
 
 ### 2. Grant Metadata API access for the Agent Builder
 

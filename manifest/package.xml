@@ -53,6 +53,7 @@
         <members>OpenAIClient</members>
         <members>OpenAIRequestDTO</members>
         <members>OpenAIResponseDTO</members>
+        <members>OpenAIResponsesClient</members>
         <members>QuerySalesforceTool</members>
         <members>QuerySalesforceToolTest</members>
         <members>SalesforceMemoryProvider</members>
@@ -184,6 +185,7 @@
         <members>Agent_Tool_Mapping.Orchestrator_Agent_Sub_Agent</members>
         <members>LLM_Provider.Anthropic_Claude</members>
         <members>LLM_Provider.Azure_OpenAI</members>
+        <members>LLM_Provider.Azure_OpenAI_Responses</members>
         <members>LLM_Provider.OpenAI_GPT4</members>
         <members>Memory_Config.Default_Memory</members>
         <members>Memory_Config.NoMemory</members>
