@@ -1,7 +1,8 @@
 /**
  * @description Resolves an `LLM_Provider__mdt` record to the concrete `LLMClient`
  * implementation for its `Provider_Type__c`: `'OpenAI'` → `OpenAIClient`, `'Anthropic'` →
- * `AnthropicClient`, `'Azure'` → `AzureOpenAIClient`.
+ * `AnthropicClient`, `'Azure'` → `AzureOpenAIClient` (chat completions), `'Responses'` →
+ * `OpenAIResponsesClient` (Responses API, OpenAI or Azure).
  * Adding a new provider means adding a branch here plus a new `LLMClient` implementation.
  * During tests, `setMock` swaps in an `LLMClientMock` so tests never hit a real LLM.
  * @group LLM Integration
@@ -57,6 +58,9 @@ public with sharing class LLMClientFactory {
     }
     if (provider.aao__Provider_Type__c == 'Azure') {
       return new AzureOpenAIClient(provider);
+    }
+    if (provider.aao__Provider_Type__c == 'Responses') {
+      return new OpenAIResponsesClient(provider);
     }
 
     throw new AgentException(
