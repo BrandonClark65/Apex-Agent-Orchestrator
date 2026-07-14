@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apex Agent Orchestrator — Framework Map</title>
+<title>Apex Agent Orchestrator - Framework Map</title>
 <style>
   :root{
     --bg:#F3F5F8; --surface:#FFFFFF; --ink:#17222E; --muted:#5D6C7B; --line:#D9E0E8;
@@ -100,7 +100,7 @@
 
   .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow)}
   .canvas{position:relative}
-  #erd-canvas{width:1240px; height:1172px}
+  #erd-canvas{width:1370px; height:1172px}
   #flow-canvas{width:1140px; height:1175px}
   .canvas svg.edges{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible}
 
@@ -210,7 +210,7 @@
   <p class="lede">
     AAO lets you run AI agents natively inside Salesforce: you describe an agent in configuration,
     grant it tools, and every conversation it has leaves a complete, queryable paper trail.
-    This page has two views — <strong>the parts</strong> (every object and how they connect) and
+    This page has two views - <strong>the parts</strong> (every object and how they connect) and
     <strong>the process</strong> (what happens, step by step, when someone asks an agent a question).
   </p>
   <nav class="toc">
@@ -222,14 +222,14 @@
 
 <!-- ============================ SECTION 1: OBJECT MAP ============================ -->
 <section id="objects">
-  <div class="sec-head"><h2>1 · The parts — every object, and how they connect</h2></div>
+  <div class="sec-head"><h2>1 · The parts - every object, and how they connect</h2></div>
 
   <div class="plain">
     <p><strong>Plain English:</strong> think of an agent as a new employee.
-    The <strong style="color:var(--cfg-base)">blueprint</strong> (left) is their job description, their toolbox, and the list of tools they're allowed to touch —
+    The <strong style="color:var(--cfg-base)">blueprint</strong> (left) is their job description, their toolbox, and the list of tools they're allowed to touch -
     all editable configuration, no code changes needed.
     The <strong style="color:var(--run-base)">flight recorder</strong> (right) is the paper trail: every conversation, every question, and every single step the agent took gets its own record you can open and audit.
-    The <strong style="color:var(--evt-base)">signals</strong> (bottom) are the office intercom — instant broadcasts that keep the engine moving and the screens live; they aren't stored.</p>
+    The <strong style="color:var(--evt-base)">signals</strong> (bottom) are the office intercom - instant broadcasts that keep the engine moving and the screens live; they aren't stored.</p>
   </div>
 
   <div class="legend" role="list">
@@ -246,15 +246,15 @@
   <div class="canvas" id="erd-canvas">
 
     <div class="lane lane-cfg" style="left:16px; top:16px; width:612px; height:830px">
-      <span class="lane-title lt-cfg">Blueprint — configuration</span>
+      <span class="lane-title lt-cfg">Blueprint - configuration</span>
       <span class="lane-sub">Custom metadata: deploys with the package, editable by admins</span>
     </div>
-    <div class="lane lane-run" style="left:644px; top:16px; width:580px; height:830px">
-      <span class="lane-title lt-run">Flight recorder — runtime records</span>
+    <div class="lane lane-run" style="left:644px; top:16px; width:660px; height:830px">
+      <span class="lane-title lt-run">Flight recorder - runtime records</span>
       <span class="lane-sub">Created automatically as agents work; full audit trail</span>
     </div>
-    <div class="lane lane-evt" style="left:16px; top:862px; width:1208px; height:284px">
-      <span class="lane-title lt-evt">Signals — platform events</span>
+    <div class="lane lane-evt" style="left:16px; top:862px; width:1288px; height:284px">
+      <span class="lane-title lt-evt">Signals - platform events</span>
       <span class="lane-sub">Fire-and-forget broadcasts; each one starts a fresh transaction (not stored)</span>
     </div>
 
@@ -300,7 +300,7 @@
     <div class="card c-cfg" id="def" style="left:352px; top:96px; width:252px">
       <div class="kind">Custom metadata</div>
       <h4>Agent Definition</h4><span class="api">Agent_Definition__mdt</span>
-      <p class="sub">The agent's job description — one record per agent.</p>
+      <p class="sub">The agent's job description - one record per agent.</p>
       <ul>
         <li>Goal__c · SystemPrompt__c</li>
         <li>MaxSteps__c <span class="to to-eng">(default 10)</span></li>
@@ -343,13 +343,13 @@
       </ul>
     </div>
 
-    <div class="card c-std c-run" id="user" style="left:985px; top:80px; width:215px">
+    <div class="card c-std c-run" id="user" style="left:1045px; top:80px; width:215px">
       <div class="kind">Standard object</div>
       <h4>User</h4><span class="api">Salesforce standard</span>
       <p class="sub">Who the conversation or memory belongs to.</p>
     </div>
 
-    <div class="card c-run" id="test" style="left:985px; top:200px; width:215px">
+    <div class="card c-run" id="test" style="left:1045px; top:200px; width:215px">
       <div class="kind">Custom object</div>
       <h4>Test Case</h4><span class="api">Test_Case__c</span>
       <p class="sub">A saved input for replaying an agent in the Test Bench.</p>
@@ -362,7 +362,7 @@
     <div class="card c-run" id="run" style="left:680px; top:308px; width:242px">
       <div class="kind">Custom object</div>
       <h4>Agent Run</h4><span class="api">Agent_Run__c</span>
-      <p class="sub">One question in, one answer out — the unit of work.</p>
+      <p class="sub">One question in, one answer out - the unit of work.</p>
       <ul>
         <li>Agent__c <span class="to to-cfg">⇢ by name</span> · Status__c</li>
         <li>Session__c <span class="to to-run">→ Session</span></li>
@@ -376,7 +376,7 @@
       </ul>
     </div>
 
-    <div class="card c-run" id="step" style="left:965px; top:358px; width:252px">
+    <div class="card c-run" id="step" style="left:1025px; top:358px; width:252px">
       <div class="kind">Custom object</div>
       <h4>Agent Step</h4><span class="api">Agent_Step__c</span>
       <p class="sub">One step of a run: an LLM call or a tool call.</p>
@@ -390,7 +390,7 @@
       </ul>
     </div>
 
-    <div class="card c-run" id="memory" style="left:965px; top:606px; width:252px">
+    <div class="card c-run" id="memory" style="left:1025px; top:606px; width:252px">
       <div class="kind">Custom object</div>
       <h4>Agent Memory</h4><span class="api">Agent_Memory__c</span>
       <p class="sub">A remembered fact, recalled into future prompts.</p>
@@ -405,10 +405,10 @@
     </div>
 
     <!-- event cards -->
-    <div class="card c-evt" id="stepev" style="left:830px; top:940px; width:350px">
+    <div class="card c-evt" id="stepev" style="left:900px; top:940px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent Step Event</h4><span class="api">Agent_Step_Event__e</span>
-      <p class="sub">The engine's relay baton — each step publishes one to schedule the next.</p>
+      <p class="sub">The engine's relay baton - each step publishes one to schedule the next.</p>
       <ul>
         <li>Run_Id__c · Step_Type__c</li>
         <li>Tool_Name__c · Tool_Args_Json__c</li>
@@ -416,7 +416,7 @@
       <div class="foot">Consumed by AgentStepEventTrigger → enqueues the next Queueable</div>
     </div>
 
-    <div class="card c-evt" id="uiev" style="left:390px; top:940px; width:350px">
+    <div class="card c-evt" id="uiev" style="left:470px; top:940px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent UI Event</h4><span class="api">Agent_UI_Event__e</span>
       <p class="sub">Live progress broadcast so screens update without polling.</p>
@@ -426,7 +426,7 @@
       </ul>
     </div>
 
-    <div class="card c-eng" id="lwc" style="left:80px; top:940px; width:270px">
+    <div class="card c-eng" id="lwc" style="left:50px; top:940px; width:270px">
       <div class="kind">Lightning components</div>
       <h4>Consoles</h4><span class="api">lwc/aao*</span>
       <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
@@ -440,7 +440,7 @@
 
   <p class="caption">
     Reading tip: solid arrows are true lookup relationships enforced by the database.
-    Dashed arrows are loose references — the record simply stores the target's developer name as text
+    Dashed arrows are loose references - the record simply stores the target's developer name as text
     (that's the standard pattern for pointing at custom metadata). To keep the picture readable, the dashed
     <span class="mono">Agent__c</span> arrow is drawn once, from Agent Run; Session, Memory, and Test Case
     carry the identical reference (marked <span class="mono">⇢ by name</span> on each card).
@@ -449,13 +449,13 @@
 
 <!-- ============================ SECTION 2: PROCESS ============================ -->
 <section id="process">
-  <div class="sec-head"><h2>2 · The process — what happens when you ask an agent something</h2></div>
+  <div class="sec-head"><h2>2 · The process - what happens when you ask an agent something</h2></div>
 
   <div class="plain">
     <p><strong>Plain English:</strong> the agent works like a careful assistant on a loop:
     <em>think → act → look at the result → think again</em>, until it has enough to answer you.
     Every arrow between steps below is a hand-off through a platform event, which means each step runs in its
-    own small transaction — a 40-step investigation is just as safe on the Salesforce platform as a 1-step one.
+    own small transaction - a 40-step investigation is just as safe on the Salesforce platform as a 1-step one.
     And every loop has hard safety rails (right side), so an agent can never run forever or fail silently.</p>
   </div>
 
@@ -486,8 +486,8 @@
 
     <div class="fnode" id="n2" style="left:340px; top:268px; width:360px">
       <div class="step-tag"><span class="roundel">2</span><h4>The model thinks</h4></div>
-      <p>The engine assembles the prompt — the agent's goal and rules, the catalog of tools it's allowed
-      to use, and any relevant <strong>memories</strong> — compacts the history if it's grown long, then calls
+      <p>The engine assembles the prompt - the agent's goal and rules, the catalog of tools it's allowed
+      to use, and any relevant <strong>memories</strong> - compacts the history if it's grown long, then calls
       the LLM through a Named Credential. The request and reply are logged as a <strong>Step</strong>.</p>
       <div class="tech">runLLMStep → ToolRegistry manifest + MemoryService.buildRecallBlock + HistoryCompactor → LLMClientFactory → OpenAI / Anthropic / Azure client</div>
     </div>
@@ -501,7 +501,7 @@
 
     <div class="fnode branch br-tool" id="b1" style="left:40px; top:718px; width:330px">
       <div class="step-tag"><span class="roundel">A</span><h4>Run a tool</h4></div>
-      <p>The Apex tool executes — query records, create or update data, describe an object, validate a field.
+      <p>The Apex tool executes - query records, create or update data, describe an object, validate a field.
       The result is appended to the conversation and the loop returns to step 2.
       Parallel calls fan out one event per tool; the last to finish merges the results.</p>
       <div class="tech">runToolStep → Type.forName(Tool_Class__c) → AgentToolResult · PendingToolCount__c countdown (FOR UPDATE)</div>
@@ -509,7 +509,7 @@
 
     <div class="fnode branch br-sub" id="b2" style="left:410px; top:718px; width:330px">
       <div class="step-tag"><span class="roundel">B</span><h4>Ask another agent</h4></div>
-      <p>SubAgentTool starts a <strong>child run</strong> and the parent <em>pauses</em> — its step is marked
+      <p>SubAgentTool starts a <strong>child run</strong> and the parent <em>pauses</em> - its step is marked
       Pending and nothing is scheduled. When the child finishes, its final answer wakes the parent,
       which resumes thinking at step 2.</p>
       <div class="tech">startSubAgentRun (Depth__c ≤ 3) → child finishRun → resumeParentRun merges output</div>
@@ -531,7 +531,7 @@
 
     <div class="guards" id="guards" style="left:780px; top:60px; width:322px">
       <h4>Safety rails</h4>
-      <p class="gsub">Every loop is bounded — an agent cannot run away or fail silently.</p>
+      <p class="gsub">Every loop is bounded - an agent cannot run away or fail silently.</p>
       <ul>
         <li>Step budget: the loop is capped per agent (default 10 steps).
           <span class="g-how">Agent_Definition__mdt.MaxSteps__c</span></li>
@@ -543,7 +543,7 @@
           <span class="g-how">Agent_Run__c.Depth__c</span></li>
         <li>Watchdog: a scheduled sweep fails runs that stall mid-flight.
           <span class="g-how">AgentWatchdogSchedulable (cron)</span></li>
-        <li>Full audit: every LLM call and tool call is written as an Agent Step — nothing is invisible.
+        <li>Full audit: every LLM call and tool call is written as an Agent Step - nothing is invisible.
           <span class="g-how">ExecutionLogger.logStep</span></li>
       </ul>
     </div>
@@ -554,18 +554,18 @@
 
   <p class="caption">
     Dashed green arrows are the loop: after a tool result or a sub-agent's answer comes back, the model thinks
-    again with the new information — as many times as the step budget allows.
+    again with the new information - as many times as the step budget allows.
   </p>
 </section>
 
 <!-- ============================ SECTION 3: CAST ============================ -->
 <section id="cast">
-  <div class="sec-head"><h2>3 · Cast of classes — who does what</h2></div>
+  <div class="sec-head"><h2>3 · Cast of classes - who does what</h2></div>
   <p class="lede" style="margin-top:6px">For the engineers in the room: the Apex classes behind the diagrams, one line each.</p>
   <dl class="cast">
     <div class="member"><dt>AgentEngine</dt><dd>The conductor. Only public entry point (<span class="mono">runAgent</span> / <span class="mono">runAgentInSession</span>); owns the LLM step, the tool step, and parent-run resume.</dd></div>
-    <div class="member"><dt>AgentRunQueueable · AgentToolQueueable</dt><dd>One async hop each — the LLM step (with callouts) and the tool step (deliberately no callouts).</dd></div>
-    <div class="member"><dt>AgentStepEventTrigger</dt><dd>Hears each <span class="mono">Agent_Step_Event__e</span> and enqueues the next hop — the trick that resets chain depth.</dd></div>
+    <div class="member"><dt>AgentRunQueueable · AgentToolQueueable</dt><dd>One async hop each - the LLM step (with callouts) and the tool step (deliberately no callouts).</dd></div>
+    <div class="member"><dt>AgentStepEventTrigger</dt><dd>Hears each <span class="mono">Agent_Step_Event__e</span> and enqueues the next hop - the trick that resets chain depth.</dd></div>
     <div class="member"><dt>ToolRegistry</dt><dd>Reads the tool metadata, builds the manifest the model sees, resolves classes via <span class="mono">Type.forName</span>.</dd></div>
     <div class="member"><dt>ExecutionLogger</dt><dd>Writes Runs and Steps, finishes runs, and is the resume choke point for suspended parent runs.</dd></div>
     <div class="member"><dt>LLMClientFactory → OpenAI / Anthropic / AzureOpenAI clients</dt><dd>Provider adapters behind the <span class="mono">LLMClient</span> interface; swapped for <span class="mono">LLMClientMock</span> in tests so tests never hit a real LLM.</dd></div>
@@ -574,7 +574,7 @@
     <div class="member"><dt>HistoryCompactor</dt><dd>Summarizes long conversation histories before they blow past heap and prompt limits.</dd></div>
     <div class="member"><dt>UIEventPublisher</dt><dd>Fires <span class="mono">Agent_UI_Event__e</span> on step completion and run finish; failures are swallowed so the UI can never break the engine.</dd></div>
     <div class="member"><dt>AgentWatchdogSchedulable · MemoryJanitorSchedulable</dt><dd>Scheduled crons: sweep stuck runs; prune expired or inactive memories.</dd></div>
-    <div class="member"><dt>The tools</dt><dd><span class="mono">QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool</span> — all implement <span class="mono">AgentTool</span> and return <span class="mono">AgentToolResult</span>.</dd></div>
+    <div class="member"><dt>The tools</dt><dd><span class="mono">QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool</span> - all implement <span class="mono">AgentTool</span> and return <span class="mono">AgentToolResult</span>.</dd></div>
   </dl>
 </section>
 
@@ -678,7 +678,7 @@
     // the one representative by-name edge into the blueprint
     {from:'run', to:'def',     fs:'l', ft:.12, ts:'r', tt:.72, cls:'byname', label:'Agent__c', mono:true, ly:-8},
     // events
-    {from:'stepev', to:'run',  fs:'t', ft:.2, ts:'b', tt:.3,  cls:'event', label:'Run_Id__c — schedules the next step', lt:.5, ly:-9},
+    {from:'stepev', to:'run',  fs:'t', ft:.2, ts:'b', tt:.3,  cls:'event', label:'Run_Id__c - schedules the next step', lt:.5, ly:-9},
     {from:'uiev', to:'lwc',    fs:'l', ft:.45, ts:'r', tt:.5,  cls:'event', label:'live updates', ly:-8}
   ].forEach(function(s){ drawEdge(erd, s); });
 
@@ -693,8 +693,8 @@
     p.setAttribute('marker-end','url(#m-lookup-erd-edges)');
     erd.appendChild(p);
     var t = document.createElementNS(NS,'text');
-    t.setAttribute('x', x0-8); t.setAttribute('y', y0-22);
-    t.setAttribute('class','elabel mono'); t.setAttribute('text-anchor','end');
+    t.setAttribute('x', (x0 + x1 + 42)/2); t.setAttribute('y', y0-27);
+    t.setAttribute('class','elabel mono'); t.setAttribute('text-anchor','middle');
     t.textContent = '↺ Parent_Run__c';
     erd.appendChild(t);
   })();
