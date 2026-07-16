@@ -44,7 +44,8 @@ public with sharing class LLMClientFactory {
         aao__Named_Credential__c,
         aao__API_Endpoint__c,
         aao__MaxTokens__c,
-        aao__Temperature__c
+        aao__Temperature__c,
+        aao__Reasoning_Effort__c
       FROM aao__LLM_Provider__mdt
       WHERE DeveloperName = :providerDeveloperName
       LIMIT 1

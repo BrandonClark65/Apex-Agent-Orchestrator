@@ -68,6 +68,88 @@ private class AgentEngineTest {
   }
 
   @IsTest
+  static void testTokenUsageRollup() {
+    LLMClientMock mock = new LLMClientMock();
+    // First LLM step reports usage; tool step in between reports none; final LLM step
+    // reports usage. Run totals should sum only the two LLM steps.
+    mock.addResponse(
+      '{"tool":"QuerySalesforceTool","args":{"object":"Account"}}',
+      10,
+      5,
+      15
+    );
+    mock.addResponse('{"final":{"message":"Done"}}', 20, 8, 28);
+    LLMClientFactory.setMock(mock);
+
+    String inputJson = '{"task":"Find accounts"}';
+    List<LLMMessage> history = new List<LLMMessage>();
+    Id runId = startRun(inputJson, history);
+
+    Test.startTest();
+    AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, history);
+    AgentEngine.runToolStep(
+      'CRUD_Agent',
+      'Apex',
+      runId,
+      history,
+      'QuerySalesforceTool',
+      new Map<String, Object>{ 'object' => 'Account' }
+    );
+    AgentEngine.runLLMStep('CRUD_Agent', inputJson, 'Apex', runId, history);
+    Test.stopTest();
+
+    Map<String, aao__Agent_Step__c> stepByType = new Map<String, aao__Agent_Step__c>();
+    List<aao__Agent_Step__c> steps = [
+      SELECT
+        aao__Step_Type__c,
+        aao__Prompt_Tokens__c,
+        aao__Completion_Tokens__c,
+        aao__Total_Tokens__c
+      FROM aao__Agent_Step__c
+      WHERE aao__Agent_Run__c = :runId
+      ORDER BY aao__Step_Number__c ASC
+    ];
+
+    aao__Agent_Step__c firstLlm = steps[0];
+    System.assertEquals('LLMCall', firstLlm.aao__Step_Type__c);
+    System.assertEquals(10, firstLlm.aao__Prompt_Tokens__c.intValue());
+    System.assertEquals(5, firstLlm.aao__Completion_Tokens__c.intValue());
+    System.assertEquals(15, firstLlm.aao__Total_Tokens__c.intValue());
+
+    aao__Agent_Step__c toolStep = steps[1];
+    System.assertEquals('ToolCall', toolStep.aao__Step_Type__c);
+    System.assertEquals(
+      null,
+      toolStep.aao__Total_Tokens__c,
+      'Tool steps carry no token usage'
+    );
+
+    aao__Agent_Run__c run = [
+      SELECT
+        aao__Prompt_Tokens__c,
+        aao__Completion_Tokens__c,
+        aao__Total_Tokens__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+    ];
+    System.assertEquals(
+      30,
+      run.aao__Prompt_Tokens__c.intValue(),
+      'Prompt tokens summed'
+    );
+    System.assertEquals(
+      13,
+      run.aao__Completion_Tokens__c.intValue(),
+      'Completion tokens summed'
+    );
+    System.assertEquals(
+      43,
+      run.aao__Total_Tokens__c.intValue(),
+      'Total tokens summed'
+    );
+  }
+
+  @IsTest
   static void testToolChain() {
     LLMClientMock mock = new LLMClientMock();
     mock.addResponse(

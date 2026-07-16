@@ -38,6 +38,9 @@ public with sharing class HistoryCompactor {
     private String requestJson;
     private String rawResponse;
     private String summaryText;
+    private Integer promptTokens;
+    private Integer completionTokens;
+    private Integer totalTokens;
   }
 
   /**
@@ -103,19 +106,20 @@ public with sharing class HistoryCompactor {
     if (pending == null) {
       return;
     }
-    ExecutionLogger.logStep(
-      pending.runId,
-      new AgentStepLog(
-        ExecutionLogger.nextStepNumber(pending.runId),
-        'Summary',
-        pending.requestJson,
-        pending.rawResponse,
-        null,
-        null,
-        'Completed',
-        null
-      )
+    AgentStepLog summaryLog = new AgentStepLog(
+      ExecutionLogger.nextStepNumber(pending.runId),
+      'Summary',
+      pending.requestJson,
+      pending.rawResponse,
+      null,
+      null,
+      'Completed',
+      null
     );
+    summaryLog.promptTokens = pending.promptTokens;
+    summaryLog.completionTokens = pending.completionTokens;
+    summaryLog.totalTokens = pending.totalTokens;
+    ExecutionLogger.logStep(pending.runId, summaryLog);
     writeSessionSummary(pending.runId, pending.summaryText);
   }
 
@@ -190,6 +194,9 @@ public with sharing class HistoryCompactor {
     pending.requestJson = JSON.serialize(req);
     pending.rawResponse = res.rawResponse;
     pending.summaryText = summaryText;
+    pending.promptTokens = res.promptTokens;
+    pending.completionTokens = res.completionTokens;
+    pending.totalTokens = res.totalTokens;
 
     List<LLMMessage> compacted = new List<LLMMessage>();
     compacted.addAll(systemMessages);

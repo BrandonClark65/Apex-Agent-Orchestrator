@@ -8,14 +8,38 @@
 @IsTest
 public class LLMClientMock implements LLMClient {
   private List<String> responses = new List<String>();
+  private List<Integer> promptTokens = new List<Integer>();
+  private List<Integer> completionTokens = new List<Integer>();
+  private List<Integer> totalTokens = new List<Integer>();
   private Integer index = 0;
 
   /**
-   * @description Queues a raw JSON response string to be returned by the next `complete` call.
+   * @description Queues a raw JSON response string to be returned by the next `complete` call,
+   * with no token usage reported.
    * @param json Raw response text the mock will hand back verbatim as both `text` and `rawResponse`.
    */
   public void addResponse(String json) {
+    addResponse(json, null, null, null);
+  }
+
+  /**
+   * @description Queues a raw JSON response along with the token usage the mock should report,
+   * so tests can exercise the per-step / per-run token rollup.
+   * @param json Raw response text handed back as both `text` and `rawResponse`.
+   * @param prompt Prompt (input) tokens to report, or null.
+   * @param completion Completion (output) tokens to report, or null.
+   * @param total Total tokens to report, or null.
+   */
+  public void addResponse(
+    String json,
+    Integer prompt,
+    Integer completion,
+    Integer total
+  ) {
     responses.add(json);
+    promptTokens.add(prompt);
+    completionTokens.add(completion);
+    totalTokens.add(total);
   }
 
   /**
@@ -29,7 +53,12 @@ public class LLMClientMock implements LLMClient {
       throw new AgentException('No more mock responses available.');
     }
 
-    String text = responses[index++];
-    return new LLMResponse(text, text);
+    Integer i = index++;
+    String text = responses[i];
+    LLMResponse response = new LLMResponse(text, text);
+    response.promptTokens = promptTokens[i];
+    response.completionTokens = completionTokens[i];
+    response.totalTokens = totalTokens[i];
+    return response;
   }
 }
