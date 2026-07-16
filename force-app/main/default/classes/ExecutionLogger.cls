@@ -89,11 +89,15 @@ public with sharing class ExecutionLogger {
     String toolName,
     Map<String, Object> args
   ) {
+    // Compare against the most recent *ToolCall* step, not merely the most recent
+    // step. `AgentEngine.runLLMStep` always logs the current LLMCall step before it
+    // calls this guard, so an unfiltered "last step" query would always see that
+    // LLMCall and the guard could never fire (it would bail on the step-type check).
     List<aao__Agent_Step__c> steps = [
-      SELECT aao__Step_Type__c, aao__Tool_Input__c, aao__Tool__c
+      SELECT aao__Tool_Input__c, aao__Tool__c
       FROM aao__Agent_Step__c
-      WHERE aao__Agent_Run__c = :runId
-      ORDER BY CreatedDate DESC
+      WHERE aao__Agent_Run__c = :runId AND aao__Step_Type__c = 'ToolCall'
+      ORDER BY aao__Step_Number__c DESC
       LIMIT 1
     ];
 
@@ -102,23 +106,67 @@ public with sharing class ExecutionLogger {
 
     aao__Agent_Step__c last = steps[0];
 
-    if (last.aao__Step_Type__c != 'ToolCall')
-      return false;
     if (last.aao__Tool__c != toolName)
       return false;
+    if (String.isBlank(last.aao__Tool_Input__c))
+      return false;
 
-    // Normalize both sides
-    String lastNormalized = normalize(
-      JSON.deserializeUntyped(last.aao__Tool_Input__c)
-    );
+    // Normalize both sides to canonical JSON before comparing.
+    String lastNormalized = normalizeStoredInput(last.aao__Tool_Input__c);
     String currentNormalized = normalize(args);
 
     return lastNormalized == currentNormalized;
   }
+
+  /**
+   * @description Canonicalizes a stored `Tool_Input__c` value for comparison. The tool-step
+   * logging path serializes the args map and then `AgentStepLog` serializes again, so the
+   * stored value is usually double-encoded (a JSON string whose text is the args JSON). The
+   * first parse then yields a `String`, not a `Map`; when that happens we parse once more so
+   * the result lines up with `normalize(args)`. Single-encoded values are handled too.
+   */
+  private static String normalizeStoredInput(String storedInput) {
+    Object parsed = JSON.deserializeUntyped(storedInput);
+    if (parsed instanceof String) {
+      parsed = JSON.deserializeUntyped((String) parsed);
+    }
+    return normalize(parsed);
+  }
+
+  /**
+   * @description Produces a canonical JSON string with map keys recursively sorted, so two
+   * argument structures that differ only in key order compare equal. Sorting is required
+   * because Apex `JSON.deserializeUntyped` does not preserve a stable key order across
+   * round-trips: the stored (double-encoded) side is parsed one more time than the live
+   * args, which alone reorders keys and would defeat a plain serialize-based comparison.
+   */
   private static String normalize(Object value) {
-    // Serialize → Deserialize → Serialize again
-    // This produces stable, canonical JSON ordering
-    return JSON.serialize(JSON.deserializeUntyped(JSON.serialize(value)));
+    return canonicalJson(value);
+  }
+
+  private static String canonicalJson(Object value) {
+    if (value == null) {
+      return 'null';
+    }
+    if (value instanceof Map<String, Object>) {
+      Map<String, Object> m = (Map<String, Object>) value;
+      List<String> keys = new List<String>(m.keySet());
+      keys.sort();
+      List<String> parts = new List<String>();
+      for (String k : keys) {
+        parts.add(JSON.serialize(k) + ':' + canonicalJson(m.get(k)));
+      }
+      return '{' + String.join(parts, ',') + '}';
+    }
+    if (value instanceof List<Object>) {
+      List<String> parts = new List<String>();
+      for (Object item : (List<Object>) value) {
+        parts.add(canonicalJson(item));
+      }
+      return '[' + String.join(parts, ',') + ']';
+    }
+    // Primitives — let JSON.serialize handle escaping and numeric formatting.
+    return JSON.serialize(value);
   }
   //
   // ───────────────────────────────────────────────────────────────
@@ -137,7 +185,7 @@ public with sharing class ExecutionLogger {
       SELECT aao__Status__c
       FROM aao__Agent_Step__c
       WHERE aao__Agent_Run__c = :runId
-      ORDER BY CreatedDate DESC
+      ORDER BY aao__Step_Number__c DESC
       LIMIT 10
     ];
 

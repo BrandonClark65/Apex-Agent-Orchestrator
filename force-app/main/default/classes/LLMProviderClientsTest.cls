@@ -284,6 +284,94 @@ private class LLMProviderClientsTest {
   }
 
   @IsTest
+  static void testResponsesUsesFirstMessageNotConcatenation() {
+    // Some models emit a second, stray message after the real answer. Concatenating them
+    // would yield invalid JSON like `{...}{...}`; only the first message must be used.
+    String responsesResponse = JSON.serialize(
+      new Map<String, Object>{
+        'status' => 'completed',
+        'output' => new List<Object>{
+          new Map<String, Object>{ 'type' => 'reasoning' },
+          new Map<String, Object>{
+            'type' => 'message',
+            'role' => 'assistant',
+            'content' => new List<Object>{
+              new Map<String, Object>{
+                'type' => 'output_text',
+                'text' => '{"tool":"DescribeObjectTool","args":{"object":"Case"}}'
+              }
+            }
+          },
+          new Map<String, Object>{
+            'type' => 'message',
+            'role' => 'assistant',
+            'content' => new List<Object>{
+              new Map<String, Object>{
+                'type' => 'output_text',
+                'text' => '{"error":"stray second message"}'
+              }
+            }
+          }
+        }
+      }
+    );
+    Test.setMock(HttpCalloutMock.class, new CalloutMock(200, responsesResponse));
+
+    Test.startTest();
+    LLMResponse res = new OpenAIResponsesClient(responsesProvider())
+      .complete(sampleRequest());
+    Test.stopTest();
+
+    System.assertEquals(
+      '{"tool":"DescribeObjectTool","args":{"object":"Case"}}',
+      res.text,
+      'Only the first assistant message should be used, not a concatenation of both'
+    );
+  }
+
+  @IsTest
+  static void testResponsesReasoningEffortSentOnlyWhenConfigured() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new CalloutMock(
+        200,
+        '{"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"{\\"final\\":{}}"}]}]}'
+      )
+    );
+
+    // Blank effort (non-reasoning model): no reasoning param.
+    CalloutMock blankMock = new CalloutMock(
+      200,
+      '{"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"{\\"final\\":{}}"}]}]}'
+    );
+    Test.setMock(HttpCalloutMock.class, blankMock);
+    new OpenAIResponsesClient(responsesProvider()).complete(sampleRequest());
+    Map<String, Object> blankBody = (Map<String, Object>) JSON.deserializeUntyped(
+      blankMock.captured.getBody()
+    );
+    System.assert(
+      !blankBody.containsKey('reasoning'),
+      'No reasoning param should be sent when Reasoning_Effort__c is blank'
+    );
+
+    // Configured effort: reasoning.effort travels in the body, lower-cased.
+    aao__LLM_Provider__mdt reasoningProvider = responsesProvider();
+    reasoningProvider.aao__Reasoning_Effort__c = 'Medium';
+    CalloutMock effortMock = new CalloutMock(
+      200,
+      '{"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"{\\"final\\":{}}"}]}]}'
+    );
+    Test.setMock(HttpCalloutMock.class, effortMock);
+    new OpenAIResponsesClient(reasoningProvider).complete(sampleRequest());
+    Map<String, Object> effortBody = (Map<String, Object>) JSON.deserializeUntyped(
+      effortMock.captured.getBody()
+    );
+    Map<String, Object> reasoning = (Map<String, Object>) effortBody.get('reasoning');
+    System.assertNotEquals(null, reasoning, 'reasoning param should be present');
+    System.assertEquals('medium', reasoning.get('effort'));
+  }
+
+  @IsTest
   static void testFactoryResolvesNewProviders() {
     // Clear the auto-mock path: no LLMClientMock registered.
     System.assert(
