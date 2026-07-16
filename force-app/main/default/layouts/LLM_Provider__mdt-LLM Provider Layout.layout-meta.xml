@@ -48,6 +48,10 @@
                 <behavior>Edit</behavior>
                 <field>Temperature__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Reasoning_Effort__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

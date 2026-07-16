@@ -16,6 +16,7 @@
   "sourceApiVersion": "66.0",
   "packageAliases": {
     "Apex Agent Orchestrator": "0Hofj0000002LpxCAE",
-    "Apex Agent Orchestrator@0.1.0-1": "04tfj000000N4CbAAK"
+    "Apex Agent Orchestrator@0.1.0-1": "04tfj000000N4CbAAK",
+    "Apex Agent Orchestrator@0.2.0-1": "04tfj000000NAptAAG"
   }
 }
