@@ -79,7 +79,7 @@ until promoted. Save the `04t` id.
 Proves the package deploys on its own, independent of your dev org's state.
 
 ```powershell
-sf org create scratch --definition-file config/project-scratch-def.json --alias 2gp-test --target-dev-hub DevHub --set-default
+sf org create scratch --definition-file config/project-scratch-def.json --alias 2gp-test --no-namespace --target-dev-hub DevHub --set-default
 sf package install --package 04tXXXXXXXXXXXX --wait 20 --publish-wait 20 --target-org 2gp-test
 sf org assign permset --name AAO_Admin --target-org 2gp-test
 sf org open --target-org 2gp-test

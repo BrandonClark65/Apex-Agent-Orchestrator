@@ -87,9 +87,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 1.0 Beta.** This is a managed package Beta - install into a sandbox, scratch org, or Developer Edition org for testing, not a production org (Beta versions can't be installed into production).
+**Current version: 0.2 (0.2.0.2), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000N4CbAAK
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NB1BAAW
 
 ## Post-Install Setup
 
@@ -131,7 +131,7 @@ The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__
 1. Setup → Profiles (not Permission Sets - Salesforce has a known issue where **Modify Metadata Through Metadata API Functions** granted via a permission set doesn't actually take effect) → open the builder user's profile → System Permissions.
 2. Enable **Customize Application** and **Modify Metadata Through Metadata API Functions**, then save.
 
-**b. Org-wide Apex Setting for non-certified packages.** While this package is Beta and not AppExchange security-reviewed, the org must separately opt in to letting *any* code from it call the Metadata API:
+**b. Org-wide Apex Setting for non-certified packages.** While this package is not AppExchange security-reviewed, the org must separately opt in to letting *any* code from it call the Metadata API:
 
 1. Setup → Quick Find → **Apex Settings**.
 2. Enable **Deploy Metadata from Non-Certified Package Version via Apex**, then save.
@@ -191,4 +191,4 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - ✅ Agent authoring from the builder (Metadata API deploys)
 - ✅ Memory management UI
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ⏳ Managed package release
+- ✅ Managed package release (2GP, v0.2 Released)
