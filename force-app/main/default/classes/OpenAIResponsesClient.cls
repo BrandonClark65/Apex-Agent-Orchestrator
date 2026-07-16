@@ -66,7 +66,6 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
     Map<String, Object> body = new Map<String, Object>{
       'input' => input,
       'max_output_tokens' => maxTokens,
-      'temperature' => temperature,
       'text' => new Map<String, Object>{
         'format' => new Map<String, String>{ 'type' => 'json_object' }
       },
@@ -76,10 +75,13 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
       body.put('model', provider.aao__Model_Name__c);
     }
 
-    // Reasoning models (gpt-5.x, o-series) default to `effort: none` on the Responses
-    // API, which makes them skip steps on long procedural workflows. Send an explicit
-    // effort only when configured — non-reasoning models (e.g. gpt-4o) reject the
-    // `reasoning` param, so a blank field leaves the request untouched.
+    // `temperature` and `reasoning.effort` are mutually exclusive on the Responses API.
+    // Reasoning models (gpt-5.x, o-series) reject `temperature` with a 400 but accept
+    // `reasoning.effort`; standard models (e.g. gpt-4o) reject `reasoning` but honor
+    // `temperature`. A configured Reasoning_Effort__c marks the provider as a reasoning
+    // model, so we send exactly one of the two based on that flag. Reasoning models also
+    // default to `effort: none`, which makes them skip steps on long procedural
+    // workflows, so sending the explicit effort matters beyond just avoiding the 400.
     if (String.isNotBlank(provider.aao__Reasoning_Effort__c)) {
       body.put(
         'reasoning',
@@ -87,6 +89,8 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
           'effort' => provider.aao__Reasoning_Effort__c.toLowerCase()
         }
       );
+    } else {
+      body.put('temperature', temperature);
     }
 
     req.setBody(JSON.serialize(body));

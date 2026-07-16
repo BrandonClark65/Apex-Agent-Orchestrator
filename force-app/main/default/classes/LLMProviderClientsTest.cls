@@ -353,6 +353,10 @@ private class LLMProviderClientsTest {
       !blankBody.containsKey('reasoning'),
       'No reasoning param should be sent when Reasoning_Effort__c is blank'
     );
+    System.assert(
+      blankBody.containsKey('temperature'),
+      'temperature should be sent for a non-reasoning model'
+    );
 
     // Configured effort: reasoning.effort travels in the body, lower-cased.
     aao__LLM_Provider__mdt reasoningProvider = responsesProvider();
@@ -369,6 +373,10 @@ private class LLMProviderClientsTest {
     Map<String, Object> reasoning = (Map<String, Object>) effortBody.get('reasoning');
     System.assertNotEquals(null, reasoning, 'reasoning param should be present');
     System.assertEquals('medium', reasoning.get('effort'));
+    System.assert(
+      !effortBody.containsKey('temperature'),
+      'temperature must be omitted for a reasoning model — the Responses API rejects it with a 400'
+    );
   }
 
   @IsTest
