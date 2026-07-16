@@ -220,9 +220,27 @@ public with sharing class ExecutionLogger {
       aao__Tool_Input__c = log.toolInput,
       aao__Tool_Output__c = log.toolOutput,
       aao__Status__c = log.status,
-      aao__Tool__c = log.toolName
+      aao__Tool__c = log.toolName,
+      aao__Prompt_Tokens__c = log.promptTokens,
+      aao__Completion_Tokens__c = log.completionTokens,
+      aao__Total_Tokens__c = log.totalTokens
     );
     insert step;
+
+    // Roll the step's token usage up onto the run. Only LLM-backed steps carry tokens;
+    // tool steps leave all three null and skip the extra query/DML entirely.
+    if (
+      log.promptTokens != null ||
+      log.completionTokens != null ||
+      log.totalTokens != null
+    ) {
+      addRunTokenUsage(
+        runId,
+        log.promptTokens,
+        log.completionTokens,
+        log.totalTokens
+      );
+    }
 
     UIEventPublisher.publishStepCompleted(
       runId,
@@ -233,6 +251,52 @@ public with sharing class ExecutionLogger {
     );
 
     return step.Id;
+  }
+
+  /**
+   * @description Adds one LLM step's token usage to the running totals on its parent run.
+   * Each run aggregates only its own direct LLM/Summary steps — a sub-agent's tokens live on
+   * the sub-agent's own run, not the parent's. Null contributions count as zero, so a
+   * provider that reports only some of the three counts still accumulates the rest.
+   * @param runId Id of the parent Agent_Run__c.
+   * @param promptTokens Prompt tokens for this step, or null.
+   * @param completionTokens Completion tokens for this step, or null.
+   * @param totalTokens Total tokens for this step, or null.
+   */
+  private static void addRunTokenUsage(
+    Id runId,
+    Integer promptTokens,
+    Integer completionTokens,
+    Integer totalTokens
+  ) {
+    List<aao__Agent_Run__c> runs = [
+      SELECT
+        aao__Prompt_Tokens__c,
+        aao__Completion_Tokens__c,
+        aao__Total_Tokens__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+      LIMIT 1
+    ];
+    if (runs.isEmpty()) {
+      return;
+    }
+    aao__Agent_Run__c run = runs[0];
+    run.aao__Prompt_Tokens__c =
+      zeroIfNull(run.aao__Prompt_Tokens__c) + zeroIfNull(promptTokens);
+    run.aao__Completion_Tokens__c =
+      zeroIfNull(run.aao__Completion_Tokens__c) + zeroIfNull(completionTokens);
+    run.aao__Total_Tokens__c =
+      zeroIfNull(run.aao__Total_Tokens__c) + zeroIfNull(totalTokens);
+    update run;
+  }
+
+  private static Decimal zeroIfNull(Decimal value) {
+    return value == null ? 0 : value;
+  }
+
+  private static Integer zeroIfNull(Integer value) {
+    return value == null ? 0 : value;
   }
 
   /**

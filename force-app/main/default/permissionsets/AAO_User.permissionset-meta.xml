@@ -34,7 +34,22 @@
     </customMetadataTypeAccesses>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Agent_Run__c.Completion_Tokens__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Agent_Run__c.Error_Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Agent_Run__c.Prompt_Tokens__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Agent_Run__c.Total_Tokens__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

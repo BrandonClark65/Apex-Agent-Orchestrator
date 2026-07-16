@@ -15,6 +15,13 @@ public class AgentStepLog {
   public String status;
   public String toolName;
 
+  // Token usage for LLM-backed steps ('LLMCall', 'Summary'); left null for tool steps and
+  // set post-construction from the provider's LLMResponse. ExecutionLogger.logStep persists
+  // these onto the Agent_Step__c row and rolls them up onto the parent Agent_Run__c.
+  public Integer promptTokens;
+  public Integer completionTokens;
+  public Integer totalTokens;
+
   /**
    * @description Builds a step log entry, JSON-serializing any non-null `Object` arguments.
    * @param stepNumber 1-based position of this step within the run.

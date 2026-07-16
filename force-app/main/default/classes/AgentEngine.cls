@@ -293,19 +293,20 @@ public with sharing class AgentEngine {
         parsed.containsKey('tool') ||
         parsed.containsKey('tools'));
 
-      ExecutionLogger.logStep(
-        runId,
-        new AgentStepLog(
-          ExecutionLogger.nextStepNumber(runId),
-          'LLMCall',
-          JSON.serialize(req),
-          res.rawResponse,
-          null,
-          null,
-          isValidContract ? 'Completed' : 'Failed',
-          null
-        )
+      AgentStepLog llmStepLog = new AgentStepLog(
+        ExecutionLogger.nextStepNumber(runId),
+        'LLMCall',
+        JSON.serialize(req),
+        res.rawResponse,
+        null,
+        null,
+        isValidContract ? 'Completed' : 'Failed',
+        null
       );
+      llmStepLog.promptTokens = res.promptTokens;
+      llmStepLog.completionTokens = res.completionTokens;
+      llmStepLog.totalTokens = res.totalTokens;
+      ExecutionLogger.logStep(runId, llmStepLog);
 
       if (parsed.containsKey('final')) {
         Map<String, Object> finalResult = (Map<String, Object>) parsed.get(
