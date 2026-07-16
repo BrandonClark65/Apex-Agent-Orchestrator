@@ -12,7 +12,7 @@
     </values>
     <values>
         <field>Model_Name__c</field>
-        <value xsi:type="xsd:string">gpt-4o-mini</value>
+        <value xsi:type="xsd:string">gpt-5.4-mini</value>
     </values>
     <values>
         <field>Named_Credential__c</field>
@@ -21,6 +21,10 @@
     <values>
         <field>Provider_Type__c</field>
         <value xsi:type="xsd:string">Responses</value>
+    </values>
+    <values>
+        <field>Reasoning_Effort__c</field>
+        <value xsi:type="xsd:string">medium</value>
     </values>
     <values>
         <field>Temperature__c</field>

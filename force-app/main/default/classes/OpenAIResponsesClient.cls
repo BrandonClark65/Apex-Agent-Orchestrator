@@ -76,6 +76,19 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
       body.put('model', provider.aao__Model_Name__c);
     }
 
+    // Reasoning models (gpt-5.x, o-series) default to `effort: none` on the Responses
+    // API, which makes them skip steps on long procedural workflows. Send an explicit
+    // effort only when configured — non-reasoning models (e.g. gpt-4o) reject the
+    // `reasoning` param, so a blank field leaves the request untouched.
+    if (String.isNotBlank(provider.aao__Reasoning_Effort__c)) {
+      body.put(
+        'reasoning',
+        new Map<String, Object>{
+          'effort' => provider.aao__Reasoning_Effort__c.toLowerCase()
+        }
+      );
+    }
+
     req.setBody(JSON.serialize(body));
     req.setTimeout(120000);
 
@@ -117,8 +130,13 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
     }
 
     // The reply lives in the `output` array's message item(s); other item types
-    // (e.g. `reasoning`) are skipped. Message content parts of type `output_text`
-    // are concatenated; a `refusal` part throws.
+    // (e.g. `reasoning`) are skipped. Only the FIRST assistant message that yields
+    // text is used: the Responses API can return several `message` items, and some
+    // models emit a spurious second message (e.g. a stray `{"error":...}`) after the
+    // real answer. Concatenating across message items produces invalid JSON like
+    // `{...}{...}`, which then only parses by luck. Parts of type `output_text`
+    // *within* one message are still joined (normal streaming chunking); a `refusal`
+    // part throws.
     String text = null;
     List<Object> output = (List<Object>) rawBody.get('output');
     if (output != null) {
@@ -131,6 +149,7 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
         if (parts == null) {
           continue;
         }
+        String messageText = null;
         for (Object partObj : parts) {
           Map<String, Object> part = (Map<String, Object>) partObj;
           String partType = (String) part.get('type');
@@ -140,10 +159,14 @@ public with sharing class OpenAIResponsesClient implements LLMClient {
             );
           }
           if ('output_text'.equals(partType)) {
-            text = text == null
+            messageText = messageText == null
               ? (String) part.get('text')
-              : text + (String) part.get('text');
+              : messageText + (String) part.get('text');
           }
+        }
+        if (messageText != null) {
+          text = messageText;
+          break;
         }
       }
     }
