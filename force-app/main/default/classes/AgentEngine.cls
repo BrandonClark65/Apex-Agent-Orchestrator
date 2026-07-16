@@ -239,7 +239,9 @@ public with sharing class AgentEngine {
         'You may ONLY call tools from this list.\n\n' +
         toolManifest +
         '\n\nAfter receiving tool output(s), decide whether to call more tools or return a final answer. ' +
-        'You may ONLY respond with one of:\n' +
+        // The literal word "json" must appear in the input: OpenAI's Responses and Chat
+        // Completions APIs reject a json_object response format without it.
+        'You may ONLY respond with a single raw JSON object, exactly one of:\n' +
         '- {"tool":"<name>","args":{...}} — call a single tool\n' +
         '- {"tools":[{"tool":"<name>","args":{...}}, ...]} — call multiple independent tools in parallel\n' +
         '- {"final":{...}} — return the final answer';
@@ -589,12 +591,17 @@ public with sharing class AgentEngine {
             toolName
           )
         );
+        // `args` is echoed back deliberately: without it the model sees that a tool ran
+        // but not what it ran with, and re-derives the call from scratch instead of
+        // treating it as done. It also gives hasIdenticalToolCall's exact-match guard a
+        // transcript that can actually produce an exact match.
         history.add(
           new LLMMessage(
             'assistant',
             JSON.serialize(
               new Map<String, Object>{
                 'tool' => toolName,
+                'args' => args,
                 'output' => toolResult
               }
             )
@@ -804,6 +811,19 @@ public with sharing class AgentEngine {
     EventBus.publish(events);
   }
 
+  // Re-inflates already-serialized args so they nest as JSON in the transcript instead of
+  // reaching the model as one escaped string.
+  private static Object inflateArgs(String argsJson) {
+    if (String.isBlank(argsJson)) {
+      return null;
+    }
+    try {
+      return JSON.deserializeUntyped(argsJson);
+    } catch (Exception e) {
+      return argsJson;
+    }
+  }
+
   // Called by each tool in a parallel batch. Acquires a FOR UPDATE lock on Agent_Run__c,
   // logs the step, merges this tool's result into the shared history, decrements the counter,
   // and — if this is the last tool to finish — publishes the next LLM step event.
@@ -854,6 +874,7 @@ public with sharing class AgentEngine {
           JSON.serialize(
             new Map<String, Object>{
               'tool' => toolName,
+              'args' => inflateArgs(argsJson),
               'error' => errorMessage
             }
           )
@@ -864,7 +885,11 @@ public with sharing class AgentEngine {
         new LLMMessage(
           'assistant',
           JSON.serialize(
-            new Map<String, Object>{ 'tool' => toolName, 'output' => result }
+            new Map<String, Object>{
+              'tool' => toolName,
+              'args' => inflateArgs(argsJson),
+              'output' => result
+            }
           )
         )
       );

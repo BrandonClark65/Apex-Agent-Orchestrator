@@ -1,13 +1,13 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 0.5",
-      "versionNumber": "0.5.0.NEXT",
+      "versionName": "ver 0.6",
+      "versionNumber": "0.6.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "Apex Agent Orchestrator",
       "versionDescription": "",
-      "ancestorVersion": "0.4.0.1"
+      "ancestorVersion": "0.5.0.1"
     }
   ],
   "name": "apex-agent-orchestrator",
@@ -20,6 +20,7 @@
     "Apex Agent Orchestrator@0.2.0-1": "04tfj000000NAptAAG",
     "Apex Agent Orchestrator@0.2.0-2": "04tfj000000NB1BAAW",
     "Apex Agent Orchestrator@0.3.0-1": "04tfj000000NH9pAAG",
-    "Apex Agent Orchestrator@0.4.0-1": "04tfj000000NHxpAAG"
+    "Apex Agent Orchestrator@0.4.0-1": "04tfj000000NHxpAAG",
+    "Apex Agent Orchestrator@0.5.0-1": "04tfj000000NJrZAAW"
   }
 }
