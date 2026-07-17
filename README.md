@@ -87,9 +87,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 0.5 (0.5.0.1), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
+**Current version: 0.6 (0.6.0.1), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NJrZAAW
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NJtBAAW
 
 ## Post-Install Setup
 
@@ -191,4 +191,4 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - ✅ Agent authoring from the builder (Metadata API deploys)
 - ✅ Memory management UI
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ✅ Managed package release (2GP, v0.2 Released)
+- ✅ Managed package release (2GP, v0.6 Released)
