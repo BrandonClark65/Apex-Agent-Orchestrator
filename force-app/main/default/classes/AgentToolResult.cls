@@ -53,6 +53,21 @@ public class AgentToolResult {
   }
 
   /**
+   * @description Builds a failed result that still carries a data payload. Use for batch
+   * tools where nothing succeeded but the per-record breakdown is what the LLM needs to
+   * recover — `error` discards `data`, which would hide which record/field actually failed.
+   * @param message Human-readable error message shown to the LLM.
+   * @param data Structured result payload explaining the failure.
+   * @return A result with success = false.
+   */
+  public static AgentToolResult failure(
+    String message,
+    Map<String, Object> data
+  ) {
+    return new AgentToolResult(false, message, data);
+  }
+
+  /**
    * @description Builds a pending result for a tool that started async work (a sub-agent
    * run) rather than completing inline. The engine suspends the run until the work finishes.
    * @param message Human-readable summary of what was started.

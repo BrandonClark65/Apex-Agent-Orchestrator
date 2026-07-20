@@ -3,7 +3,8 @@
  * as `{"object": "Account", "records": [{"id": "...", "fields": {...}}, ...]}`. Validates each
  * record's fields against the object's describe (existence + updateability) before attempting
  * DML; per-record results (including DML errors) are returned individually so a partial
- * failure in one record doesn't fail the whole batch.
+ * failure in one record doesn't fail the whole batch. The envelope only reports failure when
+ * no record succeeded at all.
  * @group Agent Tools
  */
 public with sharing class UpdateRecordTool implements AgentTool {
@@ -139,10 +140,28 @@ public with sharing class UpdateRecordTool implements AgentTool {
         }
       }
 
-      return AgentToolResult.success(
-        'Records updated',
-        new Map<String, Object>{ 'results' => results }
-      );
+      // A partial failure still reports envelope success: some records committed, and
+      // telling the model the batch failed would invite a retry that double-writes them.
+      // When *nothing* succeeded there is no partial write to protect, so the envelope
+      // must fail — otherwise the step logs as 'Completed' and the engine's consecutive
+      // -error guard never sees a tool that is failing every time.
+      Boolean anySucceeded = false;
+      for (Map<String, Object> r : results) {
+        if ((Boolean) r.get('success') == true) {
+          anySucceeded = true;
+          break;
+        }
+      }
+
+      return anySucceeded
+        ? AgentToolResult.success(
+            'Records updated',
+            new Map<String, Object>{ 'results' => results }
+          )
+        : AgentToolResult.failure(
+            'No records updated',
+            new Map<String, Object>{ 'results' => results }
+          );
     } catch (Exception e) {
       return AgentToolResult.error(e.getMessage());
     }

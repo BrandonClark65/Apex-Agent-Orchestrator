@@ -122,7 +122,9 @@ private class CreateRecordToolTest {
       }
     );
 
-    System.assert(result.success, result.message);
+    // Nothing was created, so the envelope must fail — but still carry the breakdown.
+    System.assertEquals(false, result.success);
+    System.assertEquals('No records created', result.message);
     List<Object> results = (List<Object>) result.data.get('results');
     Map<String, Object> r = (Map<String, Object>) results[0];
     System.assertEquals(false, r.get('success'));
@@ -147,7 +149,8 @@ private class CreateRecordToolTest {
       }
     );
 
-    System.assert(result.success, result.message);
+    System.assertEquals(false, result.success);
+    System.assertEquals('No records created', result.message);
     List<Object> results = (List<Object>) result.data.get('results');
     Map<String, Object> r = (Map<String, Object>) results[0];
     System.assertEquals(false, r.get('success'));
@@ -169,7 +172,8 @@ private class CreateRecordToolTest {
       }
     );
 
-    System.assert(result.success, result.message);
+    System.assertEquals(false, result.success);
+    System.assertEquals('No records created', result.message);
     List<Object> results = (List<Object>) result.data.get('results');
     Map<String, Object> r = (Map<String, Object>) results[0];
     System.assertEquals(false, r.get('success'));
@@ -229,7 +233,10 @@ private class CreateRecordToolTest {
       }
     );
 
-    System.assert(result.success, result.message);
+    // The AR-0037 shape: DML rejected every record. The envelope has to fail so the step
+    // logs as 'Failed' and the engine's consecutive-error guard can count it.
+    System.assertEquals(false, result.success);
+    System.assertEquals('No records created', result.message);
     List<Object> results = (List<Object>) result.data.get('results');
     Map<String, Object> r = (Map<String, Object>) results[0];
     System.assertEquals(false, r.get('success'));

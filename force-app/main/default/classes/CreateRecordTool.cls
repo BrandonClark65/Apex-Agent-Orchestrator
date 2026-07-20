@@ -3,7 +3,8 @@
  * Expects `args` shaped as `{"object": "Account", "records": [{"fields": {...}}, ...]}`.
  * Validates each record's fields against the object's describe (existence + createability)
  * before attempting DML; per-record results (including DML errors) are returned individually
- * so a partial failure in one record doesn't fail the whole batch.
+ * so a partial failure in one record doesn't fail the whole batch. The envelope only reports
+ * failure when no record succeeded at all.
  * @group Agent Tools
  */
 public with sharing class CreateRecordTool implements AgentTool {
@@ -132,10 +133,27 @@ public with sharing class CreateRecordTool implements AgentTool {
         }
       }
 
-      return AgentToolResult.success(
-        'Records created',
-        new Map<String, Object>{ 'results' => results }
-      );
+      // Mirrors UpdateRecordTool: a partial failure keeps envelope success so the model
+      // doesn't retry records that already committed, but a batch where nothing was
+      // created must fail the envelope so the step logs as 'Failed' and the engine's
+      // consecutive-error guard can see it.
+      Boolean anySucceeded = false;
+      for (Map<String, Object> r : results) {
+        if ((Boolean) r.get('success') == true) {
+          anySucceeded = true;
+          break;
+        }
+      }
+
+      return anySucceeded
+        ? AgentToolResult.success(
+            'Records created',
+            new Map<String, Object>{ 'results' => results }
+          )
+        : AgentToolResult.failure(
+            'No records created',
+            new Map<String, Object>{ 'results' => results }
+          );
     } catch (Exception e) {
       return AgentToolResult.error(e.getMessage());
     }
