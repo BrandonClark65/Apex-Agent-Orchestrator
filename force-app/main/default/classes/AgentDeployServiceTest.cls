@@ -35,19 +35,29 @@ private class AgentDeployServiceTest {
 
     Metadata.DeployContainer container = AgentDeployService.lastDeployedContainer;
     System.assertEquals(
-      3,
+      2,
       container.getMetadata().size(),
-      'definition + two tool mappings'
+      'definition + the granted mapping; Sales_Agent has no existing mapping for the ' +
+      'revoked tool, so no dead IsAllowed=false row is written'
     );
 
     Metadata.CustomMetadata definition = (Metadata.CustomMetadata) container.getMetadata()[0];
-    System.assertEquals('aao__Agent_Definition.Sales_Agent', definition.fullName);
+    System.assertEquals(
+      'aao__Agent_Definition.Sales_Agent',
+      definition.fullName
+    );
     System.assertEquals('Sales Agent', definition.label);
     Map<String, Object> defValues = valueMap(definition);
-    System.assertEquals('You are a sales agent.', defValues.get('aao__SystemPrompt__c'));
+    System.assertEquals(
+      'You are a sales agent.',
+      defValues.get('aao__SystemPrompt__c')
+    );
     System.assertEquals('OpenAI_GPT4', defValues.get('aao__LLMProvider__c'));
     System.assertEquals(12, defValues.get('aao__MaxSteps__c'));
-    System.assertEquals('Default_Memory', defValues.get('aao__MemoryConfig__c'));
+    System.assertEquals(
+      'Default_Memory',
+      defValues.get('aao__MemoryConfig__c')
+    );
     System.assertEquals(true, defValues.get('aao__IsActive__c'));
 
     Metadata.CustomMetadata mapping = (Metadata.CustomMetadata) container.getMetadata()[1];
@@ -59,12 +69,64 @@ private class AgentDeployServiceTest {
     System.assertEquals('Sales_Agent', mapValues.get('aao__Agent__c'));
     System.assertEquals('QuerySalesforceTool', mapValues.get('aao__Tool__c'));
     System.assertEquals(true, mapValues.get('aao__IsAllowed__c'));
+  }
 
-    Metadata.CustomMetadata revokedMapping = (Metadata.CustomMetadata) container.getMetadata()[2];
+  @IsTest
+  static void testRevokingAnExistingGrantShipsIsAllowedFalse() {
+    // CRUD_Agent really is granted DescribeObjectTool, so unchecking it must ship the
+    // mapping with IsAllowed=false — Metadata.Operations upserts and cannot delete, so
+    // omitting the record would leave the old true row granting the tool.
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.developerName = 'CRUD_Agent';
+    request.label = 'CRUD Agent';
+    AgentDeployService.ToolGrant revoked = new AgentDeployService.ToolGrant();
+    revoked.toolDeveloperName = 'DescribeObjectTool';
+    revoked.allowed = false;
+    request.tools = new List<AgentDeployService.ToolGrant>{ revoked };
+
+    AgentDeployService.deployAgent(request);
+
+    Metadata.DeployContainer container = AgentDeployService.lastDeployedContainer;
+    System.assertEquals(
+      2,
+      container.getMetadata().size(),
+      'definition + the flipped mapping'
+    );
+    Metadata.CustomMetadata mapping = (Metadata.CustomMetadata) container.getMetadata()[1];
+    System.assertEquals(
+      'aao__Agent_Tool_Mapping.CRUD_Agent_DescribeObjectTool',
+      mapping.fullName
+    );
     System.assertEquals(
       false,
-      valueMap(revokedMapping).get('aao__IsAllowed__c'),
-      'revoked grants deploy with IsAllowed=false rather than being skipped'
+      valueMap(mapping).get('aao__IsAllowed__c'),
+      'an existing grant is revoked by flipping it, not by dropping it'
+    );
+  }
+
+  @IsTest
+  static void testAddingAToolToAnExistingAgentIsAlwaysDeployed() {
+    // SubAgentTool is not currently granted to CRUD_Agent — checking it has no record to
+    // flip, so the save must create one.
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.developerName = 'CRUD_Agent';
+    request.label = 'CRUD Agent';
+    AgentDeployService.ToolGrant added = new AgentDeployService.ToolGrant();
+    added.toolDeveloperName = 'SubAgentTool';
+    added.allowed = true;
+    request.tools = new List<AgentDeployService.ToolGrant>{ added };
+
+    AgentDeployService.deployAgent(request);
+
+    Metadata.CustomMetadata mapping = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[1];
+    System.assertEquals(
+      'aao__Agent_Tool_Mapping.CRUD_Agent_SubAgentTool',
+      mapping.fullName
+    );
+    System.assertEquals(
+      true,
+      valueMap(mapping).get('aao__IsAllowed__c'),
+      'newly granted tools deploy regardless of whether a mapping already existed'
     );
   }
 
@@ -80,6 +142,62 @@ private class AgentDeployServiceTest {
     System.assert(
       recordName.length() <= 40,
       'CMDT DeveloperName capped at 40 chars: ' + recordName
+    );
+    System.assert(
+      !recordName.contains('__') && !recordName.endsWith('_'),
+      'DeveloperName may not hold consecutive or trailing underscores: ' +
+      recordName
+    );
+  }
+
+  @IsTest
+  static void testLongAgentNameKeepsToolMappingsDistinct() {
+    // A 29-char agent name leaves only 10 characters for the tool, so plain
+    // truncation collapsed every "DescribeOb*" tool onto one fullName and the
+    // deployment failed with "duplicate fullName".
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.developerName = 'CaseReasonClassificationAgent';
+    request.tools = new List<AgentDeployService.ToolGrant>();
+    for (
+      String toolName : new List<String>{
+        'DescribeObjectTool',
+        'DescribeObjectFieldsTool',
+        'DescribeObjectRelationshipsTool'
+      }
+    ) {
+      AgentDeployService.ToolGrant grant = new AgentDeployService.ToolGrant();
+      grant.toolDeveloperName = toolName;
+      grant.allowed = true;
+      request.tools.add(grant);
+    }
+
+    AgentDeployService.deployAgent(request);
+
+    Set<String> fullNames = new Set<String>();
+    for (
+      Metadata.Metadata record : AgentDeployService.lastDeployedContainer.getMetadata()
+    ) {
+      fullNames.add(record.fullName);
+    }
+    System.assertEquals(
+      4,
+      fullNames.size(),
+      'definition + three distinct tool mappings: ' + fullNames
+    );
+  }
+
+  @IsTest
+  static void testMappingNameIsStableAcrossCalls() {
+    String rawName = 'CaseReasonClassificationAgent_DescribeObjectTool';
+    System.assertEquals(
+      AgentDeployService.mappingName(rawName),
+      AgentDeployService.mappingName(rawName),
+      'the same agent/tool pair always resolves to the same record name'
+    );
+    System.assertEquals(
+      'Sales_Agent_QuerySalesforceTool',
+      AgentDeployService.mappingName('Sales_Agent_QuerySalesforceTool'),
+      'names within the limit are left untouched'
     );
   }
 

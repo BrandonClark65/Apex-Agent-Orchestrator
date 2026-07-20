@@ -12,6 +12,10 @@
  * @group UI
  */
 public with sharing class AgentDeployService {
+  /** CMDT DeveloperName and MasterLabel both cap at 40 characters. */
+  private static final Integer MAX_NAME_LENGTH = 40;
+  private static final Integer HASH_LENGTH = 8;
+
   @TestVisible
   private static Metadata.DeployContainer lastDeployedContainer;
 
@@ -46,10 +50,34 @@ public with sharing class AgentDeployService {
 
     Metadata.DeployContainer container = new Metadata.DeployContainer();
     container.addMetadata(buildAgentDefinition(request));
-    for (ToolGrant grant : request.tools == null
-      ? new List<ToolGrant>()
-      : request.tools) {
-      container.addMetadata(buildToolMapping(request.developerName, grant));
+
+    // The builder submits every tool in the catalog, granted or not. A revoked tool
+    // still has to ship as IsAllowed__c = false so an existing grant gets flipped —
+    // `Metadata.Operations` upserts and can never delete. But a tool that was never
+    // granted has no record to flip, and to `ToolRegistry` "absent" and "false" mean
+    // the same thing, so writing one would just litter Setup with dead rows.
+    Set<String> alreadyMapped = mappedToolNames(request.developerName);
+    // A container may not carry the same fullName twice — drop repeats in case the
+    // builder submits the same tool more than once.
+    Set<String> seenNames = new Set<String>();
+    for (
+      ToolGrant grant : request.tools == null
+        ? new List<ToolGrant>()
+        : request.tools
+    ) {
+      if (
+        grant.allowed != true &&
+        !alreadyMapped.contains(grant.toolDeveloperName)
+      ) {
+        continue;
+      }
+      Metadata.CustomMetadata mapping = buildToolMapping(
+        request.developerName,
+        grant
+      );
+      if (seenNames.add(mapping.fullName)) {
+        container.addMetadata(mapping);
+      }
     }
 
     lastDeployedContainer = container;
@@ -79,6 +107,23 @@ public with sharing class AgentDeployService {
     }
   }
 
+  /**
+   * @description Tool DeveloperNames that already have an `Agent_Tool_Mapping` record for
+   * this agent, whatever their IsAllowed__c value — these are the grants a save can still
+   * need to flip to false. Empty for an agent being created.
+   */
+  private static Set<String> mappedToolNames(String agentDeveloperName) {
+    Set<String> toolNames = new Set<String>();
+    for (aao__Agent_Tool_Mapping__mdt mapping : [
+      SELECT aao__Tool__c
+      FROM aao__Agent_Tool_Mapping__mdt
+      WHERE aao__Agent__c = :agentDeveloperName
+    ]) {
+      toolNames.add(mapping.aao__Tool__c);
+    }
+    return toolNames;
+  }
+
   private static Metadata.CustomMetadata buildAgentDefinition(
     AgentSaveRequest request
   ) {
@@ -103,22 +148,45 @@ public with sharing class AgentDeployService {
     String agentDeveloperName,
     ToolGrant grant
   ) {
-    String mappingName =
-      agentDeveloperName +
-      '_' +
-      grant.toolDeveloperName;
-    // CMDT DeveloperNames cap at 40 chars; keep deterministic by truncation.
-    if (mappingName.length() > 40) {
-      mappingName = mappingName.substring(0, 40);
-    }
+    String rawName = agentDeveloperName + '_' + grant.toolDeveloperName;
 
     Metadata.CustomMetadata record = new Metadata.CustomMetadata();
-    record.fullName = 'aao__Agent_Tool_Mapping.' + mappingName;
-    record.label = mappingName.replace('_', ' ');
+    record.fullName = 'aao__Agent_Tool_Mapping.' + mappingName(rawName);
+    record.label = truncate(rawName.replace('_', ' '), MAX_NAME_LENGTH);
     record.values.add(value('aao__Agent__c', agentDeveloperName));
     record.values.add(value('aao__Tool__c', grant.toolDeveloperName));
     record.values.add(value('aao__IsAllowed__c', grant.allowed == true));
     return record;
+  }
+
+  /**
+   * @description Fits an `agent_tool` pair into the 40-char CMDT DeveloperName limit.
+   * Plain truncation is not safe here: a long agent name leaves so few characters for
+   * the tool that every tool sharing that prefix collapses onto one fullName, and the
+   * builder submits a mapping for every tool in the catalog — so the deployment fails
+   * with "duplicate fullName". Over-long names therefore keep a truncated prefix plus a
+   * hash of the full pair, which stays deterministic per agent/tool and unique across them.
+   */
+  @TestVisible
+  private static String mappingName(String rawName) {
+    if (rawName.length() <= MAX_NAME_LENGTH) {
+      return rawName;
+    }
+    Blob digest = Crypto.generateDigest('MD5', Blob.valueOf(rawName));
+    String suffix = EncodingUtil.convertToHex(digest).substring(0, HASH_LENGTH);
+    String prefix = rawName.substring(0, MAX_NAME_LENGTH - HASH_LENGTH - 1);
+    // DeveloperNames may not contain consecutive underscores or end in one.
+    while (prefix.endsWith('_')) {
+      prefix = prefix.substring(0, prefix.length() - 1);
+    }
+    return prefix + '_' + suffix;
+  }
+
+  private static String truncate(String input, Integer maxLength) {
+    return input != null &&
+      input.length() > maxLength
+      ? input.substring(0, maxLength)
+      : input;
   }
 
   private static Metadata.CustomMetadataValue value(
