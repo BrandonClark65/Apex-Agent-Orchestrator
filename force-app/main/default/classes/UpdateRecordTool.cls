@@ -5,6 +5,11 @@
  * DML; per-record results (including DML errors) are returned individually so a partial
  * failure in one record doesn't fail the whole batch. The envelope only reports failure when
  * no record succeeded at all.
+ *
+ * Access is enforced against the running user's permissions: object-level update (CRUD) is
+ * checked up front, field-level update (FLS) is checked per field, and the DML itself runs in
+ * user mode (`AccessLevel.USER_MODE`) so record sharing, CRUD, and FLS are all enforced at the
+ * database layer as a backstop.
  * @group Agent Tools
  */
 public with sharing class UpdateRecordTool implements AgentTool {
@@ -37,6 +42,15 @@ public with sharing class UpdateRecordTool implements AgentTool {
       }
 
       Schema.DescribeSObjectResult describe = typeRef.getDescribe();
+
+      // Object-level CRUD: reject the whole request if the running user can't update this
+      // object at all, rather than relying solely on the DML backstop below.
+      if (!describe.isUpdateable()) {
+        return AgentToolResult.error(
+          'Insufficient access to update ' + objectType
+        );
+      }
+
       Map<String, Schema.SObjectField> fieldMap = describe.fields.getMap();
 
       List<SObject> toUpdate = new List<SObject>();
@@ -113,7 +127,7 @@ public with sharing class UpdateRecordTool implements AgentTool {
       // Perform DML
       if (!toUpdate.isEmpty()) {
         try {
-          update toUpdate;
+          Database.update(toUpdate, AccessLevel.USER_MODE);
 
           // Confirm success on every record that was actually submitted for DML
           for (Map<String, Object> r : results) {
