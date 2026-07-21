@@ -22,6 +22,25 @@ public with sharing class AgentEngine {
   // Consecutive failed steps (LLM or tool) allowed before a run is hard-failed.
   private static final Integer MAX_CONSECUTIVE_ERRORS = 3;
 
+  // Model-steering instruction strings. Kept here as the single source of truth so the
+  // wording can't drift between the tool / parallel-tool / sub-agent-resume / retry paths
+  // (which it previously had). Written straight into the transcript as {"instruction":"..."}
+  // messages, so the tool-call contract is pre-escaped JSON. TOOL_CONTRACT_FORMATS holds the
+  // one part the parser actually cares about, so it lives in exactly one place.
+  private static final String TOOL_CONTRACT_FORMATS =
+    '{\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}';
+  private static final String CONTINUE_INSTRUCTION =
+    '{"instruction":"Given the tool output(s) above, decide whether to call more tools or ' +
+    'return a final answer. Only respond with ' +
+    TOOL_CONTRACT_FORMATS +
+    '."}';
+  private static final String RETRY_INSTRUCTION =
+    '{"instruction":"The previous step failed. Adjust your approach and respond with ' +
+    TOOL_CONTRACT_FORMATS +
+    '."}';
+  private static final String REPEATED_TOOL_CALL_INSTRUCTION =
+    '{"instruction":"The previous tool call was identical. You must now return a final answer."}';
+
   //
   // ───────────────────────────────────────────────────────────────
   // 1. PUBLIC ENTRY POINT
@@ -371,10 +390,7 @@ public with sharing class AgentEngine {
             )
           );
           history.add(
-            new LLMMessage(
-              'user',
-              '{"instruction":"The previous tool call was identical. You must now return a final answer."}'
-            )
+            new LLMMessage('user', REPEATED_TOOL_CALL_INSTRUCTION)
           );
 
           scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
@@ -446,12 +462,7 @@ public with sharing class AgentEngine {
         );
       }
 
-      String runAsUser =
-        '[DIAGNOSTIC] Running as: ' +
-        UserInfo.getName() +
-        ' (' +
-        UserInfo.getUserId() +
-        ') | ';
+      String runAsUser = diagnosticPrefix();
       handleStepError(
         runId,
         agentDeveloperName,
@@ -595,36 +606,13 @@ public with sharing class AgentEngine {
         // but not what it ran with, and re-derives the call from scratch instead of
         // treating it as done. It also gives hasIdenticalToolCall's exact-match guard a
         // transcript that can actually produce an exact match.
-        history.add(
-          new LLMMessage(
-            'assistant',
-            JSON.serialize(
-              new Map<String, Object>{
-                'tool' => toolName,
-                'args' => args,
-                'output' => toolResult
-              }
-            )
-          )
-        );
-
-        history.add(
-          new LLMMessage(
-            'user',
-            '{"instruction":"Given the tool output above, decide whether to call another tool or return a final answer. ' +
-            'Only respond with {\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}."}'
-          )
-        );
+        history.add(assistantToolMessage(toolName, args, toolResult));
+        history.add(new LLMMessage('user', CONTINUE_INSTRUCTION));
 
         scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
       }
     } catch (Exception e) {
-      String runAsUser =
-        '[DIAGNOSTIC] Running as: ' +
-        UserInfo.getName() +
-        ' (' +
-        UserInfo.getUserId() +
-        ') | ';
+      String runAsUser = diagnosticPrefix();
       if (isParallel) {
         // logStep also handled inside the lock for error path
         completeParallelToolStep(
@@ -716,13 +704,7 @@ public with sharing class AgentEngine {
         JSON.serialize(new Map<String, Object>{ 'error' => llmMessage })
       )
     );
-    history.add(
-      new LLMMessage(
-        'user',
-        '{"instruction":"The previous step failed. Adjust your approach and respond with ' +
-        '{\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}."}'
-      )
-    );
+    history.add(new LLMMessage('user', RETRY_INSTRUCTION));
 
     scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
   }
@@ -824,6 +806,38 @@ public with sharing class AgentEngine {
     }
   }
 
+  // Diagnostic prefix stamped onto caught error messages so a failed step's log records
+  // which user context the async step actually ran as.
+  private static String diagnosticPrefix() {
+    return (
+      '[DIAGNOSTIC] Running as: ' +
+      UserInfo.getName() +
+      ' (' +
+      UserInfo.getUserId() +
+      ') | '
+    );
+  }
+
+  // Builds the assistant transcript message that echoes a completed tool call and its output
+  // back to the model. `args` is echoed deliberately (see runToolStep) so the model treats
+  // the call as done instead of re-deriving it.
+  private static LLMMessage assistantToolMessage(
+    String toolName,
+    Object args,
+    AgentToolResult output
+  ) {
+    return new LLMMessage(
+      'assistant',
+      JSON.serialize(
+        new Map<String, Object>{
+          'tool' => toolName,
+          'args' => args,
+          'output' => output
+        }
+      )
+    );
+  }
+
   // Called by each tool in a parallel batch. Acquires a FOR UPDATE lock on Agent_Run__c,
   // logs the step, merges this tool's result into the shared history, decrements the counter,
   // and — if this is the last tool to finish — publishes the next LLM step event.
@@ -881,18 +895,7 @@ public with sharing class AgentEngine {
         )
       );
     } else {
-      merged.add(
-        new LLMMessage(
-          'assistant',
-          JSON.serialize(
-            new Map<String, Object>{
-              'tool' => toolName,
-              'args' => inflateArgs(argsJson),
-              'output' => result
-            }
-          )
-        )
-      );
+      merged.add(assistantToolMessage(toolName, inflateArgs(argsJson), result));
     }
 
     Integer remaining = run.PendingToolCount__c != null
@@ -900,13 +903,7 @@ public with sharing class AgentEngine {
       : 0;
 
     if (remaining == 0) {
-      merged.add(
-        new LLMMessage(
-          'user',
-          '{"instruction":"Given the tool outputs above, decide whether to call more tools or return a final answer. ' +
-          'Only respond with {\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}."}'
-        )
-      );
+      merged.add(new LLMMessage('user', CONTINUE_INSTRUCTION));
     }
 
     update new Agent_Run__c(
@@ -976,8 +973,6 @@ public with sharing class AgentEngine {
     return childRunId;
   }
 
-  // Suspends the run after a tool returned a pending result: logs the ToolCall step as
-  // 'Pending', links the child run back to that step, and only then starts the child's
   /**
    * @description Logs a `Cancelled` step marking where a terminated run's in-flight work
    * was dropped. Best-effort: cancellation must stop the run even if the log insert fails.
@@ -1012,6 +1007,8 @@ public with sharing class AgentEngine {
     }
   }
 
+  // Suspends the run after a tool returned a pending result: logs the ToolCall step as
+  // 'Pending', links the child run back to that step, and only then starts the child's
   // first LLM step. The FOR UPDATE lock serializes the step insert with sibling parallel
   // jobs, same as completeParallelToolStep. PendingToolCount__c is left untouched — for a
   // parallel batch the child's completion performs this tool's decrement in resumeParentRun.
@@ -1177,13 +1174,7 @@ public with sharing class AgentEngine {
       : 0;
 
     if (remaining == 0) {
-      merged.add(
-        new LLMMessage(
-          'user',
-          '{"instruction":"Given the tool output(s) above, decide whether to call more tools or return a final answer. ' +
-          'Only respond with {\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}."}'
-        )
-      );
+      merged.add(new LLMMessage('user', CONTINUE_INSTRUCTION));
     }
 
     update new Agent_Run__c(

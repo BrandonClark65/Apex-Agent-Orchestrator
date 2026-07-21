@@ -1,7 +1,9 @@
 /**
  * @description Runs an arbitrary SOQL query supplied by the LLM and returns the matching
- * records as JSON. Runs with sharing (`with sharing`), so results are filtered by the running
- * user's record access.
+ * records as JSON. The query executes in user mode (`AccessLevel.USER_MODE`), so results are
+ * filtered by the running user's full permission model — record sharing, object read (CRUD),
+ * and field-level security (FLS). A query touching an object or field the user cannot read
+ * throws, and is returned to the model as an error rather than leaking inaccessible data.
  * @group Agent Tools
  */
 public with sharing class QuerySalesforceTool implements AgentTool {
@@ -35,7 +37,7 @@ public with sharing class QuerySalesforceTool implements AgentTool {
         soql = soql.removeEnd('}').trim();
       }
 
-      List<SObject> results = Database.query(soql);
+      List<SObject> results = Database.query(soql, AccessLevel.USER_MODE);
 
       Map<String, Object> data = new Map<String, Object>{
         'records' => results

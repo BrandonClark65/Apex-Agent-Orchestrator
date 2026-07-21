@@ -5,6 +5,11 @@
  * before attempting DML; per-record results (including DML errors) are returned individually
  * so a partial failure in one record doesn't fail the whole batch. The envelope only reports
  * failure when no record succeeded at all.
+ *
+ * Access is enforced against the running user's permissions: object-level create (CRUD) is
+ * checked up front, field-level create (FLS) is checked per field, and the DML itself runs in
+ * user mode (`AccessLevel.USER_MODE`) so record sharing, CRUD, and FLS are all enforced at the
+ * database layer as a backstop.
  * @group Agent Tools
  */
 public with sharing class CreateRecordTool implements AgentTool {
@@ -36,6 +41,15 @@ public with sharing class CreateRecordTool implements AgentTool {
       }
 
       Schema.DescribeSObjectResult describe = typeRef.getDescribe();
+
+      // Object-level CRUD: reject the whole request if the running user can't create this
+      // object at all, rather than relying solely on the DML backstop below.
+      if (!describe.isCreateable()) {
+        return AgentToolResult.error(
+          'Insufficient access to create ' + objectType
+        );
+      }
+
       Map<String, Schema.SObjectField> fieldMap = describe.fields.getMap();
 
       List<SObject> toInsert = new List<SObject>();
@@ -105,7 +119,7 @@ public with sharing class CreateRecordTool implements AgentTool {
 
       if (!toInsert.isEmpty()) {
         try {
-          insert toInsert;
+          Database.insert(toInsert, AccessLevel.USER_MODE);
 
           Integer insertIdx = 0;
           for (Map<String, Object> r : results) {
