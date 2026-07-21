@@ -43,6 +43,19 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 - **AgentWatchdogSchedulable / MemoryJanitorSchedulable** - hourly timeout of stuck runs and orphaned sessions; nightly pruning of expired/stale memories.
 - **Custom Metadata** - `Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`.
 
+## Built-in Tools
+
+Each tool is an `AgentTool` implementation registered via an `Agent_Tool_Definition__mdt` record; grant an agent access by adding an `Agent_Tool_Mapping__mdt` record (or from the Agent Builder UI). All record reads and writes run in **user mode**, so a tool can only see or change data the running user could. The framework ships:
+
+- **QuerySalesforceTool** - runs a SOQL query and returns the matching records.
+- **DescribeObjectTool** - describes an sObject's fields and types for the model.
+- **ValidateFieldTool** - checks that a field API name exists and is accessible on an object.
+- **CreateRecordTool** - bulk-creates records of any object type.
+- **UpdateRecordTool** - bulk-updates records by Id.
+- **ListRecordFilesTool** - lists the files attached to a record (metadata only, no content).
+- **ReadFileTool** - reads the text content of a file attached to a record (text-based files only; binary/office/image types are rejected, and oversized files and long text are capped to protect heap and the model's context window).
+- **SubAgentTool** - delegates a task to another agent (suspend/resume, depth-capped).
+
 ## Permission Sets
 
 - **AAO_Admin** - full access: all objects, all tabs, monitoring, builder, test bench.

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Read File</label>
+    <protected>false</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Reads the text content of a file attached to a Salesforce record.</value>
+    </values>
+    <values>
+        <field>InputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;contentDocumentId&quot;: &quot;string&quot;,
+  &quot;maxChars&quot;: &quot;number (optional, default 20000)&quot;
+}</value>
+    </values>
+    <values>
+        <field>IsEnabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>OutputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;title&quot;: &quot;string&quot;,
+  &quot;fileExtension&quot;: &quot;string&quot;,
+  &quot;byteSize&quot;: &quot;number&quot;,
+  &quot;truncated&quot;: &quot;boolean&quot;,
+  &quot;text&quot;: &quot;string&quot;
+}</value>
+    </values>
+    <values>
+        <field>PromptGuidance__c</field>
+        <value xsi:type="xsd:string">Reads one text-based file (txt, csv, tsv, json, md, xml, html, log, yaml). Get the contentDocumentId from ListRecordFilesTool first — never guess it. Binary files (PDF, Word, images) cannot be read and return an error. Long files are truncated: if &quot;truncated&quot; is true, raise maxChars or narrow what you need.</value>
+    </values>
+    <values>
+        <field>Tool_Class__c</field>
+        <value xsi:type="xsd:string">ReadFileTool</value>
+    </values>
+</CustomMetadata>

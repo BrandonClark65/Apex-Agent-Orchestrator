@@ -326,7 +326,7 @@
       <div class="kind">Apex classes</div>
       <h4>Tool implementations</h4><span class="api">implement AgentTool</span>
       <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
-        QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool
+        QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · ListRecordFilesTool · ReadFileTool · SubAgentTool
       </p>
     </div>
 
@@ -574,7 +574,7 @@
     <div class="member"><dt>HistoryCompactor</dt><dd>Summarizes long conversation histories before they blow past heap and prompt limits.</dd></div>
     <div class="member"><dt>UIEventPublisher</dt><dd>Fires <span class="mono">Agent_UI_Event__e</span> on step completion and run finish; failures are swallowed so the UI can never break the engine.</dd></div>
     <div class="member"><dt>AgentWatchdogSchedulable · MemoryJanitorSchedulable</dt><dd>Scheduled crons: sweep stuck runs; prune expired or inactive memories.</dd></div>
-    <div class="member"><dt>The tools</dt><dd><span class="mono">QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · SubAgentTool</span> - all implement <span class="mono">AgentTool</span> and return <span class="mono">AgentToolResult</span>.</dd></div>
+    <div class="member"><dt>The tools</dt><dd><span class="mono">QuerySalesforceTool · CreateRecordTool · UpdateRecordTool · DescribeObjectTool · ValidateFieldTool · ListRecordFilesTool · ReadFileTool · SubAgentTool</span> - all implement <span class="mono">AgentTool</span> and return <span class="mono">AgentToolResult</span>.</dd></div>
   </dl>
 </section>
 

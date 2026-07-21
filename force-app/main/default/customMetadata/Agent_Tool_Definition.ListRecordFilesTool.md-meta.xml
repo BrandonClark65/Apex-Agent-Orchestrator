@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>List Record Files</label>
+    <protected>false</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Lists the files attached to a Salesforce record (metadata only, no content).</value>
+    </values>
+    <values>
+        <field>InputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;recordId&quot;: &quot;string&quot;
+}</value>
+    </values>
+    <values>
+        <field>IsEnabled__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>OutputSchema__c</field>
+        <value xsi:type="xsd:string">{
+  &quot;files&quot;: [
+    {
+      &quot;contentDocumentId&quot;: &quot;string&quot;,
+      &quot;title&quot;: &quot;string&quot;,
+      &quot;fileType&quot;: &quot;string&quot;,
+      &quot;fileExtension&quot;: &quot;string&quot;,
+      &quot;contentSize&quot;: &quot;number&quot;,
+      &quot;modifiedDate&quot;: &quot;datetime&quot;
+    }
+  ]
+}</value>
+    </values>
+    <values>
+        <field>PromptGuidance__c</field>
+        <value xsi:type="xsd:string">Use this to see what files are attached to a record before reading any of them. It returns metadata only — call ReadFileTool with a contentDocumentId from these results to get a file&apos;s text. The recordId normally comes from the run&apos;s input context or a prior QuerySalesforceTool result; never fabricate one.</value>
+    </values>
+    <values>
+        <field>Tool_Class__c</field>
+        <value xsi:type="xsd:string">ListRecordFilesTool</value>
+    </values>
+</CustomMetadata>
