@@ -166,6 +166,7 @@ public with sharing class AgentChatController {
       msg.role = v.role;
       msg.text = v.text;
       msg.toolName = v.toolName;
+      msg.data = v.data;
       messages.add(msg);
     }
     return messages;
@@ -203,6 +204,10 @@ public with sharing class AgentChatController {
     public String text;
     @AuraEnabled
     public String toolName;
+    // Structured payload from the agent's final answer (every `final` key except `message`).
+    // Null unless the answer carried extra keys; lets the LWC render it beside the prose.
+    @AuraEnabled
+    public Map<String, Object> data;
   }
 
   /** @description Full display state of one session. */

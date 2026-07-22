@@ -30,7 +30,9 @@ private class AgentChatControllerTest {
   @IsTest
   static void testSessionStateRendersChatMessages() {
     LLMClientMock mock = new LLMClientMock();
-    mock.addResponse('{"final":{"message":"Here are your accounts"}}');
+    mock.addResponse(
+      '{"final":{"message":"Here are your accounts","count":3,"objectType":"Account"}}'
+    );
     LLMClientFactory.setMock(mock);
 
     Test.startTest();
@@ -56,6 +58,18 @@ private class AgentChatControllerTest {
       'Here are your accounts',
       state.messages[1].text,
       'final.message convention renders the human-readable answer'
+    );
+    // The remaining final keys ride alongside as structured data for the LWC.
+    System.assertNotEquals(
+      null,
+      state.messages[1].data,
+      'structured payload should pass through the DTO'
+    );
+    System.assertEquals(3, state.messages[1].data.get('count'));
+    System.assertEquals('Account', state.messages[1].data.get('objectType'));
+    System.assert(
+      !state.messages[1].data.containsKey('message'),
+      'message stays in text, not duplicated into data'
     );
   }
 
@@ -138,8 +152,7 @@ private class AgentChatControllerTest {
     AgentChatController.closeSession(sessionId);
     System.assertEquals(
       'Closed',
-      [SELECT Status__c FROM Agent_Session__c WHERE Id = :sessionId]
-      .Status__c
+      [SELECT Status__c FROM Agent_Session__c WHERE Id = :sessionId].Status__c
     );
   }
 }
