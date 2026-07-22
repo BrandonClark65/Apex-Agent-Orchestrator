@@ -1,0 +1,13 @@
+{
+  "name": "aao-external-chatbot-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Token-holding proxy for the AAO external chatbot widget: mints the integration-user OAuth token server-side and serves the widget same-origin (no token in the browser, no CORS).",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
