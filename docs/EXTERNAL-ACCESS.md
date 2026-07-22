@@ -52,7 +52,10 @@ Salesforce user.
 | `GET` | `/agent/session/{id}` | `?externalRef=...` | Poll a thread: `{status, title, latestRunStatus, messages[]}`. `messages[]` excludes tool activity. |
 | `GET` | `/agent/config` | — | Display info for the one configured agent: `{agentLabel}`. Lets a client title the chat without ever offering a choice. |
 
-`messages[]` entries are `{role, text}` where `role` is `user` or `assistant`.
+`messages[]` entries are `{role, text}` where `role` is `user` or `assistant`. An assistant entry
+may also carry `data` — the structured half of the agent's final answer (every key of the `final`
+object other than `message`, which becomes `text`). It's present only when the final answer included
+extra keys, letting a client render cards/links/buttons while the bubble stays plain prose.
 
 ## Safety gates
 

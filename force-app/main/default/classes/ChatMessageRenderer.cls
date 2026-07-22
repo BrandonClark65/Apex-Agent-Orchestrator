@@ -16,6 +16,10 @@ public with sharing class ChatMessageRenderer {
     public String role;
     public String text;
     public String toolName;
+    // Structured payload that rode alongside the agent's final answer: every key of the `final`
+    // object other than `message` (which becomes `text`). Null unless the final answer carried
+    // extra keys. Lets a client render cards/links/buttons without the prose showing raw JSON.
+    public Map<String, Object> data;
   }
 
   /**
@@ -63,7 +67,10 @@ public with sharing class ChatMessageRenderer {
 
       // The agent's final answer is the only assistant content a customer sees.
       if (parsed != null && parsed.containsKey('final')) {
-        messages.add(entry('assistant', extractFinalText(parsed), null));
+        Map<String, Object> finalResult = (Map<String, Object>) parsed.get('final');
+        View answer = entry('assistant', extractFinalText(finalResult), null);
+        answer.data = structuredPayload(finalResult);
+        messages.add(answer);
         continue;
       }
 
@@ -93,12 +100,24 @@ public with sharing class ChatMessageRenderer {
 
   // Soft contract with demo agent prompts: `final.message` carries the human-readable answer;
   // anything else falls back to the serialized final object.
-  private static String extractFinalText(Map<String, Object> parsed) {
-    Map<String, Object> finalResult = (Map<String, Object>) parsed.get('final');
+  private static String extractFinalText(Map<String, Object> finalResult) {
     if (finalResult.containsKey('message')) {
       return String.valueOf(finalResult.get('message'));
     }
     return JSON.serializePretty(finalResult);
+  }
+
+  // The structured half of the final answer: every key except `message` (already the bubble
+  // text). Returned so a client can act on the data without the prose becoming raw JSON.
+  // Null when the final answer is message-only, or has no `message` at all (in which case the
+  // whole object is already shown as the bubble text via extractFinalText).
+  private static Map<String, Object> structuredPayload(Map<String, Object> finalResult) {
+    if (!finalResult.containsKey('message')) {
+      return null;
+    }
+    Map<String, Object> rest = new Map<String, Object>(finalResult);
+    rest.remove('message');
+    return rest.isEmpty() ? null : rest;
   }
 
   private static Map<String, Object> tryParseObject(String content) {
