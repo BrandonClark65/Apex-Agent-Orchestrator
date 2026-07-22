@@ -1,0 +1,62 @@
+# External chatbot proxy
+
+A tiny, dependency-free Node proxy that sits between the [widget](../index.html) and Salesforce.
+It exists to solve the two problems you hit running the widget straight against Salesforce:
+
+- **No token in the browser.** The proxy mints and caches the integration-user OAuth access token
+  server-side (Client Credentials flow) and adds `Authorization: Bearer …` to each forwarded call.
+  The customer's browser never sees the token.
+- **No CORS.** The proxy serves the widget *and* the API from the same origin, so the browser makes
+  no cross-origin request — there is nothing to allowlist under Setup → CORS.
+
+```
+browser ──▶ proxy (same origin)  ──Bearer token──▶  /services/apexrest/agent/*  (Salesforce)
+  widget      holds + refreshes token
+```
+
+## Prerequisites
+
+- **Node 18+** (uses the built-in global `fetch`; no npm dependencies).
+- A **Connected App** with **Client Credentials Flow** enabled and its **Run-As** user set to your
+  integration user (Setup → App Manager → your app → Manage → Edit Policies). Scope must include
+  `Manage user data via APIs (api)`.
+- Exactly one active `Agent_Definition__mdt` flagged `Externally_Accessible__c = true` — that is the
+  agent the chat uses (the widget never chooses it).
+
+## Run it
+
+```bash
+cd examples/external-chatbot/proxy
+cp .env.example .env         # fill in SF_LOGIN_URL, SF_CLIENT_ID, SF_CLIENT_SECRET
+export $(grep -v '^#' .env | xargs)   # load .env into the environment (bash)
+npm start
+```
+
+Then open **http://localhost:8080**, click ⚙, and set:
+
+| Field | Value |
+| --- | --- |
+| **API base URL** | `/agent` |
+| **Bearer token** | *(leave blank — the proxy holds it)* |
+| **External ref** | *(leave blank to auto-generate)* |
+
+That's it — the widget is now live with no token in the browser and no CORS.
+
+## What it forwards
+
+| Widget call | Proxied to Salesforce |
+| --- | --- |
+| `GET /agent/config` | `GET /services/apexrest/agent/config` |
+| `POST /agent/message` | `POST /services/apexrest/agent/message` |
+| `GET /agent/session/{id}?externalRef=…` | `GET /services/apexrest/agent/session/{id}?externalRef=…` |
+
+The token is cached in memory and refreshed automatically; a `401` from Salesforce forces a one-time
+re-mint. Nothing about the agent or the token is exposed to the client — the proxy is a pass-through
+for exactly these three routes and otherwise just serves the widget's static files.
+
+## Production notes
+
+This is still a starting point, not a hardened gateway. Before going public you'd typically add: TLS
+(run it behind a real web server / load balancer), the widget's origin locked down, request logging,
+and the Connected App's integration user scoped to the **least** access its one agent needs. Keep
+`.env` out of source control (it already is via `.gitignore`).

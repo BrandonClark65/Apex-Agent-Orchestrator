@@ -223,7 +223,7 @@
           <input id="cfgBase" placeholder="https://your-instance.my.salesforce.com/services/apexrest/agent" />
         </label>
         <label class="wide">
-          Bearer token (integration-user OAuth access token)
+          Bearer token (leave blank when using the proxy)
           <input id="cfgToken" placeholder="00D...!AQ..." />
         </label>
         <label class="wide">
@@ -231,9 +231,11 @@
           <input id="cfgRef" placeholder="auto-generated" />
         </label>
         <div class="hint">
-          Leave the base URL or token empty to stay in <strong>demo mode</strong>
-          (canned responses, no network). In production these are injected by the
-          site owner — never exposed to the customer.
+          Leave the base URL empty to stay in <strong>demo mode</strong> (canned
+          responses, no network). <strong>Proxy mode</strong> (recommended): point the
+          base URL at your proxy (e.g. <code>/agent</code>) and leave the token blank —
+          the proxy holds it. <strong>Direct mode</strong> (trials only): a full
+          Salesforce base URL plus a bearer token, which then lives in the browser.
         </div>
       </section>
 
@@ -271,8 +273,15 @@
           };
         }
         function isLive() {
-          var c = cfg();
-          return !!(c.base && c.token);
+          // A base URL alone is enough to go live. Direct-to-Salesforce needs a bearer token
+          // too, but when the base points at a token-holding proxy (see proxy/), the browser
+          // sends no token — the proxy adds it server-side.
+          return !!cfg().base;
+        }
+        // Only send Authorization when we actually have a token (direct mode). Through the
+        // proxy the header is omitted and the proxy injects it.
+        function authHeaders(c) {
+          return c.token ? { Authorization: "Bearer " + c.token } : {};
         }
 
         // ---- rendering (customer view: only their messages + the agent's answers) ----
@@ -316,7 +325,7 @@
         // ---- live API --------------------------------------------------
         async function apiGetConfig(c) {
           var res = await fetch(c.base + "/config", {
-            headers: { Authorization: "Bearer " + c.token }
+            headers: authHeaders(c)
           });
           if (!res.ok) throw new Error("config " + res.status);
           return res.json();
@@ -324,10 +333,10 @@
         async function apiPost(c, text) {
           var res = await fetch(c.base + "/message", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + c.token
-            },
+            headers: Object.assign(
+              { "Content-Type": "application/json" },
+              authHeaders(c)
+            ),
             body: JSON.stringify({
               message: text,
               externalRef: c.ref,
@@ -340,7 +349,7 @@
         async function apiGetSession(c, sessionId) {
           var url =
             c.base + "/session/" + sessionId + "?externalRef=" + encodeURIComponent(c.ref);
-          var res = await fetch(url, { headers: { Authorization: "Bearer " + c.token } });
+          var res = await fetch(url, { headers: authHeaders(c) });
           if (!res.ok) throw new Error("GET " + res.status);
           return res.json();
         }
