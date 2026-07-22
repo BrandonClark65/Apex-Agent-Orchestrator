@@ -28,9 +28,12 @@ browser ──▶ proxy (same origin)  ──Bearer token──▶  /services/ap
 ```bash
 cd examples/external-chatbot/proxy
 cp .env.example .env         # fill in SF_LOGIN_URL, SF_CLIENT_ID, SF_CLIENT_SECRET
-export $(grep -v '^#' .env | xargs)   # load .env into the environment (bash)
-npm start
+npm start                    # the proxy reads .env directly
 ```
+
+The proxy loads `.env` itself, so there's no `export`/shell step — this also avoids Git Bash /
+MSYS on Windows mangling path-like values (e.g. `/services/apexrest/aao/agent`). Real environment
+variables, if set, take precedence over `.env`.
 
 Then open **http://localhost:8080**, click ⚙, and set:
 
@@ -71,7 +74,7 @@ Common causes:
 | `OAuth token request failed: unsupported_grant_type` | Enable **Client Credentials Flow** on the Connected App and set its **Run-As** user (Manage → Edit Policies). Changes take a few minutes to propagate. |
 | `OAuth token request failed: invalid_client` / `invalid_client_id` | Wrong `SF_CLIENT_ID` / `SF_CLIENT_SECRET`. |
 | `fetch failed (getaddrinfo ENOTFOUND …)` | `SF_LOGIN_URL` is wrong or still a placeholder — use your real `*.my.salesforce.com` host. |
-| `OAuth token request failed: …` but creds look right | Env vars not loaded into the process — re-run the `export $(…)` line, or confirm with `echo $SF_CLIENT_ID`. |
+| `OAuth token request failed: …` but creds look right | `.env` not being read — confirm it sits next to `server.js` and the keys are spelled exactly. |
 
 If the OAuth call succeeds but Salesforce returns `{"errorCode":"NOT_FOUND","message":"Could not
 find a match for URL …"}`, the Apex REST path is wrong for how AAO is deployed. AAO installed as a
