@@ -73,6 +73,12 @@ Common causes:
 | `fetch failed (getaddrinfo ENOTFOUND …)` | `SF_LOGIN_URL` is wrong or still a placeholder — use your real `*.my.salesforce.com` host. |
 | `OAuth token request failed: …` but creds look right | Env vars not loaded into the process — re-run the `export $(…)` line, or confirm with `echo $SF_CLIENT_ID`. |
 
+If the OAuth call succeeds but Salesforce returns `{"errorCode":"NOT_FOUND","message":"Could not
+find a match for URL …"}`, the Apex REST path is wrong for how AAO is deployed. AAO installed as a
+**managed package** exposes a **namespaced** endpoint — set `SF_APEXREST_PATH=/services/apexrest/aao/agent`.
+An unmanaged source deploy uses the default `/services/apexrest/agent`. The startup log prints the
+path it's forwarding to.
+
 ## Production notes
 
 This is still a starting point, not a hardened gateway. Before going public you'd typically add: TLS
