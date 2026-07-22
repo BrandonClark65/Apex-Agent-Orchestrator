@@ -22,6 +22,32 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 
+// ── Load .env directly (no shell) ──────────────────────────────────────────────
+// Reading the file in-process avoids passing values through the shell, which on Git Bash /
+// MSYS (Windows) rewrites anything that looks like a Unix path — e.g. turning
+// `/services/apexrest/aao/agent` into `C:/Program Files/Git/services/...`. Real environment
+// variables still win over the file.
+(function loadDotenv() {
+  let raw;
+  try {
+    raw = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+  } catch (_) {
+    return; // no .env is fine — rely on the real environment
+  }
+  for (const line of raw.split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!m) continue; // skip blanks and # comments
+    let val = m[2].trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1); // tolerate quotes if someone added them
+    }
+    if (process.env[m[1]] === undefined) process.env[m[1]] = val;
+  }
+})();
+
 // ── Config (from environment; see .env.example) ────────────────────────────────
 const PORT = process.env.PORT || 8080;
 const SF_LOGIN_URL = (process.env.SF_LOGIN_URL || '').replace(/\/$/, '');
