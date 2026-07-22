@@ -157,93 +157,18 @@ public with sharing class AgentChatController {
   // ───────────────────────────────────────────────────────────────
   //
 
-  /**
-   * @description Converts engine history into displayable chat messages. History shapes:
-   * user messages are either real user text or engine `{"instruction":...}` prompts (skipped);
-   * assistant messages are the model contract (`final` -> answer bubble, `tool`/`tools` ->
-   * "calling tool" chips) or the engine's tool-output wrapper (`{"tool":...,"output":...}` ->
-   * tool-result chip).
-   */
+  // Projection lives in ChatMessageRenderer so the external REST API renders identically;
+  // here we just map its View to this controller's @AuraEnabled DTO for the LWC.
   private static List<ChatMessage> toChatMessages(List<LLMMessage> history) {
     List<ChatMessage> messages = new List<ChatMessage>();
-
-    for (LLMMessage msg : history) {
-      if (msg.role == 'system' || String.isBlank(msg.content)) {
-        continue;
-      }
-
-      Map<String, Object> parsed = tryParseObject(msg.content);
-
-      if (msg.role == 'user') {
-        if (parsed != null && parsed.containsKey('instruction')) {
-          continue; // engine-injected steering prompt, not the human
-        }
-        messages.add(chatMessage('user', msg.content, null));
-        continue;
-      }
-
-      // assistant
-      if (parsed == null) {
-        messages.add(chatMessage('assistant', msg.content, null));
-        continue;
-      }
-      if (parsed.containsKey('final')) {
-        messages.add(
-          chatMessage('assistant', extractFinalText(parsed), null)
-        );
-      } else if (parsed.containsKey('output')) {
-        messages.add(
-          chatMessage('tool', null, String.valueOf(parsed.get('tool')))
-        );
-      } else if (parsed.containsKey('tool')) {
-        messages.add(
-          chatMessage('tool', null, String.valueOf(parsed.get('tool')))
-        );
-      } else if (parsed.containsKey('tools')) {
-        for (Object callObj : (List<Object>) parsed.get('tools')) {
-          Map<String, Object> call = (Map<String, Object>) callObj;
-          messages.add(
-            chatMessage('tool', null, String.valueOf(call.get('tool')))
-          );
-        }
-      } else {
-        messages.add(chatMessage('assistant', msg.content, null));
-      }
+    for (ChatMessageRenderer.View v : ChatMessageRenderer.render(history)) {
+      ChatMessage msg = new ChatMessage();
+      msg.role = v.role;
+      msg.text = v.text;
+      msg.toolName = v.toolName;
+      messages.add(msg);
     }
     return messages;
-  }
-
-  // Soft contract with demo agent prompts: `final.message` carries the human-readable
-  // answer; anything else falls back to the serialized final object.
-  private static String extractFinalText(Map<String, Object> parsed) {
-    Map<String, Object> finalResult = (Map<String, Object>) parsed.get('final');
-    if (finalResult.containsKey('message')) {
-      return String.valueOf(finalResult.get('message'));
-    }
-    return JSON.serializePretty(finalResult);
-  }
-
-  private static Map<String, Object> tryParseObject(String content) {
-    try {
-      Object raw = JSON.deserializeUntyped(content);
-      return raw instanceof Map<String, Object>
-        ? (Map<String, Object>) raw
-        : null;
-    } catch (Exception e) {
-      return null;
-    }
-  }
-
-  private static ChatMessage chatMessage(
-    String role,
-    String text,
-    String toolName
-  ) {
-    ChatMessage msg = new ChatMessage();
-    msg.role = role;
-    msg.text = text;
-    msg.toolName = toolName;
-    return msg;
   }
 
   //
