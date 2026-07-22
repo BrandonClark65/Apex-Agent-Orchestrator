@@ -60,4 +60,48 @@ private class ChatMessageRendererTest {
       System.assertNotEquals('tool', v.role, 'No tool activity should be exposed to customers');
     }
   }
+
+  @IsTest
+  static void testFinalStructuredDataExposedAlongsideMessage() {
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage('user', 'Where is my order?'),
+      new LLMMessage(
+        'assistant',
+        '{"final":{"message":"It ships Thursday.","orderId":"801xx","status":"shipped"}}'
+      )
+    };
+
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(history, false);
+
+    System.assertEquals(2, views.size());
+    ChatMessageRenderer.View answer = views[1];
+    System.assertEquals('assistant', answer.role);
+    // Prose stays as the bubble text...
+    System.assertEquals('It ships Thursday.', answer.text);
+    // ...and the remaining keys ride alongside as structured data.
+    System.assertNotEquals(null, answer.data, 'structured payload should be exposed');
+    System.assertEquals('801xx', answer.data.get('orderId'));
+    System.assertEquals('shipped', answer.data.get('status'));
+    System.assert(
+      !answer.data.containsKey('message'),
+      'message stays in text, not duplicated into data'
+    );
+  }
+
+  @IsTest
+  static void testFinalMessageOnlyHasNoData() {
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage('assistant', '{"final":{"message":"Done."}}')
+    };
+
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(history, false);
+
+    System.assertEquals(1, views.size());
+    System.assertEquals('Done.', views[0].text);
+    System.assertEquals(
+      null,
+      views[0].data,
+      'a message-only final answer exposes no structured payload'
+    );
+  }
 }

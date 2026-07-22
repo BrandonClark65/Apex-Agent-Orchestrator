@@ -147,6 +147,28 @@
         color: var(--ink);
         border-bottom-left-radius: 4px;
       }
+      .payload {
+        margin-top: 8px;
+        border-top: 1px solid var(--line);
+        padding-top: 6px;
+      }
+      .payload summary {
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--muted);
+        user-select: none;
+      }
+      .payload pre {
+        margin: 6px 0 0;
+        padding: 8px;
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 12px;
+        line-height: 1.4;
+        overflow-x: auto;
+        white-space: pre;
+      }
       .typing .bubble { background: var(--bot); }
       .dot {
         display: inline-block;
@@ -295,6 +317,21 @@
           var b = document.createElement("div");
           b.className = "bubble";
           b.textContent = m.text || "";
+          // The agent's final answer can carry a structured payload alongside the prose —
+          // every key of the `final` object other than `message`. A real integration would turn
+          // this into cards, buttons, or links; here we show it in a collapsible block so it's
+          // visible. Replace this with your own rendering.
+          if (m.role === "assistant" && m.data && Object.keys(m.data).length) {
+            var det = document.createElement("details");
+            det.className = "payload";
+            var sum = document.createElement("summary");
+            sum.textContent = "Details";
+            var pre = document.createElement("pre");
+            pre.textContent = JSON.stringify(m.data, null, 2);
+            det.appendChild(sum);
+            det.appendChild(pre);
+            b.appendChild(det);
+          }
           row.appendChild(b);
           thread.appendChild(row);
           thread.scrollTop = thread.scrollHeight;
@@ -386,17 +423,32 @@
         function demoAnswer(text) {
           var s = text.toLowerCase();
           if (s.indexOf("order") >= 0 || s.indexOf("status") >= 0)
-            return "Your most recent order shipped yesterday and should arrive Thursday. Would you like the tracking link?";
+            // Mirrors a live final answer that carries structured data next to the prose:
+            // {"final":{"message":"...","orderId":"...","status":"...","eta":"..."}}.
+            return {
+              text: "Your most recent order shipped yesterday and should arrive Thursday. Would you like the tracking link?",
+              data: {
+                orderId: "801xx0000000Abc",
+                status: "Shipped",
+                eta: "Thursday",
+                trackingUrl: "https://example.com/track/1Z999"
+              }
+            };
           if (s.indexOf("refund") >= 0 || s.indexOf("return") >= 0)
-            return "I can help with that. Your order is within the 30-day window, so you're eligible for a return — want me to start it?";
-          return "Thanks for reaching out! I've looked into that and everything's in order. Is there anything else I can help you with?";
+            return {
+              text: "I can help with that. Your order is within the 30-day window, so you're eligible for a return — want me to start it?"
+            };
+          return {
+            text: "Thanks for reaching out! I've looked into that and everything's in order. Is there anything else I can help you with?"
+          };
         }
         async function sendDemo(text) {
           addMessage({ role: "user", text: text });
           showTyping(true);
           await sleep(1100);
           showTyping(false);
-          addMessage({ role: "assistant", text: demoAnswer(text) });
+          var a = demoAnswer(text);
+          addMessage({ role: "assistant", text: a.text, data: a.data });
         }
 
         // ---- send dispatch --------------------------------------------
