@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apex Agent Orchestrator — External Chat</title>
+    <style>
+      :root {
+        --bg: #f4f6f9;
+        --panel: #ffffff;
+        --ink: #16192c;
+        --muted: #5c677d;
+        --line: #e2e6ed;
+        --user: #0b5cff;
+        --user-ink: #ffffff;
+        --bot: #eef1f6;
+        --accent: #0b5cff;
+        --danger: #b3261e;
+        --radius: 14px;
+        --shadow: 0 6px 24px rgba(22, 25, 44, 0.08);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1117;
+          --panel: #171a22;
+          --ink: #e8ebf2;
+          --muted: #9aa3b5;
+          --line: #262b36;
+          --user: #2f6bff;
+          --user-ink: #ffffff;
+          --bot: #21262f;
+          --accent: #4d84ff;
+          --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      .app {
+        width: 100%;
+        max-width: 460px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      header.bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7aa2ff);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .bar .title { font-weight: 650; font-size: 15px; line-height: 1.1; }
+      .bar .subtitle { font-size: 12px; color: var(--muted); }
+      .bar .spacer { flex: 1; }
+      .gear {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 6px;
+        border-radius: 8px;
+      }
+      .gear:hover { background: var(--bot); }
+
+      .settings {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg);
+        display: none;
+        gap: 8px;
+        grid-template-columns: 1fr 1fr;
+      }
+      .settings.open { display: grid; }
+      .settings label {
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .settings label.wide { grid-column: 1 / -1; }
+      .settings input {
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 13px;
+      }
+      .settings .hint {
+        grid-column: 1 / -1;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+
+      .thread {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .row { display: flex; }
+      .row.user { justify-content: flex-end; }
+      .row.assistant { justify-content: flex-start; }
+      .bubble {
+        max-width: 78%;
+        padding: 9px 13px;
+        border-radius: var(--radius);
+        font-size: 14px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .user .bubble {
+        background: var(--user);
+        color: var(--user-ink);
+        border-bottom-right-radius: 4px;
+      }
+      .assistant .bubble {
+        background: var(--bot);
+        color: var(--ink);
+        border-bottom-left-radius: 4px;
+      }
+      .typing .bubble { background: var(--bot); }
+      .dot {
+        display: inline-block;
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--muted);
+        animation: blink 1.2s infinite both;
+        margin-right: 2px;
+      }
+      .dot:nth-child(2) { animation-delay: 0.2s; }
+      .dot:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+      .banner {
+        margin: 0 16px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        background: #fde8e6;
+        color: var(--danger);
+        text-align: center;
+      }
+
+      footer.composer {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--line);
+      }
+      .composer textarea {
+        flex: 1;
+        resize: none;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: inherit;
+        background: var(--panel);
+        color: var(--ink);
+        max-height: 120px;
+      }
+      .composer button {
+        border: none;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 12px;
+        padding: 0 18px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .composer button:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar">
+        <div class="avatar">AO</div>
+        <div>
+          <div class="title" id="agentLabel">Assistant</div>
+          <div class="subtitle" id="statusLine">Demo mode</div>
+        </div>
+        <div class="spacer"></div>
+        <button class="gear" id="gearBtn" title="Settings">⚙</button>
+      </header>
+
+      <!--
+        Settings hold the *deployment* config the site owner sets once, not anything the
+        customer chooses. There is deliberately no agent picker — the agent is fixed
+        server-side (the one flagged Externally_Accessible in the org).
+      -->
+      <section class="settings" id="settings">
+        <label class="wide">
+          API base URL
+          <input id="cfgBase" placeholder="https://your-instance.my.salesforce.com/services/apexrest/agent" />
+        </label>
+        <label class="wide">
+          Bearer token (integration-user OAuth access token)
+          <input id="cfgToken" placeholder="00D...!AQ..." />
+        </label>
+        <label class="wide">
+          External ref (end-user id)
+          <input id="cfgRef" placeholder="auto-generated" />
+        </label>
+        <div class="hint">
+          Leave the base URL or token empty to stay in <strong>demo mode</strong>
+          (canned responses, no network). In production these are injected by the
+          site owner — never exposed to the customer.
+        </div>
+      </section>
+
+      <div class="banner" id="banner" style="display: none"></div>
+
+      <div class="thread" id="thread"></div>
+
+      <footer class="composer">
+        <textarea id="input" rows="1" placeholder="Type your message…"></textarea>
+        <button id="sendBtn">Send</button>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        var thread = document.getElementById("thread");
+        var input = document.getElementById("input");
+        var sendBtn = document.getElementById("sendBtn");
+        var banner = document.getElementById("banner");
+        var statusLine = document.getElementById("statusLine");
+        var agentLabel = document.getElementById("agentLabel");
+
+        var state = { sessionId: null, busy: false };
+
+        function cfg() {
+          var ref = document.getElementById("cfgRef").value.trim();
+          if (!ref) {
+            ref = "web-" + Math.random().toString(36).slice(2, 10);
+            document.getElementById("cfgRef").value = ref;
+          }
+          return {
+            base: document.getElementById("cfgBase").value.trim().replace(/\/$/, ""),
+            token: document.getElementById("cfgToken").value.trim(),
+            ref: ref
+          };
+        }
+        function isLive() {
+          var c = cfg();
+          return !!(c.base && c.token);
+        }
+
+        // ---- rendering (customer view: only their messages + the agent's answers) ----
+        function clearThread() { thread.innerHTML = ""; }
+        function addMessage(m) {
+          // The API never returns tool activity to an external customer, so we render
+          // only user and assistant bubbles.
+          if (m.role !== "user" && m.role !== "assistant") return;
+          var row = document.createElement("div");
+          row.className = "row " + m.role;
+          var b = document.createElement("div");
+          b.className = "bubble";
+          b.textContent = m.text || "";
+          row.appendChild(b);
+          thread.appendChild(row);
+          thread.scrollTop = thread.scrollHeight;
+        }
+        function renderAll(messages) {
+          clearThread();
+          messages.forEach(addMessage);
+        }
+        var typingRow = null;
+        function showTyping(on) {
+          if (on && !typingRow) {
+            typingRow = document.createElement("div");
+            typingRow.className = "row assistant typing";
+            typingRow.innerHTML =
+              '<div class="bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+            thread.appendChild(typingRow);
+            thread.scrollTop = thread.scrollHeight;
+          } else if (!on && typingRow) {
+            typingRow.remove();
+            typingRow = null;
+          }
+        }
+        function showError(text) {
+          banner.textContent = text;
+          banner.style.display = text ? "block" : "none";
+        }
+
+        // ---- live API --------------------------------------------------
+        async function apiGetConfig(c) {
+          var res = await fetch(c.base + "/config", {
+            headers: { Authorization: "Bearer " + c.token }
+          });
+          if (!res.ok) throw new Error("config " + res.status);
+          return res.json();
+        }
+        async function apiPost(c, text) {
+          var res = await fetch(c.base + "/message", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + c.token
+            },
+            body: JSON.stringify({
+              message: text,
+              externalRef: c.ref,
+              sessionId: state.sessionId
+            })
+          });
+          if (!res.ok) throw new Error("POST " + res.status);
+          return res.json();
+        }
+        async function apiGetSession(c, sessionId) {
+          var url =
+            c.base + "/session/" + sessionId + "?externalRef=" + encodeURIComponent(c.ref);
+          var res = await fetch(url, { headers: { Authorization: "Bearer " + c.token } });
+          if (!res.ok) throw new Error("GET " + res.status);
+          return res.json();
+        }
+        async function pollUntilDone(c, sessionId) {
+          for (var i = 0; i < 40; i++) {
+            await new Promise(function (r) { setTimeout(r, 1500); });
+            var st = await apiGetSession(c, sessionId);
+            if (st.messages) renderAll(st.messages);
+            if (st.latestRunStatus && st.latestRunStatus !== "Running") {
+              if (st.latestRunStatus === "Failed")
+                showError("Sorry — something went wrong. Please try again.");
+              return;
+            }
+          }
+          showError("This is taking longer than expected. Please try again.");
+        }
+
+        async function sendLive(c, text) {
+          addMessage({ role: "user", text: text });
+          showTyping(true);
+          try {
+            var r = await apiPost(c, text);
+            state.sessionId = r.sessionId;
+            await pollUntilDone(c, r.sessionId);
+          } catch (e) {
+            showError("Sorry — we couldn't reach the assistant. Please try again.");
+          } finally {
+            showTyping(false);
+          }
+        }
+
+        // ---- demo (mock) mode: mirrors the customer view — no tools, just answers ----
+        function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+        function demoAnswer(text) {
+          var s = text.toLowerCase();
+          if (s.indexOf("order") >= 0 || s.indexOf("status") >= 0)
+            return "Your most recent order shipped yesterday and should arrive Thursday. Would you like the tracking link?";
+          if (s.indexOf("refund") >= 0 || s.indexOf("return") >= 0)
+            return "I can help with that. Your order is within the 30-day window, so you're eligible for a return — want me to start it?";
+          return "Thanks for reaching out! I've looked into that and everything's in order. Is there anything else I can help you with?";
+        }
+        async function sendDemo(text) {
+          addMessage({ role: "user", text: text });
+          showTyping(true);
+          await sleep(1100);
+          showTyping(false);
+          addMessage({ role: "assistant", text: demoAnswer(text) });
+        }
+
+        // ---- send dispatch --------------------------------------------
+        async function onSend() {
+          var text = input.value.trim();
+          if (!text || state.busy) return;
+          state.busy = true;
+          sendBtn.disabled = true;
+          input.value = "";
+          input.style.height = "auto";
+          showError("");
+          try {
+            if (isLive()) await sendLive(cfg(), text);
+            else await sendDemo(text);
+          } finally {
+            state.busy = false;
+            sendBtn.disabled = false;
+            input.focus();
+          }
+        }
+
+        async function refreshStatus() {
+          if (isLive()) {
+            statusLine.textContent = "Online";
+            try {
+              var conf = await apiGetConfig(cfg());
+              if (conf && conf.agentLabel) agentLabel.textContent = conf.agentLabel;
+            } catch (e) {
+              /* leave the default label */
+            }
+          } else {
+            statusLine.textContent = "Demo mode";
+            agentLabel.textContent = "Assistant";
+          }
+        }
+
+        // ---- wiring ----------------------------------------------------
+        document.getElementById("gearBtn").addEventListener("click", function () {
+          document.getElementById("settings").classList.toggle("open");
+        });
+        sendBtn.addEventListener("click", onSend);
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); }
+        });
+        input.addEventListener("input", function () {
+          input.style.height = "auto";
+          input.style.height = Math.min(input.scrollHeight, 120) + "px";
+        });
+        ["cfgBase", "cfgToken"].forEach(function (id) {
+          document.getElementById(id).addEventListener("change", refreshStatus);
+        });
+
+        refreshStatus();
+        addMessage({
+          role: "assistant",
+          text: "👋 Hi there! How can I help you today?"
+        });
+      })();
+    </script>
+  </body>
+</html>
