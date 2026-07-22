@@ -199,9 +199,15 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(res, 404, { error: 'Not found' });
   } catch (e) {
-    console.error('[proxy]', e.message);
-    // Keep the customer-facing shape generic; details stay in the server log.
-    sendJson(res, 502, { error: 'Upstream request failed' });
+    // e.cause carries the underlying reason for fetch failures (DNS, TLS, ECONNREFUSED),
+    // which is otherwise hidden behind a bare "fetch failed".
+    const detail = e.cause ? e.message + ' (' + (e.cause.message || e.cause) + ')' : e.message;
+    console.error('[proxy]', detail);
+    // Customer-facing shape stays generic; set DEBUG=1 to echo the detail to the browser
+    // while you're troubleshooting.
+    const payload = { error: 'Upstream request failed' };
+    if (process.env.DEBUG) payload.detail = detail;
+    sendJson(res, 502, payload);
   }
 });
 

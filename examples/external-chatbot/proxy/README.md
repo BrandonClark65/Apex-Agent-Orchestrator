@@ -54,6 +54,25 @@ The token is cached in memory and refreshed automatically; a `401` from Salesfor
 re-mint. Nothing about the agent or the token is exposed to the client — the proxy is a pass-through
 for exactly these three routes and otherwise just serves the widget's static files.
 
+## Troubleshooting a 502
+
+A `502` in the browser means the proxy reached Salesforce but that call failed — the browser only
+gets a generic message on purpose. The real reason is logged in the terminal running `npm start` as
+a `[proxy] …` line. To also echo it to the browser while debugging, start with `DEBUG=1`:
+
+```bash
+DEBUG=1 npm start
+```
+
+Common causes:
+
+| `[proxy]` detail | Fix |
+| --- | --- |
+| `OAuth token request failed: unsupported_grant_type` | Enable **Client Credentials Flow** on the Connected App and set its **Run-As** user (Manage → Edit Policies). Changes take a few minutes to propagate. |
+| `OAuth token request failed: invalid_client` / `invalid_client_id` | Wrong `SF_CLIENT_ID` / `SF_CLIENT_SECRET`. |
+| `fetch failed (getaddrinfo ENOTFOUND …)` | `SF_LOGIN_URL` is wrong or still a placeholder — use your real `*.my.salesforce.com` host. |
+| `OAuth token request failed: …` but creds look right | Env vars not loaded into the process — re-run the `export $(…)` line, or confirm with `echo $SF_CLIENT_ID`. |
+
 ## Production notes
 
 This is still a starting point, not a hardened gateway. Before going public you'd typically add: TLS
