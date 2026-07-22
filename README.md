@@ -13,6 +13,7 @@ A managed-package-ready orchestration layer that provides:
 - **Long-term memory** - agents extract durable facts and preferences from runs, recall them into future prompts, and learn lessons from their own successes and failures (pluggable store, Salesforce-native today, vector-ready)
 - **LLM provider abstraction** - provider configs in Custom Metadata; OpenAI, Anthropic (Claude), Azure OpenAI, and the OpenAI Responses API (OpenAI or Azure) out of the box, new providers are one class + one factory branch
 - **Full observability** - every run and step persisted, live progress events, a run monitor with cancel/re-run, and a step-by-step trace viewer
+- **External access** - drive a single agent from outside Salesforce through a REST API, with a standalone, framework-agnostic web chat widget; customer-facing surfaces hide the tool/thinking activity and are rate-limited per caller
 - **Admin-configurable agents** via Custom Metadata - prompts, tool grants, providers, and memory behavior are records, not code
 
 ## The Agent Orchestrator App
@@ -40,6 +41,7 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 - **HistoryCompactor** - summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
 - **ExecutionLogger** - persists every run (`Agent_Run__c`) and step (`Agent_Step__c`); the single termination choke point that releases sessions, resumes parents, and publishes UI events.
 - **UIEventPublisher / Agent_UI_Event\_\_e** - live progress channel the LWCs subscribe to (with polling fallback).
+- **AgentChatApi** - external REST boundary (`@RestResource` at `/services/apexrest/agent/*`) mirroring the chat controller for non-Salesforce clients: a single server-resolved agent, `External_Ref__c`-scoped sessions, tool activity hidden from the customer, and per-caller rate limiting. Shares message rendering with the LWC via `ChatMessageRenderer`. See [docs/EXTERNAL-ACCESS.md](docs/EXTERNAL-ACCESS.md).
 - **AgentWatchdogSchedulable / MemoryJanitorSchedulable** - hourly timeout of stuck runs and orphaned sessions; nightly pruning of expired/stale memories.
 - **Custom Metadata** - `Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`.
 
@@ -100,9 +102,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 0.8 (0.8.0.1), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
+**Current version: 0.9 (0.9.0.1), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NkJtAAK
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NrI9AAK
 
 ## Post-Install Setup
 
@@ -190,6 +192,16 @@ Three invocable actions are available in Flow Builder under the **Apex Agent Orc
 
 Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the agent loop finishes asynchronously via platform events. Poll with a Wait element that loops **Get Run Result** until `Is Done` is true, then read `Final Message` (or `Error Message` on failure).
 
+### 7. External chat access (optional)
+
+`AgentChatApi` exposes one agent to non-Salesforce clients (e.g. a website chat widget) over REST at `/services/apexrest/agent/*`. It's the HTTP mirror of the in-org chat, bound to a single agent and trimmed for customer-facing use. The full walkthrough - auth, endpoints, and the example widget - is in [docs/EXTERNAL-ACCESS.md](docs/EXTERNAL-ACCESS.md); the essentials:
+
+- **Pick the agent.** Set `Externally_Accessible__c = true` on exactly one active `Agent_Definition__mdt`. The end user never chooses an agent - the API resolves it server-side and ignores any agent a client sends (zero flagged → `503` not configured; more than one → `503` misconfigured).
+- **Authenticate.** Calls run as one integration user via a Connected App (JWT bearer or client-credentials flow). Give that user least-privilege access - user-mode tools bound what any conversation can touch.
+- **Endpoints.** `POST /agent/message` `{message, externalRef, sessionId?}` starts or continues a thread and returns immediately (poll for the answer); `GET /agent/session/{id}?externalRef=…` polls a thread; `GET /agent/config` returns the agent's display label.
+- **Customer-safe by default.** Session responses show only the user's messages and the agent's final answers - tool calls, intermediate thinking, and error internals are stripped. `POST` is rate-limited per `externalRef` (default 20 turns / 60s → `429` with `Retry-After`).
+- **Example widget.** `examples/external-chatbot/index.html` is a standalone chat UI (demo mode out of the box; add an API URL + token for live). Don't ship the integration token to a public browser - front the API with a thin backend proxy, as the doc describes.
+
 ## Roadmap
 
 - ✅ Agent execution loop (async, event-chained)
@@ -203,5 +215,6 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - ✅ Additional LLM providers (Anthropic Claude, Azure OpenAI)
 - ✅ Agent authoring from the builder (Metadata API deploys)
 - ✅ Memory management UI
+- ✅ External REST API + embeddable web chatbot
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ✅ Managed package release (2GP, v0.8 Released)
+- ✅ Managed package release (2GP, v0.9 Released)
