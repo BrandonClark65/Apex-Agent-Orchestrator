@@ -28,6 +28,14 @@ const SF_LOGIN_URL = (process.env.SF_LOGIN_URL || '').replace(/\/$/, '');
 const SF_CLIENT_ID = process.env.SF_CLIENT_ID || '';
 const SF_CLIENT_SECRET = process.env.SF_CLIENT_SECRET || '';
 
+// The Apex REST root for AgentChatApi. When AAO is installed as a MANAGED PACKAGE, Salesforce
+// inserts the package namespace into the path, so the endpoint is
+// `/services/apexrest/aao/agent` — set SF_APEXREST_PATH to that. For an unmanaged source deploy
+// it stays the default `/services/apexrest/agent`. No trailing slash.
+const SF_APEXREST_PATH = (
+  process.env.SF_APEXREST_PATH || '/services/apexrest/agent'
+).replace(/\/$/, '');
+
 if (!SF_LOGIN_URL || !SF_CLIENT_ID || !SF_CLIENT_SECRET) {
   console.error(
     'Missing config. Set SF_LOGIN_URL, SF_CLIENT_ID and SF_CLIENT_SECRET ' +
@@ -82,7 +90,7 @@ async function forward(method, sfPath, query, bodyObj) {
   let auth = await getToken();
 
   const doCall = async () => {
-    const url = auth.instanceUrl + '/services/apexrest/agent' + sfPath + (query || '');
+    const url = auth.instanceUrl + SF_APEXREST_PATH + sfPath + (query || '');
     return fetch(url, {
       method,
       headers: {
@@ -213,5 +221,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log('External chatbot proxy listening on http://localhost:' + PORT);
+  console.log('Forwarding /agent/* -> ' + SF_LOGIN_URL + SF_APEXREST_PATH);
   console.log('Open http://localhost:' + PORT + ' and set the widget base URL to "/agent".');
 });
