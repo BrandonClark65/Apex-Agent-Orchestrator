@@ -48,7 +48,7 @@ Salesforce user.
 
 | Method | Path | Body / Query | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/agent/message` | `{message, externalRef, sessionId?}` | Start (no `sessionId`) or continue a conversation. The agent is resolved server-side. Returns `{sessionId, runId, status}` (HTTP 202). Rate-limited per `externalRef` → `429` with `Retry-After` when exceeded. |
+| `POST` | `/agent/message` | `{message, externalRef, sessionId?, customerNumber?}` | Start (no `sessionId`) or continue a conversation. The agent is resolved server-side. `customerNumber` is bound to a **new** session for record scoping (see below) and ignored when continuing. Returns `{sessionId, runId, status}` (HTTP 202). Rate-limited per `externalRef` → `429` with `Retry-After` when exceeded. |
 | `GET` | `/agent/session/{id}` | `?externalRef=...` | Poll a thread: `{status, title, latestRunStatus, messages[]}`. `messages[]` excludes tool activity. |
 | `GET` | `/agent/config` | — | Display info for the one configured agent: `{agentLabel}`. Lets a client title the chat without ever offering a choice. |
 
@@ -56,6 +56,36 @@ Salesforce user.
 may also carry `data` — the structured half of the agent's final answer (every key of the `final`
 object other than `message`, which becomes `text`). It's present only when the final answer included
 extra keys, letting a client render cards/links/buttons while the bubble stays plain prose.
+
+## Record-level scoping (only this customer's records)
+
+`External_Ref__c` isolates **conversation threads** — one caller can't see another's chat. It does
+**not** by itself isolate **records**: every external call runs as the *same* integration user, so
+user-mode permissions are identical for every customer. Those are two different jobs, and a
+customer-facing chat that answers "what are my open cases?" needs both.
+
+The second layer is a bound customer identity plus purpose-built tools:
+
+- **Bind the customer server-side, never from the chat.** A new session is stamped with
+  `Agent_Session__c.Customer_Number__c` from the `customerNumber` on `POST /message`. The trusted
+  backend proxy sets that from the *logged-in* customer on your site — never from anything the
+  browser user types. It's ignored when continuing a session, so a caller can't re-scope a live
+  thread. `AgentEngine.runToolStep` copies it into `AgentToolContext.customerNumber` before each
+  tool runs.
+- **Don't grant the external agent the raw `QuerySalesforceTool`.** Arbitrary LLM-authored SOQL
+  lets a customer ask for anything the integration user can see. Give this one agent a small set of
+  pre-scoped tools instead.
+- **Scoped tools inject the filter, take no customer argument.** `GetMyCasesTool` and
+  `GetMyAccountTool` read the bound customer number from `AgentToolContext`, hard-filter on it with
+  a bind variable (`WHERE Account.AccountNumber = :customerNumber`), run `WITH USER_MODE`, and fail
+  closed if no customer is bound. Their input schema is empty — there is no customer identifier for
+  the model (or the user) to spoof. Map "customer number" to whatever your schema uses (a custom
+  field, external Id, etc.) by editing the query in those classes.
+
+> **The system prompt is not the boundary.** "Only discuss this customer's data" in the agent
+> prompt is good UX but must never be your only control — each scoped tool's `WHERE` clause is the
+> real boundary. Keep the integration user least-privileged so even a prompt trick can't reach
+> objects the tools don't expose.
 
 ## Safety gates
 

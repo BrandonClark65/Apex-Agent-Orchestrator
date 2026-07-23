@@ -506,7 +506,11 @@ public with sharing class AgentEngine {
     // Non-locking read to detect parallel mode before tool execution.
     // The actual atomic decrement happens later under FOR UPDATE.
     Agent_Run__c runCheck = [
-      SELECT PendingToolCount__c, Depth__c, Status__c
+      SELECT
+        PendingToolCount__c,
+        Depth__c,
+        Status__c,
+        Session__r.Customer_Number__c
       FROM Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
@@ -529,6 +533,12 @@ public with sharing class AgentEngine {
     AgentToolContext.depth = runCheck.Depth__c != null
       ? Integer.valueOf(runCheck.Depth__c)
       : 0;
+    // Bind the session's authenticated customer number so record-scoped tools can filter to
+    // this customer only. Sourced from the session (stamped server-side at creation), never
+    // from tool args, so a customer cannot request another customer's records.
+    AgentToolContext.customerNumber = runCheck.Session__r != null
+      ? runCheck.Session__r.Customer_Number__c
+      : null;
 
     try {
       Map<String, aao__Agent_Tool_Definition__mdt> toolDefs = ToolRegistry.getToolDefinitionsForAgent(

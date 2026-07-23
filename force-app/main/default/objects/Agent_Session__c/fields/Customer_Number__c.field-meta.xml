@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Customer_Number__c</fullName>
+    <description>The authenticated customer number this conversation is scoped to, bound server-side when an external session is created (from a trusted caller, never from the chat message or the LLM). Record-scoped tools read this to filter to only this customer's records. Null for in-org (Lightning) sessions and for external sessions started without a customer identity.</description>
+    <externalId>true</externalId>
+    <label>Customer Number</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

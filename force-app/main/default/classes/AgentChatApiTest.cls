@@ -56,6 +56,63 @@ private class AgentChatApiTest {
   }
 
   @IsTest
+  static void testPostNewSessionStampsCustomerNumber() {
+    AgentChatApi.externalAgentOverride = AGENT;
+    setRequest(
+      'POST',
+      '/services/apexrest/agent/message',
+      JSON.serialize(
+        new Map<String, Object>{
+          'message' => 'show my cases',
+          'externalRef' => 'ext-1',
+          'customerNumber' => 'CUST-001'
+        }
+      )
+    );
+
+    AgentChatApi.doPost();
+
+    System.assertEquals(202, RestContext.response.statusCode);
+    Id sessionId = (Id) responseBody().get('sessionId');
+    Agent_Session__c session = [
+      SELECT External_Ref__c, Customer_Number__c
+      FROM Agent_Session__c
+      WHERE Id = :sessionId
+    ];
+    System.assertEquals('ext-1', session.External_Ref__c);
+    System.assertEquals(
+      'CUST-001',
+      session.Customer_Number__c,
+      'Customer number must be bound to the new session'
+    );
+  }
+
+  @IsTest
+  static void testPostNewSessionWithoutCustomerNumberLeavesItNull() {
+    AgentChatApi.externalAgentOverride = AGENT;
+    setRequest(
+      'POST',
+      '/services/apexrest/agent/message',
+      JSON.serialize(
+        new Map<String, Object>{
+          'message' => 'hello',
+          'externalRef' => 'ext-1'
+        }
+      )
+    );
+
+    AgentChatApi.doPost();
+
+    System.assertEquals(202, RestContext.response.statusCode);
+    Id sessionId = (Id) responseBody().get('sessionId');
+    System.assertEquals(
+      null,
+      [SELECT Customer_Number__c FROM Agent_Session__c WHERE Id = :sessionId]
+        .Customer_Number__c
+    );
+  }
+
+  @IsTest
   static void testPostIgnoresClientSuppliedAgent() {
     AgentChatApi.externalAgentOverride = AGENT;
     // A client tries to smuggle in a different agent; it must be ignored.

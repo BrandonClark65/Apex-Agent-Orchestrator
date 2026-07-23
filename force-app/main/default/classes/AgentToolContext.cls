@@ -18,4 +18,15 @@ public with sharing class AgentToolContext {
 
   /** @description Sub-agent nesting depth of the current run (0 for top-level runs). */
   public static Integer depth = 0;
+
+  /**
+   * @description The authenticated customer number the current session is scoped to, copied
+   * from `Agent_Session__c.Customer_Number__c`. It is bound server-side at session creation
+   * from a trusted caller — never from the chat message or the LLM — so record-scoped tools
+   * (e.g. `GetMyCasesTool`) can filter to only this customer's records without ever accepting
+   * a customer identifier as a tool argument the model could spoof. Null when the session has
+   * no bound customer (in-org Lightning sessions, or external sessions started without an
+   * identity); scoped tools must fail closed in that case rather than returning unscoped data.
+   */
+  public static String customerNumber;
 }

@@ -52,6 +52,12 @@ global with sharing class AgentChatApi {
       String message = str(body.get('message'));
       String externalRef = str(body.get('externalRef'));
       String sessionIdRaw = str(body.get('sessionId'));
+      // Authenticated customer number, bound to a NEW session so record-scoped tools
+      // (GetMyCases, GetMyAccount) filter to this customer only. The trusted backend proxy
+      // must set this from the logged-in customer — never from anything the browser user
+      // types. It is deliberately ignored when continuing an existing session, which keeps
+      // the customer number stamped at creation, so a caller cannot re-scope a live thread.
+      String customerNumber = str(body.get('customerNumber'));
 
       if (String.isBlank(externalRef)) {
         respond(400, new Map<String, Object>{ 'error' => 'externalRef is required' });
@@ -137,11 +143,13 @@ global with sharing class AgentChatApi {
       ]
       .Session__c;
 
-      // Stamp the external identity onto a newly created session.
+      // Stamp the external identity (and, when supplied, the customer scope) onto a newly
+      // created session. Both come from the trusted API boundary, not the conversation.
       if (sessionId == null) {
         update new Agent_Session__c(
           Id = resolvedSessionId,
-          External_Ref__c = externalRef
+          External_Ref__c = externalRef,
+          Customer_Number__c = String.isBlank(customerNumber) ? null : customerNumber
         );
       }
 
