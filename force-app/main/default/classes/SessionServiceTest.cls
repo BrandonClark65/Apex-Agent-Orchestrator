@@ -38,11 +38,19 @@ private class SessionServiceTest {
       WHERE Id = :runId
     ];
     System.assertEquals('Succeeded', run.aao__Status__c);
-    System.assertNotEquals(null, run.Session__c, 'run should be linked to a session');
+    System.assertNotEquals(
+      null,
+      run.Session__c,
+      'run should be linked to a session'
+    );
     System.assertEquals(1, run.Turn_Number__c);
 
     Agent_Session__c session = getSession(run.Session__c);
-    System.assertEquals('Active', session.Status__c, 'session released after the turn');
+    System.assertEquals(
+      'Active',
+      session.Status__c,
+      'session released after the turn'
+    );
     System.assertEquals('CRUD_Agent', session.Agent__c);
     System.assertEquals('Find my accounts', session.Title__c);
     System.assertEquals(1, session.Turn_Count__c);
@@ -71,7 +79,10 @@ private class SessionServiceTest {
     .Session__c;
 
     List<LLMMessage> seed = SessionService.loadSeedHistory(sessionId);
-    System.assert(!seed.isEmpty(), 'prior turn history should seed the next turn');
+    System.assert(
+      !seed.isEmpty(),
+      'prior turn history should seed the next turn'
+    );
     for (LLMMessage msg : seed) {
       System.assertNotEquals(
         'system',
@@ -105,7 +116,12 @@ private class SessionServiceTest {
     update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
 
     try {
-      AgentEngine.runAgentInSession('CRUD_Agent', 'second send', sessionId, 'Chat');
+      AgentEngine.runAgentInSession(
+        'CRUD_Agent',
+        'second send',
+        sessionId,
+        'Chat'
+      );
       System.assert(false, 'expected AuraHandledException for Busy session');
     } catch (AuraHandledException e) {
       System.assert(true);
@@ -118,7 +134,12 @@ private class SessionServiceTest {
     SessionService.closeSession(sessionId);
 
     try {
-      AgentEngine.runAgentInSession('CRUD_Agent', 'another message', sessionId, 'Chat');
+      AgentEngine.runAgentInSession(
+        'CRUD_Agent',
+        'another message',
+        sessionId,
+        'Chat'
+      );
       System.assert(false, 'expected AuraHandledException for Closed session');
     } catch (AuraHandledException e) {
       System.assert(true);
@@ -177,5 +198,72 @@ private class SessionServiceTest {
     String longMessage = 'x'.repeat(400);
     Id sessionId = SessionService.startSession('CRUD_Agent', longMessage);
     System.assertEquals(255, getSession(sessionId).Title__c.length());
+  }
+
+  @IsTest
+  static void testSessionPinsThePromptVersionAcrossTurns() {
+    Agent_Prompt_Version__c v1 = PromptVersionService.createDraft(
+      'CRUD_Agent',
+      'V1 body',
+      null,
+      null,
+      null
+    );
+    PromptVersionService.publish(v1.Id);
+    PromptVersionService.clearCache();
+
+    Test.startTest();
+    Id firstRunId = AgentEngine.runAgentInSession(
+      'CRUD_Agent',
+      'hello',
+      null,
+      'UI'
+    );
+    Id sessionId = [
+      SELECT Session__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :firstRunId
+    ]
+    .Session__c;
+
+    // The run's Queueable doesn't flush until stopTest, so end turn one by hand — a session
+    // stays Busy until its run terminates and would reject the second send.
+    ExecutionLogger.finishRun(firstRunId, 'turn one', 'Succeeded', null);
+
+    // A new version goes live between the two turns.
+    Agent_Prompt_Version__c v2 = PromptVersionService.createDraft(
+      'CRUD_Agent',
+      'V2 body',
+      null,
+      null,
+      null
+    );
+    PromptVersionService.publish(v2.Id);
+    PromptVersionService.clearCache();
+
+    Id secondRunId = AgentEngine.runAgentInSession(
+      'CRUD_Agent',
+      'follow up',
+      sessionId,
+      'UI'
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      v1.Id,
+      [SELECT Prompt_Version__c FROM Agent_Session__c WHERE Id = :sessionId]
+      .Prompt_Version__c,
+      'The session should stay pinned to the version it started on'
+    );
+    System.assertEquals(
+      v1.Id,
+      [
+        SELECT aao__Prompt_Version__c
+        FROM aao__Agent_Run__c
+        WHERE Id = :secondRunId
+      ]
+      .aao__Prompt_Version__c,
+      'A follow-up turn must not switch to a version published mid-conversation'
+    );
   }
 }

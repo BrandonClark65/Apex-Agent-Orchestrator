@@ -46,7 +46,7 @@ private class AgentBuilderControllerTest {
     System.assert(String.isNotBlank(manifest));
     System.assert(
       manifest.contains('QuerySalesforceTool') ||
-        manifest.contains('CreateRecordTool'),
+      manifest.contains('CreateRecordTool'),
       'manifest lists granted tools'
     );
   }
@@ -80,10 +80,7 @@ private class AgentBuilderControllerTest {
     LLMClientFactory.setMock(mock);
 
     Test.startTest();
-    Id runId = AgentBuilderController.testRun(
-      'CRUD_Agent',
-      '{"task":"smoke"}'
-    );
+    Id runId = AgentBuilderController.testRun('CRUD_Agent', '{"task":"smoke"}');
     Test.stopTest();
 
     aao__Agent_Run__c run = [
@@ -167,7 +164,13 @@ private class AgentBuilderControllerTest {
     LLMClientFactory.setMock(mock);
 
     Test.startTest();
-    new MemoryCaptureQueueable(runId, 'CRUD_Agent', 'Default_Memory', false, true)
+    new MemoryCaptureQueueable(
+        runId,
+        'CRUD_Agent',
+        'Default_Memory',
+        false,
+        true
+      )
       .execute(null);
     Test.stopTest();
 
@@ -183,6 +186,261 @@ private class AgentBuilderControllerTest {
       3,
       activeReflections,
       '20 originals consolidated to 2 merged + 1 new lesson'
+    );
+  }
+
+  //
+  // ───────────────────────────────────────────────────────────────
+  // PROMPT VERSIONS
+  // ───────────────────────────────────────────────────────────────
+  //
+
+  @IsTest
+  static void testSavePromptVersionPublishesAndBecomesActive() {
+    Test.startTest();
+    Id versionId = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'New prompt body',
+      'a goal',
+      'tightened the JSON rules',
+      true,
+      null
+    );
+    Test.stopTest();
+
+    Agent_Prompt_Version__c saved = [
+      SELECT Status__c, Is_Active__c, Version_Number__c, Change_Note__c
+      FROM Agent_Prompt_Version__c
+      WHERE Id = :versionId
+    ];
+    System.assertEquals('Published', saved.Status__c);
+    System.assertEquals(true, saved.Is_Active__c);
+    System.assertEquals(1, saved.Version_Number__c);
+    System.assertEquals('tightened the JSON rules', saved.Change_Note__c);
+  }
+
+  @IsTest
+  static void testSavePromptVersionAsDraftDoesNotGoLive() {
+    Id versionId = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'Draft body',
+      null,
+      null,
+      false,
+      null
+    );
+
+    Agent_Prompt_Version__c saved = [
+      SELECT Status__c, Is_Active__c
+      FROM Agent_Prompt_Version__c
+      WHERE Id = :versionId
+    ];
+    System.assertEquals('Draft', saved.Status__c);
+    System.assertEquals(
+      false,
+      saved.Is_Active__c,
+      'A draft must not become the live prompt'
+    );
+  }
+
+  @IsTest
+  static void testGetAgentsShowsTheActiveVersionNotTheBaseline() {
+    AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'VERSIONED_BODY',
+      null,
+      null,
+      true,
+      null
+    );
+
+    Test.startTest();
+    List<AgentBuilderController.AgentConfig> agents = AgentBuilderController.getAgents();
+    Test.stopTest();
+
+    for (AgentBuilderController.AgentConfig config : agents) {
+      if (config.developerName != 'CRUD_Agent') {
+        continue;
+      }
+      System.assertEquals(
+        'VERSIONED_BODY',
+        config.systemPrompt,
+        'The builder should show the prompt that actually runs'
+      );
+      System.assertEquals(1, config.activePromptVersionNumber);
+      System.assertNotEquals(
+        'VERSIONED_BODY',
+        config.baselineSystemPrompt,
+        'The packaged baseline should still be reported separately'
+      );
+      return;
+    }
+    System.assert(false, 'CRUD_Agent was not returned by getAgents');
+  }
+
+  @IsTest
+  static void testActivateAndRestorePromptVersion() {
+    Id v1 = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'first',
+      null,
+      null,
+      true,
+      null
+    );
+    AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'second',
+      null,
+      null,
+      true,
+      null
+    );
+
+    Test.startTest();
+    // Roll back to v1, then branch a new draft off it.
+    AgentBuilderController.activatePromptVersion(v1);
+    Id draftId = AgentBuilderController.restorePromptVersionAsDraft(v1);
+    Test.stopTest();
+
+    System.assertEquals(
+      true,
+      [SELECT Is_Active__c FROM Agent_Prompt_Version__c WHERE Id = :v1]
+      .Is_Active__c,
+      'Rollback should reactivate v1'
+    );
+    System.assertEquals(
+      'first',
+      [SELECT System_Prompt__c FROM Agent_Prompt_Version__c WHERE Id = :draftId]
+      .System_Prompt__c,
+      'The restored draft should carry v1 body'
+    );
+  }
+
+  @IsTest
+  static void testPublishPromptVersionTakesADraftLive() {
+    Id draftId = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'staged body',
+      null,
+      null,
+      false,
+      null
+    );
+
+    Test.startTest();
+    AgentBuilderController.publishPromptVersion(draftId);
+    Test.stopTest();
+
+    Agent_Prompt_Version__c published = [
+      SELECT Status__c, Is_Active__c
+      FROM Agent_Prompt_Version__c
+      WHERE Id = :draftId
+    ];
+    System.assertEquals('Published', published.Status__c);
+    System.assertEquals(true, published.Is_Active__c);
+  }
+
+  @IsTest
+  static void testGetPromptVersionsReturnsNewestFirst() {
+    AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'first',
+      null,
+      null,
+      true,
+      null
+    );
+    AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'second',
+      null,
+      null,
+      true,
+      null
+    );
+
+    List<AgentBuilderController.PromptVersionInfo> versions = AgentBuilderController.getPromptVersions(
+      'CRUD_Agent'
+    );
+
+    System.assertEquals(2, versions.size());
+    System.assertEquals(
+      2,
+      versions[0].versionNumber,
+      'Newest version should sort first'
+    );
+    System.assertEquals(true, versions[0].isActive);
+    System.assertEquals(false, versions[1].isActive);
+  }
+
+  @IsTest
+  static void testSaveAgentDoesNotOverwriteBaselineForExistingAgent() {
+    AgentDeployService.AgentSaveRequest request = new AgentDeployService.AgentSaveRequest();
+    request.developerName = 'CRUD_Agent';
+    request.label = 'CRUD Agent';
+    request.systemPrompt = 'SHOULD_BE_DROPPED';
+    request.llmProvider = 'OpenAI_GPT4';
+    request.memoryConfig = 'Default_Memory';
+    request.maxSteps = 10;
+    request.isActive = true;
+
+    Test.startTest();
+    AgentBuilderController.saveAgent(JSON.serialize(request));
+    Test.stopTest();
+
+    Metadata.CustomMetadata definition = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[0];
+    for (Metadata.CustomMetadataValue value : definition.values) {
+      System.assertNotEquals(
+        'aao__SystemPrompt__c',
+        value.field,
+        'An existing agent\'s prompt is owned by its versions; the config deploy must ' +
+        'leave the packaged baseline alone'
+      );
+    }
+  }
+
+  @IsTest
+  static void testTestRunOnVersionStampsTheChosenVersion() {
+    Id v1 = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'first',
+      null,
+      null,
+      true,
+      null
+    );
+    AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'second',
+      null,
+      null,
+      true,
+      null
+    );
+    PromptVersionService.clearCache();
+
+    LLMClientMock mock = new LLMClientMock();
+    mock.addResponse('{"final":{"message":"Done"}}');
+    LLMClientFactory.setMock(mock);
+
+    Test.startTest();
+    Id runId = AgentBuilderController.testRunOnVersion(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      v1
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      v1,
+      [
+        SELECT aao__Prompt_Version__c
+        FROM aao__Agent_Run__c
+        WHERE Id = :runId
+      ]
+      .aao__Prompt_Version__c,
+      'The test bench should run against the version the user picked'
     );
   }
 }

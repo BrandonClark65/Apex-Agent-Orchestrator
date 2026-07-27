@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>SystemPrompt__c</fullName>
-    <description>base instructions</description>
+    <description
+  >Packaged baseline instructions. This is NOT the live prompt once the agent has Agent_Prompt_Version__c records — AgentEngine resolves the active version and only falls back to this field when no version exists. Edit the prompt from the Agent Builder, which creates a new version.</description>
     <fieldManageability>SubscriberControlled</fieldManageability>
-    <inlineHelpText>base instructions</inlineHelpText>
+    <inlineHelpText
+  >Packaged baseline only. The live prompt is the agent&apos;s active Prompt Version — edit it in the Agent Builder, not here.</inlineHelpText>
     <label>System Prompt</label>
     <length>32768</length>
     <type>LongTextArea</type>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Change_Note__c</fullName>
+    <description
+  >The author's short explanation of what changed in this version and why.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Why this version exists — what you changed and what you expected it to improve.</inlineHelpText>
+    <label>Change Note</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,225 +1,416 @@
 <template>
-    <lightning-card title="Agents" icon-name="standard:bot">
-        <div slot="actions">
-            <lightning-button-group>
+  <lightning-card title="Agents" icon-name="standard:bot">
+    <div slot="actions">
+      <lightning-button-group>
+        <lightning-button
+          label="New Agent"
+          icon-name="utility:add"
+          onclick={handleNew}
+        ></lightning-button>
+        <template lwc:if={showViewer}>
+          <lightning-button
+            label="Edit"
+            icon-name="utility:edit"
+            onclick={handleEdit}
+          ></lightning-button>
+        </template>
+      </lightning-button-group>
+    </div>
+    <div class="slds-grid slds-p-horizontal_small">
+      <!-- agent list -->
+      <div
+        class="slds-col slds-size_1-of-4 slds-border_right slds-p-right_small"
+      >
+        <ul>
+          <template for:each={agents} for:item="agent">
+            <li
+              key={agent.developerName}
+              data-name={agent.developerName}
+              class={agent.cssClass}
+              onclick={handleSelect}
+            >
+              <p class="agent-name slds-truncate">{agent.label}</p>
+              <span class={agent.badgeClass}>{agent.statusLabel}</span>
+            </li>
+          </template>
+        </ul>
+      </div>
+
+      <!-- detail / edit -->
+      <div class="slds-col slds-size_3-of-4 slds-p-left_small">
+        <template lwc:if={errorText}>
+          <div class="slds-text-color_error slds-m-bottom_x-small">
+            {errorText}
+          </div>
+        </template>
+        <template lwc:if={deployMessage}>
+          <div
+            class="slds-box slds-box_x-small slds-m-bottom_x-small deploy-status"
+          >
+            <template lwc:if={deploying}>
+              <lightning-spinner
+                size="small"
+                alternative-text="Deploying"
+                class="slds-is-relative slds-m-right_x-small"
+              ></lightning-spinner>
+            </template>
+            {deployMessage}
+          </div>
+        </template>
+
+        <!-- EDIT MODE -->
+        <template lwc:if={editing}>
+          <div class="slds-grid slds-gutters slds-m-bottom_x-small">
+            <div class="slds-col">
+              <lightning-input
+                label="Developer Name"
+                value={form.developerName}
+                disabled={devNameDisabled}
+                data-field="developerName"
+                onchange={handleFormChange}
+              ></lightning-input>
+            </div>
+            <div class="slds-col">
+              <lightning-input
+                label="Label"
+                value={form.label}
+                data-field="label"
+                onchange={handleFormChange}
+              ></lightning-input>
+            </div>
+          </div>
+          <div class="slds-grid slds-gutters slds-m-bottom_x-small">
+            <div class="slds-col">
+              <lightning-combobox
+                label="LLM Provider"
+                value={form.llmProvider}
+                options={providerOptions}
+                data-field="llmProvider"
+                onchange={handleFormChange}
+              ></lightning-combobox>
+            </div>
+            <div class="slds-col">
+              <lightning-combobox
+                label="Memory Config"
+                value={form.memoryConfig}
+                options={memoryOptions}
+                data-field="memoryConfig"
+                onchange={handleFormChange}
+              ></lightning-combobox>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+              <lightning-input
+                type="number"
+                label="Max Steps"
+                value={form.maxSteps}
+                data-field="maxSteps"
+                onchange={handleFormChange}
+              ></lightning-input>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+              <lightning-input
+                type="checkbox"
+                label="Active"
+                checked={form.isActive}
+                data-field="isActive"
+                onchange={handleFormChange}
+              ></lightning-input>
+            </div>
+          </div>
+          <lightning-textarea
+            label="Goal"
+            value={form.goal}
+            data-field="goal"
+            onchange={handleFormChange}
+            class="slds-m-bottom_x-small"
+          ></lightning-textarea>
+          <template lwc:if={isNew}>
+            <lightning-textarea
+              label="System Prompt"
+              value={form.systemPrompt}
+              data-field="systemPrompt"
+              onchange={handleFormChange}
+              class="prompt-editor slds-m-bottom_x-small"
+            ></lightning-textarea>
+          </template>
+          <template lwc:else>
+            <p
+              class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
+            >
+              The system prompt is versioned separately — cancel out of edit
+              mode and use Prompt Versions below to change it.
+            </p>
+          </template>
+
+          <p class="field-label">Tool Grants</p>
+          <template for:each={toolRows} for:item="tool">
+            <div key={tool.developerName} class="tool-grant">
+              <lightning-input
+                type="checkbox"
+                label={tool.label}
+                checked={tool.allowed}
+                data-name={tool.developerName}
+                onchange={handleToolToggle}
+              ></lightning-input>
+              <span class="slds-text-color_weak tool-desc"
+                >{tool.description}</span
+              >
+            </div>
+          </template>
+
+          <div class="slds-m-top_small">
+            <lightning-button
+              label="Deploy"
+              variant="brand"
+              icon-name="utility:upload"
+              disabled={deployDisabled}
+              onclick={handleDeploy}
+              class="slds-m-right_x-small"
+            ></lightning-button>
+            <lightning-button
+              label="Cancel"
+              onclick={handleCancelEdit}
+            ></lightning-button>
+          </div>
+        </template>
+
+        <!-- VIEW MODE -->
+        <template lwc:if={showViewer}>
+          <div class="slds-grid slds-gutters slds-m-bottom_small">
+            <div class="slds-col">
+              <p class="field-label">LLM Provider</p>
+              <p>{selected.llmProvider}</p>
+            </div>
+            <div class="slds-col">
+              <p class="field-label">Memory Config</p>
+              <p>{selected.memoryConfig}</p>
+            </div>
+            <div class="slds-col">
+              <p class="field-label">Max Steps</p>
+              <p>{selected.maxSteps}</p>
+            </div>
+          </div>
+
+          <p class="field-label">Goal</p>
+          <p class="slds-m-bottom_small">{selected.goal}</p>
+
+          <p class="field-label">
+            System Prompt
+            <span class="slds-badge slds-m-left_x-small"
+              >{activeVersionLabel}</span
+            >
+          </p>
+          <pre class="prompt-pre slds-m-bottom_small">
+{selected.systemPrompt}</pre
+          >
+
+          <p class="field-label">Granted Tools</p>
+          <template lwc:if={hasTools}>
+            <template for:each={selected.tools} for:item="tool">
+              <div
+                key={tool.developerName}
+                class="slds-box slds-box_x-small slds-m-bottom_x-small"
+              >
+                <p class="tool-name">
+                  {tool.label}
+                  <span class="slds-text-color_weak slds-m-left_x-small"
+                    >{tool.toolClass}</span
+                  >
+                </p>
+                <p class="slds-m-bottom_xx-small">{tool.description}</p>
+                <template lwc:if={tool.promptGuidance}>
+                  <p class="field-label">Prompt Guidance</p>
+                  <p class="slds-m-bottom_xx-small">{tool.promptGuidance}</p>
+                </template>
+                <template lwc:if={tool.inputSchema}>
+                  <p class="field-label">Input Schema</p>
+                  <pre class="schema-pre">{tool.inputSchema}</pre>
+                </template>
+              </div>
+            </template>
+          </template>
+          <template lwc:else>
+            <p class="slds-text-color_weak">No tools granted.</p>
+          </template>
+
+          <lightning-button
+            label="Show what the LLM sees"
+            icon-name="utility:preview"
+            class="slds-m-top_small"
+            onclick={handleShowManifest}
+          ></lightning-button>
+          <template lwc:if={manifest}>
+            <p class="field-label slds-m-top_small">
+              Tool Manifest (as sent to the model)
+            </p>
+            <pre class="prompt-pre">{manifest}</pre>
+          </template>
+        </template>
+
+        <!-- PROMPT VERSIONS -->
+        <template lwc:if={showPromptPanel}>
+          <div class="slds-section slds-is-open slds-m-top_medium">
+            <h3 class="slds-section__title slds-p-vertical_xx-small">
+              <span class="slds-section__title-action">Prompt Versions</span>
+            </h3>
+
+            <template lwc:if={promptMessage}>
+              <div class="slds-text-color_success slds-m-bottom_x-small">
+                {promptMessage}
+              </div>
+            </template>
+
+            <!-- edit a new version -->
+            <template lwc:if={editingPrompt}>
+              <lightning-textarea
+                label="System Prompt"
+                value={promptDraft}
+                onchange={handlePromptDraftChange}
+                class="prompt-editor slds-m-bottom_x-small"
+              ></lightning-textarea>
+              <lightning-input
+                label="Change note"
+                placeholder="What did you change, and what should it improve?"
+                value={changeNote}
+                onchange={handleChangeNoteChange}
+                class="slds-m-bottom_x-small"
+              ></lightning-input>
+              <lightning-input
+                type="checkbox"
+                label="Publish immediately (make this the version new runs use)"
+                checked={publishNow}
+                onchange={handlePublishNowChange}
+                class="slds-m-bottom_x-small"
+              ></lightning-input>
+              <lightning-button
+                label={savePromptLabel}
+                variant="brand"
+                disabled={savePromptDisabled}
+                onclick={handleSavePrompt}
+                class="slds-m-right_x-small"
+              ></lightning-button>
+              <lightning-button
+                label="Cancel"
+                onclick={handleCancelPrompt}
+              ></lightning-button>
+            </template>
+            <template lwc:else>
+              <lightning-button
+                label="Edit prompt (saves a new version)"
+                icon-name="utility:edit"
+                onclick={handleEditPrompt}
+                class="slds-m-bottom_x-small"
+              ></lightning-button>
+            </template>
+
+            <!-- diff viewer -->
+            <template lwc:if={diff}>
+              <div class="slds-box slds-box_x-small slds-m-vertical_x-small">
+                <p class="field-label">
+                  Diff: {diff.title}
+                  <span class="slds-text-color_weak slds-m-left_x-small"
+                    >{diff.summary}</span
+                  >
+                </p>
+                <template lwc:if={diff.unchanged}>
+                  <p class="slds-text-color_weak">
+                    These versions are identical.
+                  </p>
+                </template>
+                <template lwc:else>
+                  <pre class="diff-pre"><template
+                                            for:each={diff.rows}
+                                            for:item="row"
+                                        ><span
+                                                key={row.key}
+                                                class={row.cssClass}
+                                            >{row.prefix} {row.text}
+</span></template></pre>
+                </template>
                 <lightning-button
-                    label="New Agent"
-                    icon-name="utility:add"
-                    onclick={handleNew}
+                  label="Close diff"
+                  onclick={handleCloseDiff}
+                  class="slds-m-top_x-small"
                 ></lightning-button>
-                <template lwc:if={showViewer}>
+              </div>
+            </template>
+
+            <!-- version history -->
+            <template lwc:if={versionsLoading}>
+              <lightning-spinner
+                alternative-text="Loading versions"
+                size="small"
+              ></lightning-spinner>
+            </template>
+            <template lwc:if={hasVersions}>
+              <template for:each={versions} for:item="version">
+                <div
+                  key={version.versionId}
+                  class="slds-box slds-box_x-small slds-m-bottom_xx-small version-row"
+                >
+                  <p class="tool-name">
+                    {version.versionLabel}
+                    <span class={version.statusBadgeClass}
+                      >{version.statusLabel}</span
+                    >
+                    <span class="slds-text-color_weak slds-m-left_x-small"
+                      >{version.createdSummary}</span
+                    >
+                  </p>
+                  <template lwc:if={version.changeNote}>
+                    <p class="slds-m-bottom_xx-small">{version.changeNote}</p>
+                  </template>
+                  <lightning-formatted-date-time
+                    value={version.createdDate}
+                    year="numeric"
+                    month="short"
+                    day="2-digit"
+                    hour="2-digit"
+                    minute="2-digit"
+                    class="slds-text-color_weak"
+                  ></lightning-formatted-date-time>
+                  <div class="slds-m-top_xx-small">
                     <lightning-button
-                        label="Edit"
-                        icon-name="utility:edit"
-                        onclick={handleEdit}
+                      label="Diff vs active"
+                      data-id={version.versionId}
+                      onclick={handleDiffVersion}
+                      class="slds-m-right_xx-small"
                     ></lightning-button>
-                </template>
-            </lightning-button-group>
-        </div>
-        <div class="slds-grid slds-p-horizontal_small">
-            <!-- agent list -->
-            <div class="slds-col slds-size_1-of-4 slds-border_right slds-p-right_small">
-                <ul>
-                    <template for:each={agents} for:item="agent">
-                        <li
-                            key={agent.developerName}
-                            data-name={agent.developerName}
-                            class={agent.cssClass}
-                            onclick={handleSelect}
-                        >
-                            <p class="agent-name slds-truncate">{agent.label}</p>
-                            <span class={agent.badgeClass}>{agent.statusLabel}</span>
-                        </li>
+                    <template lwc:if={version.canPublish}>
+                      <lightning-button
+                        label="Publish"
+                        variant="brand"
+                        data-id={version.versionId}
+                        onclick={handlePublishVersion}
+                        class="slds-m-right_xx-small"
+                      ></lightning-button>
                     </template>
-                </ul>
-            </div>
-
-            <!-- detail / edit -->
-            <div class="slds-col slds-size_3-of-4 slds-p-left_small">
-                <template lwc:if={errorText}>
-                    <div class="slds-text-color_error slds-m-bottom_x-small">{errorText}</div>
-                </template>
-                <template lwc:if={deployMessage}>
-                    <div class="slds-box slds-box_x-small slds-m-bottom_x-small deploy-status">
-                        <template lwc:if={deploying}>
-                            <lightning-spinner
-                                size="small"
-                                alternative-text="Deploying"
-                                class="slds-is-relative slds-m-right_x-small"
-                            ></lightning-spinner>
-                        </template>
-                        {deployMessage}
-                    </div>
-                </template>
-
-                <!-- EDIT MODE -->
-                <template lwc:if={editing}>
-                    <div class="slds-grid slds-gutters slds-m-bottom_x-small">
-                        <div class="slds-col">
-                            <lightning-input
-                                label="Developer Name"
-                                value={form.developerName}
-                                disabled={devNameDisabled}
-                                data-field="developerName"
-                                onchange={handleFormChange}
-                            ></lightning-input>
-                        </div>
-                        <div class="slds-col">
-                            <lightning-input
-                                label="Label"
-                                value={form.label}
-                                data-field="label"
-                                onchange={handleFormChange}
-                            ></lightning-input>
-                        </div>
-                    </div>
-                    <div class="slds-grid slds-gutters slds-m-bottom_x-small">
-                        <div class="slds-col">
-                            <lightning-combobox
-                                label="LLM Provider"
-                                value={form.llmProvider}
-                                options={providerOptions}
-                                data-field="llmProvider"
-                                onchange={handleFormChange}
-                            ></lightning-combobox>
-                        </div>
-                        <div class="slds-col">
-                            <lightning-combobox
-                                label="Memory Config"
-                                value={form.memoryConfig}
-                                options={memoryOptions}
-                                data-field="memoryConfig"
-                                onchange={handleFormChange}
-                            ></lightning-combobox>
-                        </div>
-                        <div class="slds-col slds-size_1-of-6">
-                            <lightning-input
-                                type="number"
-                                label="Max Steps"
-                                value={form.maxSteps}
-                                data-field="maxSteps"
-                                onchange={handleFormChange}
-                            ></lightning-input>
-                        </div>
-                        <div class="slds-col slds-size_1-of-6">
-                            <lightning-input
-                                type="checkbox"
-                                label="Active"
-                                checked={form.isActive}
-                                data-field="isActive"
-                                onchange={handleFormChange}
-                            ></lightning-input>
-                        </div>
-                    </div>
-                    <lightning-textarea
-                        label="Goal"
-                        value={form.goal}
-                        data-field="goal"
-                        onchange={handleFormChange}
-                        class="slds-m-bottom_x-small"
-                    ></lightning-textarea>
-                    <lightning-textarea
-                        label="System Prompt"
-                        value={form.systemPrompt}
-                        data-field="systemPrompt"
-                        onchange={handleFormChange}
-                        class="prompt-editor slds-m-bottom_x-small"
-                    ></lightning-textarea>
-
-                    <p class="field-label">Tool Grants</p>
-                    <template for:each={toolRows} for:item="tool">
-                        <div key={tool.developerName} class="tool-grant">
-                            <lightning-input
-                                type="checkbox"
-                                label={tool.label}
-                                checked={tool.allowed}
-                                data-name={tool.developerName}
-                                onchange={handleToolToggle}
-                            ></lightning-input>
-                            <span class="slds-text-color_weak tool-desc">{tool.description}</span>
-                        </div>
+                    <template lwc:if={version.canActivate}>
+                      <lightning-button
+                        label="Activate"
+                        data-id={version.versionId}
+                        onclick={handleActivateVersion}
+                        class="slds-m-right_xx-small"
+                      ></lightning-button>
                     </template>
-
-                    <div class="slds-m-top_small">
-                        <lightning-button
-                            label="Deploy"
-                            variant="brand"
-                            icon-name="utility:upload"
-                            disabled={deployDisabled}
-                            onclick={handleDeploy}
-                            class="slds-m-right_x-small"
-                        ></lightning-button>
-                        <lightning-button
-                            label="Cancel"
-                            onclick={handleCancelEdit}
-                        ></lightning-button>
-                    </div>
-                </template>
-
-                <!-- VIEW MODE -->
-                <template lwc:if={showViewer}>
-                    <div class="slds-grid slds-gutters slds-m-bottom_small">
-                        <div class="slds-col">
-                            <p class="field-label">LLM Provider</p>
-                            <p>{selected.llmProvider}</p>
-                        </div>
-                        <div class="slds-col">
-                            <p class="field-label">Memory Config</p>
-                            <p>{selected.memoryConfig}</p>
-                        </div>
-                        <div class="slds-col">
-                            <p class="field-label">Max Steps</p>
-                            <p>{selected.maxSteps}</p>
-                        </div>
-                    </div>
-
-                    <p class="field-label">Goal</p>
-                    <p class="slds-m-bottom_small">{selected.goal}</p>
-
-                    <p class="field-label">System Prompt</p>
-                    <pre class="prompt-pre slds-m-bottom_small">{selected.systemPrompt}</pre>
-
-                    <p class="field-label">Granted Tools</p>
-                    <template lwc:if={hasTools}>
-                        <template for:each={selected.tools} for:item="tool">
-                            <div
-                                key={tool.developerName}
-                                class="slds-box slds-box_x-small slds-m-bottom_x-small"
-                            >
-                                <p class="tool-name">
-                                    {tool.label}
-                                    <span class="slds-text-color_weak slds-m-left_x-small"
-                                        >{tool.toolClass}</span
-                                    >
-                                </p>
-                                <p class="slds-m-bottom_xx-small">{tool.description}</p>
-                                <template lwc:if={tool.promptGuidance}>
-                                    <p class="field-label">Prompt Guidance</p>
-                                    <p class="slds-m-bottom_xx-small">{tool.promptGuidance}</p>
-                                </template>
-                                <template lwc:if={tool.inputSchema}>
-                                    <p class="field-label">Input Schema</p>
-                                    <pre class="schema-pre">{tool.inputSchema}</pre>
-                                </template>
-                            </div>
-                        </template>
-                    </template>
-                    <template lwc:else>
-                        <p class="slds-text-color_weak">No tools granted.</p>
-                    </template>
-
                     <lightning-button
-                        label="Show what the LLM sees"
-                        icon-name="utility:preview"
-                        class="slds-m-top_small"
-                        onclick={handleShowManifest}
+                      label="Restore as draft"
+                      data-id={version.versionId}
+                      onclick={handleRestoreVersion}
                     ></lightning-button>
-                    <template lwc:if={manifest}>
-                        <p class="field-label slds-m-top_small">Tool Manifest (as sent to the model)</p>
-                        <pre class="prompt-pre">{manifest}</pre>
-                    </template>
-                </template>
-            </div>
-        </div>
-    </lightning-card>
+                  </div>
+                </div>
+              </template>
+            </template>
+            <template lwc:else>
+              <p class="slds-text-color_weak">
+                No versions yet — this agent is running its packaged baseline
+                prompt. Editing the prompt creates v1.
+              </p>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </lightning-card>
 </template>

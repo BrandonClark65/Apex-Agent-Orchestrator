@@ -23,7 +23,8 @@ public with sharing class AgentMonitorController {
   ) {
     String query =
       'SELECT Id, Name, aao__Agent__c, aao__Status__c, aao__Trigger_Type__c, ' +
-      'aao__Started_At__c, aao__Finished_At__c, Depth__c, Parent_Run__c, Session__c ' +
+      'aao__Started_At__c, aao__Finished_At__c, Depth__c, Parent_Run__c, Session__c, ' +
+      'aao__Prompt_Version__c, aao__Prompt_Version_Number__c ' +
       'FROM aao__Agent_Run__c';
     List<String> clauses = new List<String>();
     if (String.isNotBlank(statusFilter)) {
@@ -66,7 +67,9 @@ public with sharing class AgentMonitorController {
         aao__Finished_At__c,
         Depth__c,
         Parent_Run__c,
-        Session__c
+        Session__c,
+        aao__Prompt_Version__c,
+        aao__Prompt_Version_Number__c
       FROM aao__Agent_Run__c
       WHERE Id = :runId
       LIMIT 1
@@ -170,11 +173,14 @@ public with sharing class AgentMonitorController {
           aao__Finished_At__c,
           Depth__c,
           Parent_Run__c,
-          Session__c
+          Session__c,
+          aao__Prompt_Version__c,
+          aao__Prompt_Version_Number__c
         FROM aao__Agent_Run__c
         WHERE
           Id IN :frontier
-          OR (Parent_Run__c IN :frontier AND Id NOT IN :seen)
+          OR (Parent_Run__c IN :frontier
+          AND Id NOT IN :seen)
         ORDER BY Depth__c ASC, aao__Started_At__c ASC
       ];
       Set<Id> next = new Set<Id>();
@@ -247,6 +253,10 @@ public with sharing class AgentMonitorController {
     s.depth = run.Depth__c == null ? 0 : Integer.valueOf(run.Depth__c);
     s.parentRunId = run.Parent_Run__c;
     s.sessionId = run.Session__c;
+    s.promptVersionId = run.aao__Prompt_Version__c;
+    s.promptVersionNumber = run.aao__Prompt_Version_Number__c == null
+      ? null
+      : Integer.valueOf(run.aao__Prompt_Version_Number__c);
     return s;
   }
 
@@ -282,6 +292,11 @@ public with sharing class AgentMonitorController {
     public Id parentRunId;
     @AuraEnabled
     public Id sessionId;
+    /** @description Prompt version this run executed; null means the packaged baseline. */
+    @AuraEnabled
+    public Id promptVersionId;
+    @AuraEnabled
+    public Integer promptVersionNumber;
   }
 
   /** @description Run header + step previews. */

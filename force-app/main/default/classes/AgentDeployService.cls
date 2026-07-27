@@ -131,7 +131,12 @@ public with sharing class AgentDeployService {
     record.fullName = 'aao__Agent_Definition.' + request.developerName;
     record.label = request.label;
     record.values.add(value('aao__Goal__c', request.goal));
-    record.values.add(value('aao__SystemPrompt__c', request.systemPrompt));
+    // SystemPrompt__c is only the packaged baseline now — the live prompt is the agent's
+    // active Agent_Prompt_Version__c. A null here means "leave the baseline alone": a CMDT
+    // deploy only touches the fields it lists, so omitting it preserves the shipped value.
+    if (request.systemPrompt != null) {
+      record.values.add(value('aao__SystemPrompt__c', request.systemPrompt));
+    }
     record.values.add(value('aao__LLMProvider__c', request.llmProvider));
     record.values.add(
       value(
