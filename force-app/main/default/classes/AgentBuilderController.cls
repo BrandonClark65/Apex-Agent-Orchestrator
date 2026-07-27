@@ -196,12 +196,60 @@ public with sharing class AgentBuilderController {
     // when the agent is brand new — that gives a fresh org a working packaged baseline. After
     // that the baseline is frozen and prompt edits go through savePromptVersion instead, so a
     // wording tweak doesn't cost a 90-second metadata deploy.
-    if (!isNewAgent(request.developerName)) {
+    Boolean isNew = isNewAgent(request.developerName);
+    if (!isNew) {
       request.systemPrompt = null;
     }
 
+    // Runs after deployAgent so a request that fails validation throws before we write
+    // anything — an invalid agent should not leave a version record behind.
     Id jobId = AgentDeployService.deployAgent(request);
+
+    if (isNew && String.isNotBlank(request.systemPrompt)) {
+      seedFirstVersion(
+        request.developerName,
+        request.systemPrompt,
+        request.goal
+      );
+    }
+
     return jobId == null ? null : String.valueOf(jobId);
+  }
+
+  /**
+   * @description Captures a brand-new agent's starting prompt as v1 so its history begins at
+   * creation. Without this the as-created wording would live only in the CMDT baseline: the
+   * first edit would become v1 carrying the *new* text, leaving the original impossible to
+   * diff against or roll back to.
+   *
+   * The config snapshot comes out null here, and that is honest — the agent's CMDT record and
+   * tool grants are still mid-deploy, so there is no configuration to photograph yet.
+   */
+  private static void seedFirstVersion(
+    String developerName,
+    String systemPrompt,
+    String goal
+  ) {
+    try {
+      Agent_Prompt_Version__c first = PromptVersionService.createDraft(
+        developerName,
+        systemPrompt,
+        goal,
+        'Initial prompt, captured when the agent was created.',
+        null
+      );
+      PromptVersionService.publish(first.Id);
+    } catch (Exception e) {
+      // The agent itself deployed fine; losing its v1 must not fail the save. The engine
+      // falls back to the CMDT baseline, and the next prompt edit will create v1 instead.
+      System.debug(
+        LoggingLevel.ERROR,
+        'Could not seed the first prompt version for ' +
+          developerName +
+          ': ' +
+          e.getMessage()
+      );
+    }
   }
 
   private static Boolean isNewAgent(String developerName) {

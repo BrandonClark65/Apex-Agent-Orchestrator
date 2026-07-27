@@ -401,6 +401,86 @@ private class AgentBuilderControllerTest {
   }
 
   @IsTest
+  static void testNewAgentSeedsBothTheBaselineAndVersionOne() {
+    AgentDeployService.AgentSaveRequest request = new AgentDeployService.AgentSaveRequest();
+    request.developerName = 'Brand_New_Agent';
+    request.label = 'Brand New Agent';
+    request.systemPrompt = 'AS_CREATED_BODY';
+    request.goal = 'do a thing';
+    request.llmProvider = 'OpenAI_GPT4';
+    request.memoryConfig = 'Default_Memory';
+    request.maxSteps = 10;
+    request.isActive = true;
+
+    Test.startTest();
+    AgentBuilderController.saveAgent(JSON.serialize(request));
+    Test.stopTest();
+
+    // The CMDT baseline is seeded, so a fresh org has a working packaged prompt...
+    Metadata.CustomMetadata definition = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[0];
+    Boolean baselineWritten = false;
+    for (Metadata.CustomMetadataValue value : definition.values) {
+      if (value.field == 'aao__SystemPrompt__c') {
+        baselineWritten = true;
+        System.assertEquals('AS_CREATED_BODY', value.value);
+      }
+    }
+    System.assert(
+      baselineWritten,
+      'A new agent should seed the packaged CMDT baseline'
+    );
+
+    // ...and v1 captures the same text, so history starts at creation rather than at the
+    // first edit (which would otherwise lose the as-created wording entirely).
+    List<Agent_Prompt_Version__c> versions = [
+      SELECT
+        Version_Number__c,
+        Status__c,
+        Is_Active__c,
+        System_Prompt__c,
+        Goal__c
+      FROM Agent_Prompt_Version__c
+      WHERE Agent__c = 'Brand_New_Agent'
+    ];
+    System.assertEquals(
+      1,
+      versions.size(),
+      'Creating an agent should create v1'
+    );
+    System.assertEquals(1, versions[0].Version_Number__c);
+    System.assertEquals('Published', versions[0].Status__c);
+    System.assertEquals(true, versions[0].Is_Active__c);
+    System.assertEquals('AS_CREATED_BODY', versions[0].System_Prompt__c);
+    System.assertEquals('do a thing', versions[0].Goal__c);
+  }
+
+  @IsTest
+  static void testSavingAnExistingAgentCreatesNoExtraVersion() {
+    AgentDeployService.AgentSaveRequest request = new AgentDeployService.AgentSaveRequest();
+    request.developerName = 'CRUD_Agent';
+    request.label = 'CRUD Agent';
+    request.systemPrompt = 'SHOULD_BE_IGNORED';
+    request.llmProvider = 'OpenAI_GPT4';
+    request.memoryConfig = 'Default_Memory';
+    request.maxSteps = 10;
+    request.isActive = true;
+
+    Test.startTest();
+    AgentBuilderController.saveAgent(JSON.serialize(request));
+    Test.stopTest();
+
+    System.assertEquals(
+      0,
+      [
+        SELECT COUNT()
+        FROM Agent_Prompt_Version__c
+        WHERE Agent__c = 'CRUD_Agent'
+      ],
+      'A config save on an existing agent must not mint a prompt version'
+    );
+  }
+
+  @IsTest
   static void testTestRunOnVersionStampsTheChosenVersion() {
     Id v1 = AgentBuilderController.savePromptVersion(
       'CRUD_Agent',
