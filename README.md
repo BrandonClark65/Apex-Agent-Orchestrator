@@ -38,6 +38,7 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 - **ToolRegistry / AgentTool** - discovers and invokes Apex tools; access is granted per agent via `Agent_Tool_Mapping__mdt`.
 - **LLMClient / LLMClientFactory** - provider-agnostic LLM interface driven by `LLM_Provider__mdt`; ships `OpenAIClient`, `AnthropicClient`, `AzureOpenAIClient`, and `OpenAIResponsesClient` (Responses API on OpenAI or Azure).
 - **PromptVersionService** - resolves which prompt a run executes and owns version authoring (draft, publish, activate, restore). Resolution never throws: any failure falls back to the packaged baseline so versioning can't break a run.
+- **PromptVersionBackfill** - `global` entry point that seeds v1 for every agent from the packaged baseline, so subscriber orgs can start prompt history at what shipped. Backs `scripts/apex/BackfillPromptVersions.apex`.
 - **AgentDeployService / AgentDeployCallback** - deploys agent definitions and tool grants from the builder UI via `Metadata.Operations`, reporting completion over the UI event channel. Prompts deliberately bypass this path - see [Prompt Versioning](#prompt-versioning).
 - **MemoryProvider / MemoryService** - pluggable memory store (`Agent_Memory__c` + `SalesforceMemoryProvider` today); recall injects "Relevant memories" and "Lessons from previous runs" into prompts, `MemoryCaptureQueueable` extracts facts and reflections after runs.
 - **HistoryCompactor** - summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
@@ -117,9 +118,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 1.1 (1.1.0), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
+**Current version: 1.2 (1.2.0), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OYwbAAG
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OeXNAA0
 
 ## Post-Install Setup
 
@@ -199,6 +200,8 @@ sf apex run --file scripts/apex/BackfillPromptVersions.apex --target-org <alias>
 ```
 
 Idempotent - it skips agents that already have versions, and agents whose baseline prompt is blank. Safe to re-run after adding agents.
+
+The script is a thin wrapper over `aao.PromptVersionBackfill.run()`, which is where the work actually happens - the version-key format and the `Active_Key__c`/`Is_Active__c` lockstep are package invariants, so they live in the package rather than in a script you'd paste into a subscriber org and forget to update. Requires package **1.2.0 or later**; on earlier versions the entry point isn't there and anonymous Apex fails with `Variable does not exist: PromptVersionBackfill`.
 
 ### 6. Configure memory (optional)
 
