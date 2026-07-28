@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Published_Versions_Are_Immutable</fullName>
+    <active>true</active>
+    <description
+  >A version only means something if it cannot change after the fact. Uses PRIORVALUE so the Draft-to-Published transition and the Published-to-Archived transition are both still allowed; only editing the body of an already-frozen version is blocked.</description>
+    <errorConditionFormula>AND(
+  OR(
+    ISPICKVAL(PRIORVALUE(Status__c), &quot;Published&quot;),
+    ISPICKVAL(PRIORVALUE(Status__c), &quot;Archived&quot;)
+  ),
+  OR(
+    ISCHANGED(System_Prompt__c),
+    ISCHANGED(Goal__c),
+    ISCHANGED(Version_Number__c)
+  )
+)</errorConditionFormula>
+    <errorMessage
+  >This prompt version is already published and cannot be edited. Save a new version instead.</errorMessage>
+</ValidationRule>

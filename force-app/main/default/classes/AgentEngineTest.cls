@@ -422,4 +422,212 @@ private class AgentEngineTest {
       )
     );
   }
+
+  //
+  // ───────────────────────────────────────────────────────────────
+  // PROMPT VERSIONING
+  // ───────────────────────────────────────────────────────────────
+  //
+
+  private static Agent_Prompt_Version__c publishVersion(
+    String agent,
+    String body
+  ) {
+    Agent_Prompt_Version__c draft = PromptVersionService.createDraft(
+      agent,
+      body,
+      null,
+      null,
+      null
+    );
+    PromptVersionService.publish(draft.Id);
+    PromptVersionService.clearCache();
+    return draft;
+  }
+
+  private static String systemMessageSentTo(LLMClientMock mock) {
+    for (LLMMessage message : mock.lastRequest.messages) {
+      if (message.role == 'system') {
+        return message.content;
+      }
+    }
+    return null;
+  }
+
+  @IsTest
+  static void testRunUsesTheActivePromptVersion() {
+    publishVersion('CRUD_Agent', 'ACTIVE_VERSION_MARKER');
+
+    LLMClientMock mock = new LLMClientMock();
+    mock.addResponse('{"final":{"message":"Done"}}');
+    LLMClientFactory.setMock(mock);
+
+    Test.startTest();
+    Id runId = AgentEngine.runAgent('CRUD_Agent', '{"task":"x"}', 'Apex');
+    Test.stopTest();
+
+    aao__Agent_Run__c run = [
+      SELECT aao__Prompt_Version__c, aao__Prompt_Version_Number__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+    ];
+    System.assertNotEquals(
+      null,
+      run.aao__Prompt_Version__c,
+      'The run should be stamped with the version it executed'
+    );
+    System.assertEquals(1, run.aao__Prompt_Version_Number__c);
+    System.assert(
+      systemMessageSentTo(mock).contains('ACTIVE_VERSION_MARKER'),
+      'The versioned prompt body should reach the model, not the CMDT baseline'
+    );
+  }
+
+  @IsTest
+  static void testRunFallsBackToBaselineWhenAgentHasNoVersions() {
+    LLMClientMock mock = new LLMClientMock();
+    mock.addResponse('{"final":{"message":"Done"}}');
+    LLMClientFactory.setMock(mock);
+
+    Test.startTest();
+    Id runId = AgentEngine.runAgent('CRUD_Agent', '{"task":"x"}', 'Apex');
+    Test.stopTest();
+
+    aao__Agent_Run__c run = [
+      SELECT aao__Prompt_Version__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :runId
+    ];
+    System.assertEquals(
+      null,
+      run.aao__Prompt_Version__c,
+      'With no versions the run should be unstamped, not fail'
+    );
+    System.assert(
+      String.isNotBlank(systemMessageSentTo(mock)),
+      'The packaged baseline prompt should still be sent'
+    );
+    System.assert(
+      !systemMessageSentTo(mock).startsWith('null'),
+      'A missing prompt must never render the literal string "null"'
+    );
+  }
+
+  @IsTest
+  static void testExplicitVersionOverrideBeatsTheActiveVersion() {
+    Agent_Prompt_Version__c v1 = publishVersion('CRUD_Agent', 'OLD_MARKER');
+    publishVersion('CRUD_Agent', 'NEW_MARKER');
+
+    LLMClientMock mock = new LLMClientMock();
+    mock.addResponse('{"final":{"message":"Done"}}');
+    LLMClientFactory.setMock(mock);
+
+    Test.startTest();
+    Id runId = AgentEngine.runAgent(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      'TestBench',
+      v1.Id
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      1,
+      [
+        SELECT aao__Prompt_Version_Number__c
+        FROM aao__Agent_Run__c
+        WHERE Id = :runId
+      ]
+      .aao__Prompt_Version_Number__c,
+      'The run should be stamped with the overridden version'
+    );
+    System.assert(
+      systemMessageSentTo(mock).contains('OLD_MARKER'),
+      'The overridden version body should be used'
+    );
+  }
+
+  @IsTest
+  static void testRunKeepsItsStampedVersionWhenANewOneIsActivatedMidFlight() {
+    Agent_Prompt_Version__c v1 = publishVersion('CRUD_Agent', 'V1_MARKER');
+
+    LLMClientMock mock = new LLMClientMock();
+    mock.addResponse('{"final":{"message":"Done"}}');
+    LLMClientFactory.setMock(mock);
+
+    // Start the run against v1, then publish v2 before the first LLM step executes.
+    Id runId = ExecutionLogger.startRun(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      'Apex',
+      v1.Id,
+      1
+    );
+    publishVersion('CRUD_Agent', 'V2_MARKER');
+
+    Test.startTest();
+    AgentEngine.runLLMStep(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      'Apex',
+      runId,
+      new List<LLMMessage>{ new LLMMessage('user', '{"task":"x"}') }
+    );
+    // Read the request now, not after stopTest: this test drives runLLMStep directly, so the
+    // memory-capture Queueable that finishRun enqueues does flush at stopTest and would
+    // overwrite lastRequest with its own extraction prompt.
+    String systemMessage = systemMessageSentTo(mock);
+    Test.stopTest();
+
+    System.assert(
+      systemMessage.contains('V1_MARKER'),
+      'A run must finish on the prompt it started with, not one activated mid-flight'
+    );
+    System.assert(
+      !systemMessage.contains('V2_MARKER'),
+      'The version activated mid-flight must not leak into a run already in progress'
+    );
+  }
+
+  @IsTest
+  static void testSubAgentRunResolvesItsOwnAgentsVersion() {
+    publishVersion('CRUD_Agent', 'PARENT_MARKER');
+    publishVersion('Orchestrator_Agent', 'CHILD_MARKER');
+
+    Id parentRunId = ExecutionLogger.startRun(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      'Apex'
+    );
+
+    Test.startTest();
+    Id childRunId = AgentEngine.startSubAgentRun(
+      'Orchestrator_Agent',
+      '{"task":"delegated"}',
+      parentRunId,
+      1
+    );
+    Test.stopTest();
+
+    aao__Agent_Run__c child = [
+      SELECT aao__Prompt_Version__c, aao__Prompt_Version_Number__c
+      FROM aao__Agent_Run__c
+      WHERE Id = :childRunId
+    ];
+    System.assertNotEquals(
+      null,
+      child.aao__Prompt_Version__c,
+      'A delegated run should be stamped too'
+    );
+    System.assertEquals(
+      'Orchestrator_Agent',
+      [
+        SELECT Agent__c
+        FROM Agent_Prompt_Version__c
+        WHERE Id = :child.aao__Prompt_Version__c
+      ]
+      .Agent__c,
+      'The child should resolve its own agent version, not inherit the parent one'
+    );
+  }
 }

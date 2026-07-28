@@ -100,7 +100,7 @@
 
   .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow)}
   .canvas{position:relative}
-  #erd-canvas{width:1370px; height:1172px}
+  #erd-canvas{width:1370px; height:1402px}
   #flow-canvas{width:1140px; height:1175px}
   .canvas svg.edges{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:3; overflow:visible}
 
@@ -228,7 +228,8 @@
     <p><strong>Plain English:</strong> think of an agent as a new employee.
     The <strong style="color:var(--cfg-base)">blueprint</strong> (left) is their job description, their toolbox, and the list of tools they're allowed to touch -
     all editable configuration, no code changes needed.
-    The <strong style="color:var(--run-base)">flight recorder</strong> (right) is the paper trail: every conversation, every question, and every single step the agent took gets its own record you can open and audit.
+    The <strong style="color:var(--run-base)">flight recorder</strong> (right) is the paper trail: every conversation, every question, and every single step the agent took gets its own record you can open and audit -
+    including which version of the agent's instructions each run actually used.
     The <strong style="color:var(--evt-base)">signals</strong> (bottom) are the office intercom - instant broadcasts that keep the engine moving and the screens live; they aren't stored.</p>
   </div>
 
@@ -245,15 +246,15 @@
   <div class="scroller">
   <div class="canvas" id="erd-canvas">
 
-    <div class="lane lane-cfg" style="left:16px; top:16px; width:612px; height:830px">
+    <div class="lane lane-cfg" style="left:16px; top:16px; width:612px; height:1060px">
       <span class="lane-title lt-cfg">Blueprint - configuration</span>
       <span class="lane-sub">Custom metadata: deploys with the package, editable by admins</span>
     </div>
-    <div class="lane lane-run" style="left:644px; top:16px; width:660px; height:830px">
+    <div class="lane lane-run" style="left:644px; top:16px; width:660px; height:1060px">
       <span class="lane-title lt-run">Flight recorder - runtime records</span>
-      <span class="lane-sub">Created automatically as agents work; full audit trail</span>
+      <span class="lane-sub">Records that live in the org: created as agents work, plus the prompt versions admins author</span>
     </div>
-    <div class="lane lane-evt" style="left:16px; top:862px; width:1288px; height:284px">
+    <div class="lane lane-evt" style="left:16px; top:1092px; width:1288px; height:284px">
       <span class="lane-title lt-evt">Signals - platform events</span>
       <span class="lane-sub">Fire-and-forget broadcasts; each one starts a fresh transaction (not stored)</span>
     </div>
@@ -339,6 +340,7 @@
         <li>Agent__c <span class="to to-cfg">⇢ by name</span> · User__c <span class="to to-run">→ User</span></li>
         <li>Title__c · Status__c</li>
         <li>Turn_Count__c · Last_Activity__c</li>
+        <li>Prompt_Version__c <span class="to to-run">→ pinned version</span></li>
         <li>Summary__c <span class="to to-eng">(compacted history)</span></li>
       </ul>
     </div>
@@ -371,8 +373,22 @@
         <li>Parent_Run__c <span class="to to-run">↺ this object</span></li>
         <li>Parent_Step__c <span class="to to-run">→ Step</span> · Depth__c</li>
         <li>PendingToolCount__c <span class="to to-eng">(parallel)</span></li>
+        <li>Prompt_Version__c <span class="to to-run">→ Prompt Version</span></li>
         <li>Turn_Number__c · Trigger_Type__c</li>
         <li>Started_At__c · Finished_At__c</li>
+      </ul>
+    </div>
+
+    <div class="card c-run" id="promptver" style="left:1025px; top:856px; width:252px">
+      <div class="kind">Custom object</div>
+      <h4>Agent Prompt Version</h4><span class="api">Agent_Prompt_Version__c</span>
+      <p class="sub">A numbered revision of the agent's instructions.</p>
+      <ul>
+        <li>Agent__c <span class="to to-cfg">⇢ by name</span></li>
+        <li>Version_Number__c · Status__c</li>
+        <li>System_Prompt__c · Goal__c</li>
+        <li>Is_Active__c <span class="to to-eng">(one per agent)</span></li>
+        <li>Source_Version__c <span class="to to-run">↺ this object</span></li>
       </ul>
     </div>
 
@@ -405,7 +421,7 @@
     </div>
 
     <!-- event cards -->
-    <div class="card c-evt" id="stepev" style="left:900px; top:940px; width:350px">
+    <div class="card c-evt" id="stepev" style="left:900px; top:1170px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent Step Event</h4><span class="api">Agent_Step_Event__e</span>
       <p class="sub">The engine's relay baton - each step publishes one to schedule the next.</p>
@@ -416,7 +432,7 @@
       <div class="foot">Consumed by AgentStepEventTrigger → enqueues the next Queueable</div>
     </div>
 
-    <div class="card c-evt" id="uiev" style="left:470px; top:940px; width:350px">
+    <div class="card c-evt" id="uiev" style="left:470px; top:1170px; width:350px">
       <div class="kind">Platform event</div>
       <h4>Agent UI Event</h4><span class="api">Agent_UI_Event__e</span>
       <p class="sub">Live progress broadcast so screens update without polling.</p>
@@ -426,7 +442,7 @@
       </ul>
     </div>
 
-    <div class="card c-eng" id="lwc" style="left:50px; top:940px; width:270px">
+    <div class="card c-eng" id="lwc" style="left:50px; top:1170px; width:270px">
       <div class="kind">Lightning components</div>
       <h4>Consoles</h4><span class="api">lwc/aao*</span>
       <p class="sub" style="font-family:'Cascadia Code',Consolas,monospace; font-size:10px">
@@ -443,7 +459,16 @@
     Dashed arrows are loose references - the record simply stores the target's developer name as text
     (that's the standard pattern for pointing at custom metadata). To keep the picture readable, the dashed
     <span class="mono">Agent__c</span> arrow is drawn once, from Agent Run; Session, Memory, and Test Case
-    carry the identical reference (marked <span class="mono">⇢ by name</span> on each card).
+    carry the identical reference (marked <span class="mono">⇢ by name</span> on each card). The same applies to
+    <span class="mono">Prompt_Version__c</span>: drawn once from Agent Run, but Agent Session carries it too - that's
+    the pin that keeps a whole conversation on one version of the prompt.
+  </p>
+  <p class="caption">
+    One wrinkle worth calling out: <span class="mono">Agent Prompt Version</span> sits on the records side even though it
+    is really blueprint content. That's deliberate. Apex cannot write custom metadata, so keeping prompts as
+    metadata would turn every edit - and every rollback - into a ~90 second deployment. As records they save instantly.
+    <span class="mono">Agent_Definition__mdt.SystemPrompt__c</span> survives only as the packaged fallback used when an
+    agent has no versions at all.
   </p>
 </section>
 
@@ -570,6 +595,7 @@
     <div class="member"><dt>ExecutionLogger</dt><dd>Writes Runs and Steps, finishes runs, and is the resume choke point for suspended parent runs.</dd></div>
     <div class="member"><dt>LLMClientFactory → OpenAI / Anthropic / AzureOpenAI clients</dt><dd>Provider adapters behind the <span class="mono">LLMClient</span> interface; swapped for <span class="mono">LLMClientMock</span> in tests so tests never hit a real LLM.</dd></div>
     <div class="member"><dt>MemoryService · SalesforceMemoryProvider · MemoryCaptureQueueable</dt><dd>Recall memories into the prompt before a run; capture new ones asynchronously after it.</dd></div>
+    <div class="member"><dt>PromptVersionService</dt><dd>Decides which prompt a run executes, and owns version authoring (draft, publish, activate, restore). Resolution never throws - any failure falls back to the packaged baseline, so versioning can't break a run.</dd></div>
     <div class="member"><dt>SessionService</dt><dd>Multi-turn conversations: seeds prior history into each new turn, updates the session when a run ends.</dd></div>
     <div class="member"><dt>HistoryCompactor</dt><dd>Summarizes long conversation histories before they blow past heap and prompt limits.</dd></div>
     <div class="member"><dt>UIEventPublisher</dt><dd>Fires <span class="mono">Agent_UI_Event__e</span> on step completion and run finish; failures are swallowed so the UI can never break the engine.</dd></div>
@@ -675,6 +701,7 @@
     {from:'session', to:'user',fs:'r', ft:.35, ts:'l', tt:.5,  cls:'lookup', label:'User__c', mono:true},
     {from:'memory', to:'user', fs:'r', ft:.5,  ts:'r', tt:.62, cls:'lookup', d1:26, d2:26, label:'User__c', mono:true, lt:.5, lx:8, ta:'start'},
     {from:'memory', to:'run',  fs:'l', ft:.42, ts:'b', tt:.72, cls:'lookup', label:'Source_Run__c', mono:true, lt:.45, ly:16},
+    {from:'run', to:'promptver', fs:'b', ft:.85, ts:'l', tt:.25, cls:'lookup', label:'Prompt_Version__c', mono:true, lt:.55, ly:-8},
     // the one representative by-name edge into the blueprint
     {from:'run', to:'def',     fs:'l', ft:.12, ts:'r', tt:.72, cls:'byname', label:'Agent__c', mono:true, ly:-8},
     // events

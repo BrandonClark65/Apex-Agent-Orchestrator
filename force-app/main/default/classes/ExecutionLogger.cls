@@ -24,6 +24,27 @@ public with sharing class ExecutionLogger {
     String inputContextJson,
     String triggerType
   ) {
+    return startRun(agentName, inputContextJson, triggerType, null, null);
+  }
+
+  /**
+   * @description Creates the `Agent_Run__c` header record for a new run, stamping which
+   * `Agent_Prompt_Version__c` the run will execute. Stamping at insert (rather than updating
+   * the row afterwards) keeps run creation to a single DML.
+   * @param agentName DeveloperName of the `Agent_Definition__mdt` record being run.
+   * @param inputContextJson JSON string the run was started with, stored for auditing.
+   * @param triggerType Free-text trigger label; defaults to `'Unknown'` when blank.
+   * @param promptVersionId Prompt version this run will use, or null when falling back to the packaged baseline.
+   * @param promptVersionNumber That version's number, denormalized for reporting.
+   * @return Id of the newly created Agent_Run__c record.
+   */
+  public static Id startRun(
+    String agentName,
+    String inputContextJson,
+    String triggerType,
+    Id promptVersionId,
+    Integer promptVersionNumber
+  ) {
     aao__Agent_Run__c run = new aao__Agent_Run__c(
       aao__Agent__c = agentName,
       aao__Status__c = 'Running',
@@ -31,7 +52,9 @@ public with sharing class ExecutionLogger {
       aao__Started_At__c = System.now(),
       aao__Trigger_Type__c = String.isBlank(triggerType)
         ? 'Unknown'
-        : triggerType
+        : triggerType,
+      aao__Prompt_Version__c = promptVersionId,
+      aao__Prompt_Version_Number__c = promptVersionNumber
     );
     insert run;
     return run.Id;

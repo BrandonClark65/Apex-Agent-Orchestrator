@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Config_Snapshot_Json__c</fullName>
+    <description
+  >Informational JSON snapshot taken at publish time: LLM provider, max steps, memory config and the granted tool DeveloperNames. Recorded so a past run can be explained; never replayed by the engine.</description>
+    <inlineHelpText
+  >Read-only record of the agent's configuration when this version was published. Not replayed on run.</inlineHelpText>
+    <label>Config Snapshot JSON</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>6</visibleLines>
+</CustomField>

@@ -14,6 +14,14 @@ public class LLMClientMock implements LLMClient {
   private Integer index = 0;
 
   /**
+   * @description The last request handed to `complete`, so tests can assert on what the engine
+   * actually sent — most usefully the system message, which is the only place the resolved
+   * prompt version's text is observable.
+   */
+  @TestVisible
+  public LLMRequest lastRequest;
+
+  /**
    * @description Queues a raw JSON response string to be returned by the next `complete` call,
    * with no token usage reported.
    * @param json Raw response text the mock will hand back verbatim as both `text` and `rawResponse`.
@@ -43,12 +51,14 @@ public class LLMClientMock implements LLMClient {
   }
 
   /**
-   * @description Returns the next queued response, ignoring the actual request contents.
-   * @param request Ignored; present only to satisfy the `LLMClient` interface.
+   * @description Returns the next queued response. The request does not influence which
+   * response comes back, but it is captured on `lastRequest` for assertions.
+   * @param request Captured on `lastRequest`; does not affect the response returned.
    * @return An LLMResponse wrapping the next queued JSON string.
    * @throws AgentException if no more responses have been queued.
    */
   public LLMResponse complete(LLMRequest request) {
+    lastRequest = request;
     if (index >= responses.size()) {
       throw new AgentException('No more mock responses available.');
     }

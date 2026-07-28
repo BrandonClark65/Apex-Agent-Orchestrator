@@ -12,22 +12,23 @@ A managed-package-ready orchestration layer that provides:
 - **Conversational sessions** - ChatGPT-style threads: users reply and the agent remembers the conversation, with automatic history compaction for long threads
 - **Long-term memory** - agents extract durable facts and preferences from runs, recall them into future prompts, and learn lessons from their own successes and failures (pluggable store, Salesforce-native today, vector-ready)
 - **LLM provider abstraction** - provider configs in Custom Metadata; OpenAI, Anthropic (Claude), Azure OpenAI, and the OpenAI Responses API (OpenAI or Azure) out of the box, new providers are one class + one factory branch
+- **Versioned prompts** - every prompt edit is an immutable, numbered version; each run records which one it executed, rollback is one click, and the Test Bench can replay the same input against any version to compare
 - **Full observability** - every run and step persisted, live progress events, a run monitor with cancel/re-run, and a step-by-step trace viewer
 - **External access** - drive a single agent from outside Salesforce through a REST API, with a standalone, framework-agnostic web chat widget; customer-facing surfaces hide the tool/thinking activity and are rate-limited per caller
-- **Admin-configurable agents** via Custom Metadata - prompts, tool grants, providers, and memory behavior are records, not code
+- **Admin-configurable agents** via Custom Metadata - tool grants, providers, and memory behavior are records, not code (prompts are versioned records too, see below)
 
 ## The Agent Orchestrator App
 
 The included Lightning app ships six UI surfaces (LWCs):
 
-| Tab              | What it does                                                                                                                                                                                         |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto-attaches the record as context).               |
-| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                   |
-| **Agents**       | Agent builder: view or edit each agent's prompt, tools, provider, and memory config - edits deploy through the Metadata API with live status - plus a "what the LLM actually sees" manifest preview. |
-| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                       |
-| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                              |
-| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace.                                                                                                        |
+| Tab              | What it does                                                                                                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto-attaches the record as context).                                                                              |
+| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                                                                                  |
+| **Agents**       | Agent builder: view or edit each agent's tools, provider, and memory config - config edits deploy through the Metadata API with live status - plus a prompt version history (diff, publish, activate, restore) and a "what the LLM actually sees" manifest preview. |
+| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                                                                                      |
+| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                                                                                             |
+| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace. Pick a prompt version to run against, so the same input can be compared across two versions.                                                                          |
 
 Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response detail and the sub-agent family tree.
 
@@ -36,7 +37,8 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 - **AgentEngine** - the execution state machine: `runAgent` (one-shot) and `runAgentInSession` (conversational) entry points, LLM/tool steps, parallel fan-out, sub-agent suspend/resume, cancel guards.
 - **ToolRegistry / AgentTool** - discovers and invokes Apex tools; access is granted per agent via `Agent_Tool_Mapping__mdt`.
 - **LLMClient / LLMClientFactory** - provider-agnostic LLM interface driven by `LLM_Provider__mdt`; ships `OpenAIClient`, `AnthropicClient`, `AzureOpenAIClient`, and `OpenAIResponsesClient` (Responses API on OpenAI or Azure).
-- **AgentDeployService / AgentDeployCallback** - deploys agent definitions and tool grants from the builder UI via `Metadata.Operations`, reporting completion over the UI event channel.
+- **PromptVersionService** - resolves which prompt a run executes and owns version authoring (draft, publish, activate, restore). Resolution never throws: any failure falls back to the packaged baseline so versioning can't break a run.
+- **AgentDeployService / AgentDeployCallback** - deploys agent definitions and tool grants from the builder UI via `Metadata.Operations`, reporting completion over the UI event channel. Prompts deliberately bypass this path - see [Prompt Versioning](#prompt-versioning).
 - **MemoryProvider / MemoryService** - pluggable memory store (`Agent_Memory__c` + `SalesforceMemoryProvider` today); recall injects "Relevant memories" and "Lessons from previous runs" into prompts, `MemoryCaptureQueueable` extracts facts and reflections after runs.
 - **HistoryCompactor** - summarizes long conversations before they hit the 128KB history ceiling, via a configurable cheap maintenance model.
 - **ExecutionLogger** - persists every run (`Agent_Run__c`) and step (`Agent_Step__c`); the single termination choke point that releases sessions, resumes parents, and publishes UI events.
@@ -44,6 +46,19 @@ Plus the **Agent Run** record page trace: step timeline with expandable LLM requ
 - **AgentChatApi** - external REST boundary (`@RestResource` at `/services/apexrest/agent/*`) mirroring the chat controller for non-Salesforce clients: a single server-resolved agent, `External_Ref__c`-scoped sessions, tool activity hidden from the customer, and per-caller rate limiting. Shares message rendering with the LWC via `ChatMessageRenderer`. See [docs/EXTERNAL-ACCESS.md](docs/EXTERNAL-ACCESS.md).
 - **AgentWatchdogSchedulable / MemoryJanitorSchedulable** - hourly timeout of stuck runs and orphaned sessions; nightly pruning of expired/stale memories.
 - **Custom Metadata** - `Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`.
+
+## Prompt Versioning
+
+A system prompt is the highest-churn thing in an agent, so it is versioned rather than edited in place. Every save creates an **`Agent_Prompt_Version__c`** record: numbered per agent, attributable, and immutable once published (a validation rule blocks edits to a published body - you save a new version instead).
+
+- **The active version is what runs.** Exactly one version per agent is active, enforced at the database level by a unique key rather than by convention.
+- **`Agent_Definition__mdt.SystemPrompt__c` is now only the packaged baseline** - the fallback the engine uses when an agent has no versions at all. Creating an agent in the builder seeds both the baseline and v1 from the same text; after that the baseline is frozen and edits go through versions. Editing the CMDT field directly has no effect on an agent that has versions.
+- **Runs record what they ran.** `Agent_Run__c.Prompt_Version__c` is stamped at run start and honored for the whole run, so activating a new version mid-run doesn't swap the prompt underneath it. A conversation pins on its first turn (`Agent_Session__c.Prompt_Version__c`) so a multi-turn thread can't change prompts halfway through.
+- **Rollback is instant.** Activating an older version takes effect on the next run with no metadata deploy. This is the reason versions are ordinary records and not Custom Metadata: Apex cannot DML CMDT, so routing prompt edits through `Metadata.Operations` would make every save _and every rollback_ a ~90 second async deploy.
+- **Drafts are the workspace.** A version saved without publishing stays editable and affects nothing. **Restore as draft** copies an older (immutable) version into a new editable one so you can build on it — the usual case being "v6 regressed, v3 was better, but I want v3 plus one fix." Drafts can be edited repeatedly and test-run before you publish.
+- **Compare before you commit.** The Test Bench can run a saved input against any version, drafts included, so you can put two traces side by side before making one live.
+
+The tradeoff of storing versions as data: they are records, not metadata, so they don't move between orgs with a `sf project deploy`. The packaged baseline still deploys normally, and `scripts/apex/BackfillPromptVersions.apex` recreates v1 in a new org from that baseline.
 
 ## Built-in Tools
 
@@ -102,9 +117,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 1.0 (0.1.0.1), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
+**Current version: 1.1 (1.1.0), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000NxCHAA0
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OYwbAAG
 
 ## Post-Install Setup
 
@@ -137,7 +152,7 @@ If your external credential uses **Per-User** authentication, switch it to a **N
 
 ### 2. Grant Metadata API access for the Agent Builder
 
-The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__mdt`/`Agent_Tool_Mapping__mdt` records through the Apex Metadata API (`Metadata.Operations.enqueueDeployment`). Every subscriber org needs to satisfy two *independent* requirements, or the builder fails with:
+The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__mdt`/`Agent_Tool_Mapping__mdt` records through the Apex Metadata API (`Metadata.Operations.enqueueDeployment`). Every subscriber org needs to satisfy two _independent_ requirements, or the builder fails with:
 
 > Not allowed to install or modify metadata via Apex
 
@@ -146,14 +161,14 @@ The builder's **Save** action (`AgentDeployService`) deploys `Agent_Definition__
 1. Setup → Profiles (not Permission Sets - Salesforce has a known issue where **Modify Metadata Through Metadata API Functions** granted via a permission set doesn't actually take effect) → open the builder user's profile → System Permissions.
 2. Enable **Customize Application** and **Modify Metadata Through Metadata API Functions**, then save.
 
-**b. Org-wide Apex Setting for non-certified packages.** While this package is not AppExchange security-reviewed, the org must separately opt in to letting *any* code from it call the Metadata API:
+**b. Org-wide Apex Setting for non-certified packages.** While this package is not AppExchange security-reviewed, the org must separately opt in to letting _any_ code from it call the Metadata API:
 
 1. Setup → Quick Find → **Apex Settings**.
 2. Enable **Deploy Metadata from Non-Certified Package Version via Apex**, then save.
 
 Both (a) and (b) are required - having only the user permissions still throws the same error until the Apex Setting is enabled too.
 
-All five custom metadata types (`Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`) ship with `visibility` set to **Public**, so once your org is on a package version that includes it, admins with the permissions above can view and manage records for them directly under Setup → Custom Metadata Types - not just through the Agent Builder / Tool Catalog UI. Object and field *definitions* stay locked to the package either way; only records are editable.
+All five custom metadata types (`Agent_Definition__mdt`, `Agent_Tool_Definition__mdt`, `Agent_Tool_Mapping__mdt`, `LLM_Provider__mdt`, `Memory_Config__mdt`) ship with `visibility` set to **Public**, so once your org is on a package version that includes it, admins with the permissions above can view and manage records for them directly under Setup → Custom Metadata Types - not just through the Agent Builder / Tool Catalog UI. Object and field _definitions_ stay locked to the package either way; only records are editable.
 
 The shipped example records (e.g. `LLM_Provider.OpenAI_GPT4`, `Agent_Definition.Orchestrator_Agent`) are `protected = false`, so subscribers can see and edit them, not just records they create themselves. Every field on those types is `fieldManageability = SubscriberControlled` **except** `Agent_Tool_Definition__mdt.Tool_Class__c`, `InputSchema__c`, and `OutputSchema__c`, which stay `DeveloperControlled` - those three are tied 1:1 to a registered Apex tool class and its contract, and editing them without a matching code change breaks tool execution. `SubscriberControlled` is the specific setting that makes edits upgrade-safe: once a subscriber has customized a value, future package upgrades won't overwrite it. `DeveloperControlled` is the opposite - the package can freely change that value in later versions, but subscribers can never edit it.
 
@@ -173,7 +188,19 @@ sf apex run --file scripts/apex/ScheduleWatchdog.apex --target-org <alias>
 
 Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should chat with agents, then open the **Agent Orchestrator** app from the App Launcher.
 
-### 5. Configure memory (optional)
+Note that **AAO_User** grants read access to `Agent_Prompt_Version__c`. Chat users never edit prompts, but the Agent Builder's version panel and the run trace's version badge both read these records, so removing that access leaves those surfaces blank for them.
+
+### 5. Seed prompt version history (optional)
+
+Agents installed with the package start with no `Agent_Prompt_Version__c` records and run on their packaged baseline prompt. That works fine, but prompt history then begins at your first edit rather than at what shipped. To capture the shipped prompts as v1 so you can diff and roll back to them:
+
+```bash
+sf apex run --file scripts/apex/BackfillPromptVersions.apex --target-org <alias>
+```
+
+Idempotent - it skips agents that already have versions, and agents whose baseline prompt is blank. Safe to re-run after adding agents.
+
+### 6. Configure memory (optional)
 
 Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config__mdt` record:
 
@@ -182,7 +209,7 @@ Each agent's `Agent_Definition__mdt.MemoryConfig__c` points at a `Memory_Config_
 
 To cut token costs, set `Maintenance_Provider__c` on the config to a cheap model's `LLM_Provider__mdt` record - compaction, extraction, and reflection calls route there instead of the agent's main model.
 
-### 6. Using agents from Flow (optional)
+### 7. Using agents from Flow (optional)
 
 Three invocable actions are available in Flow Builder under the **Apex Agent Orchestrator** category:
 
@@ -192,7 +219,7 @@ Three invocable actions are available in Flow Builder under the **Apex Agent Orc
 
 Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the agent loop finishes asynchronously via platform events. Poll with a Wait element that loops **Get Run Result** until `Is Done` is true, then read `Final Message` (or `Error Message` on failure).
 
-### 7. External chat access (optional)
+### 8. External chat access (optional)
 
 `AgentChatApi` exposes one agent to non-Salesforce clients (e.g. a website chat widget) over REST at `/services/apexrest/agent/*`. It's the HTTP mirror of the in-org chat, bound to a single agent and trimmed for customer-facing use. The full walkthrough - auth, endpoints, and the example widget - is in [docs/EXTERNAL-ACCESS.md](docs/EXTERNAL-ACCESS.md); the essentials:
 
@@ -217,4 +244,5 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - ✅ Memory management UI
 - ✅ External REST API + embeddable web chatbot
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ✅ Managed package release (2GP, v1.0 Released)
+- ✅ Prompt Versioning
+- ✅ Managed package release (2GP, v1.1 Released)

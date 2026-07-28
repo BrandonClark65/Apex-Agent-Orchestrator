@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Version_Number__c</fullName>
+    <description
+  >Per-agent version number, 1-based. Assigned by PromptVersionService.nextVersionNumber; uniqueness within an agent is enforced by Version_Key__c.</description>
+    <inlineHelpText
+  >Version number within this agent, starting at 1.</inlineHelpText>
+    <label>Version Number</label>
+    <precision>9</precision>
+    <required>true</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

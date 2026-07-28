@@ -27,8 +27,7 @@ public with sharing class AgentEngine {
   // (which it previously had). Written straight into the transcript as {"instruction":"..."}
   // messages, so the tool-call contract is pre-escaped JSON. TOOL_CONTRACT_FORMATS holds the
   // one part the parser actually cares about, so it lives in exactly one place.
-  private static final String TOOL_CONTRACT_FORMATS =
-    '{\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}';
+  private static final String TOOL_CONTRACT_FORMATS = '{\\"tool\\":..., \\"args\\":...} or {\\"tools\\":[...]} or {\\"final\\":{...}}';
   private static final String CONTINUE_INSTRUCTION =
     '{"instruction":"Given the tool output(s) above, decide whether to call more tools or ' +
     'return a final answer. Only respond with ' +
@@ -38,8 +37,7 @@ public with sharing class AgentEngine {
     '{"instruction":"The previous step failed. Adjust your approach and respond with ' +
     TOOL_CONTRACT_FORMATS +
     '."}';
-  private static final String REPEATED_TOOL_CALL_INSTRUCTION =
-    '{"instruction":"The previous tool call was identical. You must now return a final answer."}';
+  private static final String REPEATED_TOOL_CALL_INSTRUCTION = '{"instruction":"The previous tool call was identical. You must now return a final answer."}';
 
   //
   // ───────────────────────────────────────────────────────────────
@@ -61,10 +59,39 @@ public with sharing class AgentEngine {
     String inputContextJson,
     String triggerType
   ) {
+    return runAgent(agentDeveloperName, inputContextJson, triggerType, null);
+  }
+
+  /**
+   * @description Starts a new agent run against a specific prompt version instead of whichever
+   * version is currently active. Used by the Test Bench to replay the same input across two
+   * versions and compare. Deliberately not `@AuraEnabled` — Salesforce rejects two
+   * `@AuraEnabled` methods sharing a name, and the 3-argument form above is the one the LWCs,
+   * Flow actions and REST API call.
+   * @param agentDeveloperName DeveloperName of the `Agent_Definition__mdt` record to run.
+   * @param inputContextJson JSON string passed to the LLM as the initial user message.
+   * @param triggerType Free-text label describing what triggered this run, stored for observability.
+   * @param promptVersionId `Agent_Prompt_Version__c` to run against, or null to use the active version.
+   * @return Id of the newly created Agent_Run__c record.
+   */
+  public static Id runAgent(
+    String agentDeveloperName,
+    String inputContextJson,
+    String triggerType,
+    Id promptVersionId
+  ) {
+    PromptVersionService.ResolvedPrompt prompt = PromptVersionService.resolveById(
+      promptVersionId,
+      agentDeveloperName,
+      null
+    );
+
     Id runId = ExecutionLogger.startRun(
       agentDeveloperName,
       inputContextJson,
-      triggerType
+      triggerType,
+      prompt.versionId,
+      prompt.versionNumber
     );
 
     List<LLMMessage> history = new List<LLMMessage>{
@@ -109,17 +136,26 @@ public with sharing class AgentEngine {
 
     List<LLMMessage> history = new List<LLMMessage>();
     Integer turnNumber = 1;
+    Id pinnedVersionId = null;
 
     if (sessionId == null) {
-      sessionId = SessionService.startSession(
-        agentDeveloperName,
-        userMessage
+      sessionId = SessionService.startSession(agentDeveloperName, userMessage);
+      // Pin the thread to whichever version is active right now, so publishing a new version
+      // mid-conversation doesn't swap the prompt out from under an in-progress chat.
+      pinnedVersionId = PromptVersionService.resolveActive(
+          agentDeveloperName,
+          null
+        )
+        .versionId;
+      update new Agent_Session__c(
+        Id = sessionId,
+        Status__c = 'Busy',
+        Prompt_Version__c = pinnedVersionId
       );
-      update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
     } else {
       // Lock the session so two simultaneous sends can't both pass the Busy check.
       Agent_Session__c session = [
-        SELECT Status__c, Agent__c, Turn_Count__c
+        SELECT Status__c, Agent__c, Turn_Count__c, Prompt_Version__c
         FROM Agent_Session__c
         WHERE Id = :sessionId
         LIMIT 1
@@ -140,6 +176,9 @@ public with sharing class AgentEngine {
         (session.Turn_Count__c == null
           ? 0
           : Integer.valueOf(session.Turn_Count__c)) + 1;
+      // Reuse the thread's pin. A session started before prompt versioning existed has none,
+      // in which case this turn resolves the active version below like a one-shot run.
+      pinnedVersionId = session.Prompt_Version__c;
       update new Agent_Session__c(Id = sessionId, Status__c = 'Busy');
 
       history = SessionService.loadSeedHistory(sessionId);
@@ -147,10 +186,18 @@ public with sharing class AgentEngine {
 
     history.add(new LLMMessage('user', userMessage));
 
+    PromptVersionService.ResolvedPrompt prompt = PromptVersionService.resolveById(
+      pinnedVersionId,
+      agentDeveloperName,
+      null
+    );
+
     Id runId = ExecutionLogger.startRun(
       agentDeveloperName,
       userMessage,
-      String.isBlank(triggerType) ? 'UI' : triggerType
+      String.isBlank(triggerType) ? 'UI' : triggerType,
+      prompt.versionId,
+      prompt.versionNumber
     );
     update new aao__Agent_Run__c(
       Id = runId,
@@ -202,7 +249,7 @@ public with sharing class AgentEngine {
     try {
       // A cancelled (or otherwise terminated) run makes no more LLM calls.
       List<Agent_Run__c> statusCheck = [
-        SELECT Status__c
+        SELECT Status__c, Prompt_Version__c
         FROM Agent_Run__c
         WHERE Id = :runId
         LIMIT 1
@@ -252,8 +299,24 @@ public with sharing class AgentEngine {
 
       String toolManifest = buildToolManifest(toolDefs);
 
+      // The prompt built here is only ever used on the run's first LLM step — from step 2 on,
+      // history[0] already holds the system message and everything below is discarded. So
+      // resolve the versioned body only when we're actually going to use it, keeping the extra
+      // query to at most one per run rather than one per step.
+      Boolean buildingFreshPrompt =
+        history.isEmpty() || history[0].role != 'system';
+      String promptBody = agentDef.aao__SystemPrompt__c;
+      if (buildingFreshPrompt) {
+        promptBody = PromptVersionService.resolveForRun(
+            statusCheck.isEmpty() ? null : statusCheck[0].Prompt_Version__c,
+            agentDeveloperName,
+            agentDef.aao__SystemPrompt__c
+          )
+          .systemPrompt;
+      }
+
       String systemPrompt =
-        agentDef.aao__SystemPrompt__c +
+        promptBody +
         '\n\nYou have access to the following tools. ' +
         'You may ONLY call tools from this list.\n\n' +
         toolManifest +
@@ -265,7 +328,7 @@ public with sharing class AgentEngine {
         '- {"tools":[{"tool":"<name>","args":{...}}, ...]} — call multiple independent tools in parallel\n' +
         '- {"final":{...}} — return the final answer';
 
-      if (history.isEmpty() || history[0].role != 'system') {
+      if (buildingFreshPrompt) {
         // First LLM step of the run: recall relevant long-term memories into the prompt.
         systemPrompt += MemoryService.buildRecallBlock(
           agentDeveloperName,
@@ -389,9 +452,7 @@ public with sharing class AgentEngine {
               '{"error":"Repeated tool call detected"}'
             )
           );
-          history.add(
-            new LLMMessage('user', REPEATED_TOOL_CALL_INSTRUCTION)
-          );
+          history.add(new LLMMessage('user', REPEATED_TOOL_CALL_INSTRUCTION));
 
           scheduleNextLLMStep(runId, agentDeveloperName, triggerType, history);
           return;
@@ -809,13 +870,11 @@ public with sharing class AgentEngine {
   // Diagnostic prefix stamped onto caught error messages so a failed step's log records
   // which user context the async step actually ran as.
   private static String diagnosticPrefix() {
-    return (
-      '[DIAGNOSTIC] Running as: ' +
-      UserInfo.getName() +
-      ' (' +
-      UserInfo.getUserId() +
-      ') | '
-    );
+    return ('[DIAGNOSTIC] Running as: ' +
+    UserInfo.getName() +
+    ' (' +
+    UserInfo.getUserId() +
+    ') | ');
   }
 
   // Builds the assistant transcript message that echoes a completed tool call and its output
@@ -953,10 +1012,19 @@ public with sharing class AgentEngine {
     Id parentRunId,
     Integer depth
   ) {
+    // The child is a different agent, so it resolves its own active version rather than
+    // inheriting the parent's — stamped here so a delegated run is as explainable as a top-level one.
+    PromptVersionService.ResolvedPrompt prompt = PromptVersionService.resolveActive(
+      agentDeveloperName,
+      null
+    );
+
     Id childRunId = ExecutionLogger.startRun(
       agentDeveloperName,
       inputContextJson,
-      'SubAgent'
+      'SubAgent',
+      prompt.versionId,
+      prompt.versionNumber
     );
 
     List<LLMMessage> history = new List<LLMMessage>{

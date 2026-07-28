@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>AgentBuilderController</members>
@@ -54,6 +54,8 @@
         <members>OpenAIRequestDTO</members>
         <members>OpenAIResponseDTO</members>
         <members>OpenAIResponsesClient</members>
+        <members>PromptVersionService</members>
+        <members>PromptVersionServiceTest</members>
         <members>QuerySalesforceTool</members>
         <members>QuerySalesforceToolTest</members>
         <members>SalesforceMemoryProvider</members>
@@ -96,6 +98,18 @@
         <members>Agent_Memory__c.Source_Run__c</members>
         <members>Agent_Memory__c.Type__c</members>
         <members>Agent_Memory__c.User__c</members>
+        <members>Agent_Prompt_Version__c.Active_Key__c</members>
+        <members>Agent_Prompt_Version__c.Agent__c</members>
+        <members>Agent_Prompt_Version__c.Change_Note__c</members>
+        <members>Agent_Prompt_Version__c.Config_Snapshot_Json__c</members>
+        <members>Agent_Prompt_Version__c.Goal__c</members>
+        <members>Agent_Prompt_Version__c.Is_Active__c</members>
+        <members>Agent_Prompt_Version__c.Published_At__c</members>
+        <members>Agent_Prompt_Version__c.Source_Version__c</members>
+        <members>Agent_Prompt_Version__c.Status__c</members>
+        <members>Agent_Prompt_Version__c.System_Prompt__c</members>
+        <members>Agent_Prompt_Version__c.Version_Key__c</members>
+        <members>Agent_Prompt_Version__c.Version_Number__c</members>
         <members>Agent_Run__c.Agent__c</members>
         <members>Agent_Run__c.Depth__c</members>
         <members>Agent_Run__c.Error_Message__c</members>
@@ -106,6 +120,8 @@
         <members>Agent_Run__c.Parent_Run__c</members>
         <members>Agent_Run__c.Parent_Step__c</members>
         <members>Agent_Run__c.PendingToolCount__c</members>
+        <members>Agent_Run__c.Prompt_Version__c</members>
+        <members>Agent_Run__c.Prompt_Version_Number__c</members>
         <members>Agent_Run__c.Session__c</members>
         <members>Agent_Run__c.Started_At__c</members>
         <members>Agent_Run__c.Status__c</members>
@@ -113,6 +129,7 @@
         <members>Agent_Run__c.Turn_Number__c</members>
         <members>Agent_Session__c.Agent__c</members>
         <members>Agent_Session__c.Last_Activity__c</members>
+        <members>Agent_Session__c.Prompt_Version__c</members>
         <members>Agent_Session__c.Status__c</members>
         <members>Agent_Session__c.Summary__c</members>
         <members>Agent_Session__c.Title__c</members>
@@ -181,7 +198,8 @@
         <members>Agent_Tool_Mapping.CRUD_Agent_Query_Salesforce</members>
         <members>Agent_Tool_Mapping.CRUD_Agent_Update_Record</members>
         <members>Agent_Tool_Mapping.CRUD_Agent_Validate_Field</members>
-        <members>Agent_Tool_Mapping.Orchestrator_Agent_Query_Salesforce</members>
+        <members
+    >Agent_Tool_Mapping.Orchestrator_Agent_Query_Salesforce</members>
         <members>Agent_Tool_Mapping.Orchestrator_Agent_Sub_Agent</members>
         <members>LLM_Provider.Anthropic_Claude</members>
         <members>LLM_Provider.Azure_OpenAI</members>
@@ -193,6 +211,7 @@
     </types>
     <types>
         <members>Agent_Memory__c</members>
+        <members>Agent_Prompt_Version__c</members>
         <members>Agent_Run__c</members>
         <members>Agent_Session__c</members>
         <members>Agent_Step_Event__e</members>
@@ -205,6 +224,7 @@
         <members>Agent_Builder</members>
         <members>Agent_Chat</members>
         <members>Agent_Memories</members>
+        <members>Agent_Prompt_Version__c</members>
         <members>Agent_Run_Monitor</members>
         <members>Agent_Session__c</members>
         <members>Test_Bench</members>
@@ -214,10 +234,12 @@
     <types>
         <members>Agent_Definition__mdt-Agent Definition Layout</members>
         <members>Agent_Memory__c-Agent Memory Layout</members>
+        <members>Agent_Prompt_Version__c-Agent Prompt Version Layout</members>
         <members>Agent_Run__c-Agent Run Layout</members>
         <members>Agent_Session__c-Agent Session Layout</members>
         <members>Agent_Step__c-Agent Step Layout</members>
-        <members>Agent_Tool_Definition__mdt-Agent Tool Definition Layout</members>
+        <members
+    >Agent_Tool_Definition__mdt-Agent Tool Definition Layout</members>
         <members>Agent_Tool_Mapping__mdt-Agent-Tool Mapping Layout</members>
         <members>LLM_Provider__mdt-LLM Provider Layout</members>
         <members>Memory_Config__mdt-Memory Config Layout</members>
@@ -228,6 +250,7 @@
         <members>aaoAgentChat</members>
         <members>aaoChatMessage</members>
         <members>aaoMemoryManager</members>
+        <members>aaoPromptDiff</members>
         <members>aaoRunDetail</members>
         <members>aaoRunMonitor</members>
         <members>aaoTestBench</members>

@@ -29,6 +29,28 @@ private class AgentDeployServiceTest {
   }
 
   @IsTest
+  static void testNullSystemPromptIsOmittedFromTheContainer() {
+    // Prompts are versioned records now, so an edit to an existing agent sends a null prompt.
+    // A CMDT deploy only touches the fields it lists, so omitting the field is what preserves
+    // the packaged baseline — writing null would wipe it.
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.systemPrompt = null;
+
+    AgentDeployService.deployAgent(request);
+
+    Metadata.CustomMetadata definition = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[0];
+    System.assert(
+      !valueMap(definition).containsKey('aao__SystemPrompt__c'),
+      'A null prompt must be left out of the deploy entirely, not written as null'
+    );
+    System.assertEquals(
+      'OpenAI_GPT4',
+      valueMap(definition).get('aao__LLMProvider__c'),
+      'The rest of the configuration should still deploy'
+    );
+  }
+
+  @IsTest
   static void testContainerConstruction() {
     Id jobId = AgentDeployService.deployAgent(sampleRequest());
     System.assertEquals(null, jobId, 'enqueue bypassed in tests');

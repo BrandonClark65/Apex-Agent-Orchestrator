@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>System_Prompt__c</fullName>
+    <description
+  >The versioned system prompt body. Immutable once the version is Published — see the Published_Versions_Are_Immutable validation rule.</description>
+    <inlineHelpText
+  >Base instructions sent to the LLM. Cannot be edited once published; save a new version instead.</inlineHelpText>
+    <label>System Prompt</label>
+    <length>32768</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>10</visibleLines>
+</CustomField>
