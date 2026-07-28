@@ -118,9 +118,9 @@ If a deploy touches `AgentWatchdogSchedulable` or `MemoryJanitorSchedulable`, th
 
 ## Installation
 
-**Current version: 1.1 (1.1.0), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
+**Current version: 1.2 (1.2.0), Released.** This is a promoted managed package version - it can be installed into any org, including production. Testing in a sandbox or scratch org first is still recommended.
 
-Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OYwbAAG
+Install link: https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OeXNAA0
 
 ## Post-Install Setup
 
