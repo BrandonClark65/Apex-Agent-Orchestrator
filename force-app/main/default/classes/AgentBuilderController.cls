@@ -357,6 +357,33 @@ public with sharing class AgentBuilderController {
   }
 
   /**
+   * @description Edits an existing draft in place, rather than creating yet another version.
+   * `savePromptVersion` always inserts; this is what lets a draft actually be refined.
+   * @param versionId Draft to edit.
+   * @param systemPrompt Revised prompt body.
+   * @param goal Revised goal snapshot.
+   * @param changeNote Short explanation of what changed and why.
+   */
+  @AuraEnabled
+  public static void updatePromptVersion(
+    Id versionId,
+    String systemPrompt,
+    String goal,
+    String changeNote
+  ) {
+    try {
+      PromptVersionService.updateDraft(
+        versionId,
+        systemPrompt,
+        goal,
+        changeNote
+      );
+    } catch (Exception e) {
+      throw new AuraHandledException(e.getMessage());
+    }
+  }
+
+  /**
    * @description Freezes an existing draft and makes it the live version. Without this a draft
    * saved for later would have no way to go live — `activatePromptVersion` rejects drafts.
    * @param versionId Draft to publish.

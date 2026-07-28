@@ -405,6 +405,120 @@ private class PromptVersionServiceTest {
   }
 
   @IsTest
+  static void testUpdateDraftEditsInPlaceWithoutCreatingAVersion() {
+    Agent_Prompt_Version__c draft = PromptVersionService.createDraft(
+      AGENT,
+      'first pass',
+      'goal',
+      'initial note',
+      null
+    );
+
+    Test.startTest();
+    PromptVersionService.updateDraft(
+      draft.Id,
+      'second pass',
+      'new goal',
+      'sharpened the wording'
+    );
+    Test.stopTest();
+
+    Agent_Prompt_Version__c reloaded = [
+      SELECT
+        System_Prompt__c,
+        Goal__c,
+        Change_Note__c,
+        Version_Number__c,
+        Status__c
+      FROM Agent_Prompt_Version__c
+      WHERE Id = :draft.Id
+    ];
+    System.assertEquals('second pass', reloaded.System_Prompt__c);
+    System.assertEquals('new goal', reloaded.Goal__c);
+    System.assertEquals('sharpened the wording', reloaded.Change_Note__c);
+    System.assertEquals(
+      1,
+      reloaded.Version_Number__c,
+      'Editing a draft must not renumber it'
+    );
+    System.assertEquals('Draft', reloaded.Status__c);
+    System.assertEquals(
+      1,
+      [SELECT COUNT() FROM Agent_Prompt_Version__c WHERE Agent__c = :AGENT],
+      'Editing a draft must not spawn another version'
+    );
+  }
+
+  @IsTest
+  static void testUpdateDraftRejectsAPublishedVersion() {
+    Agent_Prompt_Version__c published = publishVersion(AGENT, 'frozen');
+
+    Boolean threw = false;
+    try {
+      PromptVersionService.updateDraft(published.Id, 'tampered', null, null);
+    } catch (AgentException e) {
+      threw = true;
+      System.assert(
+        e.getMessage().contains('Only a draft can be edited'),
+        'Expected a clear message rather than a raw DML error, got: ' +
+        e.getMessage()
+      );
+    }
+    System.assert(threw, 'Editing a published version must be rejected');
+    System.assertEquals(
+      'frozen',
+      [
+        SELECT System_Prompt__c
+        FROM Agent_Prompt_Version__c
+        WHERE Id = :published.Id
+      ]
+      .System_Prompt__c,
+      'The published body must be untouched'
+    );
+  }
+
+  @IsTest
+  static void testRestoreThenEditThenPublishRoundTrip() {
+    // The workflow that was broken: restoring produced a draft nothing could edit.
+    Agent_Prompt_Version__c v1 = publishVersion(AGENT, 'ORIGINAL');
+    publishVersion(AGENT, 'REGRESSION');
+
+    Test.startTest();
+    Agent_Prompt_Version__c restored = PromptVersionService.restoreAsDraft(
+      v1.Id
+    );
+    PromptVersionService.updateDraft(
+      restored.Id,
+      'ORIGINAL plus a fix',
+      null,
+      'kept v1 structure, fixed one line'
+    );
+    PromptVersionService.publish(restored.Id);
+    Test.stopTest();
+
+    PromptVersionService.clearCache();
+    PromptVersionService.ResolvedPrompt live = PromptVersionService.resolveActive(
+      AGENT,
+      'baseline'
+    );
+    System.assertEquals(
+      'ORIGINAL plus a fix',
+      live.systemPrompt,
+      'The edited draft should be what runs after publishing'
+    );
+    System.assertEquals(
+      3,
+      live.versionNumber,
+      'The restored draft keeps its own number through edit and publish'
+    );
+    System.assertEquals(
+      3,
+      [SELECT COUNT() FROM Agent_Prompt_Version__c WHERE Agent__c = :AGENT],
+      'Restore + edit + publish should total three versions, not four'
+    );
+  }
+
+  @IsTest
   static void testRestoreAsDraftCopiesBodyWithoutMutatingTheSource() {
     Agent_Prompt_Version__c v1 = publishVersion(AGENT, 'original body');
     publishVersion(AGENT, 'current body');

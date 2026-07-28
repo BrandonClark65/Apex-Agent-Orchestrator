@@ -201,6 +201,44 @@ public with sharing class PromptVersionService {
   }
 
   /**
+   * @description Edits an existing draft in place. This is the counterpart to `createDraft`:
+   * without it every save would insert a new version, so a draft could be created but never
+   * refined — you could only publish it blind or abandon it.
+   *
+   * Only drafts are editable. Published and Archived bodies are frozen by the
+   * `Published_Versions_Are_Immutable` validation rule; this check exists so the caller gets a
+   * clear message instead of a raw DML error.
+   * @param versionId Id of the draft to edit.
+   * @param body The revised system prompt text.
+   * @param goal The revised goal snapshot.
+   * @param note Short explanation of what changed and why.
+   * @return The updated draft record.
+   */
+  public static Agent_Prompt_Version__c updateDraft(
+    Id versionId,
+    String body,
+    String goal,
+    String note
+  ) {
+    Agent_Prompt_Version__c draft = [
+      SELECT Id, Status__c
+      FROM Agent_Prompt_Version__c
+      WHERE Id = :versionId
+      LIMIT 1
+    ];
+    if (draft.Status__c != STATUS_DRAFT) {
+      throw new AgentException(
+        'Only a draft can be edited. Published versions are immutable — restore this one as a draft to work from it.'
+      );
+    }
+    draft.System_Prompt__c = body;
+    draft.Goal__c = goal;
+    draft.Change_Note__c = note;
+    update draft;
+    return draft;
+  }
+
+  /**
    * @description Freezes a draft into an immutable Published version, snapshots the agent's
    * current configuration onto it, and makes it the active version for new runs.
    * @param versionId Id of the draft to publish.
@@ -286,8 +324,10 @@ public with sharing class PromptVersionService {
   }
 
   /**
-   * @description Copies a published version's body into a new editable draft, so an author can
-   * start from an earlier prompt without mutating it.
+   * @description Copies an existing version's body into a new editable draft, so an author can
+   * start from an earlier prompt without mutating it — published bodies are frozen, so this is
+   * the only way to build on one. The new draft takes the next version number and records the
+   * version it came from in `Source_Version__c`; the source itself is left untouched.
    * @param versionId Id of the version to copy.
    * @return The new draft record.
    */

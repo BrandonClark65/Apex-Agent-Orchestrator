@@ -260,8 +260,11 @@
               </div>
             </template>
 
-            <!-- edit a new version -->
+            <!-- write a new version, or refine an existing draft in place -->
             <template lwc:if={editingPrompt}>
+              <p class="field-label slds-m-bottom_xx-small">
+                {promptEditorTitle}
+              </p>
               <lightning-textarea
                 label="System Prompt"
                 value={promptDraft}
@@ -376,6 +379,14 @@
                       onclick={handleDiffVersion}
                       class="slds-m-right_xx-small"
                     ></lightning-button>
+                    <template lwc:if={version.canEdit}>
+                      <lightning-button
+                        label="Edit draft"
+                        data-id={version.versionId}
+                        onclick={handleEditDraft}
+                        class="slds-m-right_xx-small"
+                      ></lightning-button>
+                    </template>
                     <template lwc:if={version.canPublish}>
                       <lightning-button
                         label="Publish"
@@ -393,11 +404,14 @@
                         class="slds-m-right_xx-small"
                       ></lightning-button>
                     </template>
-                    <lightning-button
-                      label="Restore as draft"
-                      data-id={version.versionId}
-                      onclick={handleRestoreVersion}
-                    ></lightning-button>
+                    <template lwc:if={version.canRestore}>
+                      <lightning-button
+                        label="Restore as draft"
+                        title="Copy this version into a new editable draft"
+                        data-id={version.versionId}
+                        onclick={handleRestoreVersion}
+                      ></lightning-button>
+                    </template>
                   </div>
                 </div>
               </template>

@@ -8,6 +8,7 @@ import getMemoryConfigOptions from "@salesforce/apex/AgentBuilderController.getM
 import saveAgent from "@salesforce/apex/AgentBuilderController.saveAgent";
 import getPromptVersions from "@salesforce/apex/AgentBuilderController.getPromptVersions";
 import savePromptVersion from "@salesforce/apex/AgentBuilderController.savePromptVersion";
+import updatePromptVersion from "@salesforce/apex/AgentBuilderController.updatePromptVersion";
 import activatePromptVersion from "@salesforce/apex/AgentBuilderController.activatePromptVersion";
 import publishPromptVersion from "@salesforce/apex/AgentBuilderController.publishPromptVersion";
 import restorePromptVersionAsDraft from "@salesforce/apex/AgentBuilderController.restorePromptVersionAsDraft";
@@ -51,6 +52,8 @@ export default class AaoAgentBuilder extends LightningElement {
   savingPrompt = false;
   promptMessage = null;
   editingPrompt = false;
+  // Id of the draft being edited in place; null means the editor will create a new version.
+  editingVersionId = null;
   @track diff = null;
 
   _subscription = null;
@@ -327,20 +330,50 @@ export default class AaoAgentBuilder extends LightningElement {
       // Only a published, non-active version can be rolled back to.
       canActivate: published && !version.isActive,
       canPublish: version.status === "Draft",
+      // Drafts are the only editable versions; published bodies are frozen.
+      canEdit: version.status === "Draft",
+      // Restoring a draft would just clone an editable thing into another editable thing.
+      canRestore: version.status !== "Draft",
       createdSummary: version.createdByName ? `${version.createdByName}` : ""
     };
   }
 
+  // "Edit prompt": start a brand-new version from whatever is live today.
   handleEditPrompt() {
     this.promptMessage = null;
     this.diff = null;
+    this.editingVersionId = null;
     this.promptDraft = this.selected?.systemPrompt ?? "";
     this.changeNote = "";
+    this.publishNow = true;
+    this.editingPrompt = true;
+  }
+
+  // "Edit draft": refine an existing draft in place rather than spawning another version.
+  handleEditDraft(event) {
+    const versionId = event.currentTarget.dataset.id;
+    this.openDraftForEditing(
+      this.versions.find((v) => v.versionId === versionId)
+    );
+  }
+
+  openDraftForEditing(version) {
+    if (!version) {
+      return;
+    }
+    this.promptMessage = null;
+    this.diff = null;
+    this.editingVersionId = version.versionId;
+    this.promptDraft = version.systemPrompt ?? "";
+    this.changeNote = version.changeNote ?? "";
+    // A draft is by definition not live yet; don't default to shipping it on save.
+    this.publishNow = false;
     this.editingPrompt = true;
   }
 
   handleCancelPrompt() {
     this.editingPrompt = false;
+    this.editingVersionId = null;
     this.promptMessage = null;
   }
 
@@ -360,18 +393,37 @@ export default class AaoAgentBuilder extends LightningElement {
     try {
       this.savingPrompt = true;
       this.errorText = null;
-      await savePromptVersion({
-        agentDeveloperName: this.selected.developerName,
-        systemPrompt: this.promptDraft,
-        goal: this.selected.goal,
-        changeNote: this.changeNote,
-        publishNow: this.publishNow,
-        sourceVersionId: this.selected.activePromptVersionId ?? null
-      });
+
+      if (this.editingVersionId) {
+        // Editing an existing draft: update it rather than inserting another version.
+        await updatePromptVersion({
+          versionId: this.editingVersionId,
+          systemPrompt: this.promptDraft,
+          goal: this.selected.goal,
+          changeNote: this.changeNote
+        });
+        if (this.publishNow) {
+          await publishPromptVersion({ versionId: this.editingVersionId });
+        }
+        this.promptMessage = this.publishNow
+          ? "Draft updated, published and active."
+          : "Draft updated.";
+      } else {
+        await savePromptVersion({
+          agentDeveloperName: this.selected.developerName,
+          systemPrompt: this.promptDraft,
+          goal: this.selected.goal,
+          changeNote: this.changeNote,
+          publishNow: this.publishNow,
+          sourceVersionId: this.selected.activePromptVersionId ?? null
+        });
+        this.promptMessage = this.publishNow
+          ? "New version published and active."
+          : "Draft saved. Edit or publish it from the list below.";
+      }
+
       this.editingPrompt = false;
-      this.promptMessage = this.publishNow
-        ? "New version published and active."
-        : "Draft saved. Publish it to make it live.";
+      this.editingVersionId = null;
       await this.refreshAfterVersionChange();
     } catch (e) {
       this.errorText = this.reduceError(e);
@@ -408,10 +460,15 @@ export default class AaoAgentBuilder extends LightningElement {
     try {
       this.errorText = null;
       const versionId = event.currentTarget.dataset.id;
-      await restorePromptVersionAsDraft({ versionId });
-      this.promptMessage =
-        "Copied into a new draft. Publish it when you are ready.";
+      const draftId = await restorePromptVersionAsDraft({ versionId });
       await this.refreshAfterVersionChange();
+      // Restoring is only ever a means to editing the copy, so open it straight away.
+      // Landing back on the list with a new draft and no obvious next step is what made
+      // this action confusing before.
+      this.openDraftForEditing(
+        this.versions.find((v) => v.versionId === draftId)
+      );
+      this.promptMessage = "Copied into a new draft — edit and publish below.";
     } catch (e) {
       this.errorText = this.reduceError(e);
     }
@@ -463,7 +520,19 @@ export default class AaoAgentBuilder extends LightningElement {
   }
 
   get savePromptLabel() {
+    if (this.editingVersionId) {
+      return this.publishNow ? "Update & Publish" : "Update Draft";
+    }
     return this.publishNow ? "Save & Publish" : "Save Draft";
+  }
+
+  get promptEditorTitle() {
+    const version = this.editingVersionId
+      ? this.versions.find((v) => v.versionId === this.editingVersionId)
+      : null;
+    return version
+      ? `Editing draft ${version.versionLabel}`
+      : "New version (from the active prompt)";
   }
 
   get activeVersionLabel() {

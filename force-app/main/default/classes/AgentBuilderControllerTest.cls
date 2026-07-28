@@ -481,6 +481,74 @@ private class AgentBuilderControllerTest {
   }
 
   @IsTest
+  static void testUpdatePromptVersionEditsTheDraftRatherThanAddingOne() {
+    Id draftId = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'first pass',
+      null,
+      null,
+      false,
+      null
+    );
+
+    Test.startTest();
+    AgentBuilderController.updatePromptVersion(
+      draftId,
+      'second pass',
+      null,
+      'refined it'
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      'second pass',
+      [
+        SELECT System_Prompt__c
+        FROM Agent_Prompt_Version__c
+        WHERE Id = :draftId
+      ]
+      .System_Prompt__c
+    );
+    System.assertEquals(
+      1,
+      [
+        SELECT COUNT()
+        FROM Agent_Prompt_Version__c
+        WHERE Agent__c = 'CRUD_Agent'
+      ],
+      'Editing a draft from the builder must not create a second version'
+    );
+  }
+
+  @IsTest
+  static void testUpdatePromptVersionSurfacesAFriendlyErrorForPublished() {
+    Id publishedId = AgentBuilderController.savePromptVersion(
+      'CRUD_Agent',
+      'frozen',
+      null,
+      null,
+      true,
+      null
+    );
+
+    Boolean threw = false;
+    try {
+      AgentBuilderController.updatePromptVersion(
+        publishedId,
+        'tampered',
+        null,
+        null
+      );
+    } catch (AuraHandledException e) {
+      threw = true;
+    }
+    System.assert(
+      threw,
+      'The builder should refuse to edit a published version'
+    );
+  }
+
+  @IsTest
   static void testTestRunOnVersionStampsTheChosenVersion() {
     Id v1 = AgentBuilderController.savePromptVersion(
       'CRUD_Agent',

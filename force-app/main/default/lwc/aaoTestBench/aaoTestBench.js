@@ -47,10 +47,12 @@ export default class AaoTestBench extends LightningElement {
   }
 
   async loadVersions() {
-    // Drafts have never been published, so running against one would be misleading.
-    this.versions = (
-      await getPromptVersions({ agentDeveloperName: this.selectedAgent })
-    ).filter((v) => v.status !== "Draft");
+    // Drafts are included deliberately: trying a candidate prompt before publishing it is the
+    // whole point of the picker. Publishing also activates, so excluding drafts would mean the
+    // only way to evaluate one was to ship it to everyone first.
+    this.versions = await getPromptVersions({
+      agentDeveloperName: this.selectedAgent
+    });
     this.selectedVersionId = ACTIVE_VERSION;
   }
 
@@ -76,9 +78,7 @@ export default class AaoTestBench extends LightningElement {
     return [
       { label: "Active version", value: ACTIVE_VERSION },
       ...this.versions.map((v) => ({
-        label: v.isActive
-          ? `v${v.versionNumber} (active)`
-          : `v${v.versionNumber}`,
+        label: `v${v.versionNumber}${this.versionSuffix(v)}`,
         value: v.versionId
       }))
     ];
@@ -86,6 +86,13 @@ export default class AaoTestBench extends LightningElement {
 
   get hasVersions() {
     return this.versions.length > 0;
+  }
+
+  versionSuffix(version) {
+    if (version.isActive) {
+      return " (active)";
+    }
+    return version.status === "Draft" ? " (draft)" : "";
   }
 
   get runDisabled() {
