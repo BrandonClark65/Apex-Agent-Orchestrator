@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apex Agent Orchestrator - One Pager</title>
+<style>
+  :root{
+    --bg:#F3F5F8; --surface:#FFFFFF; --ink:#17222E; --muted:#5D6C7B; --line:#D9E0E8;
+    --accent:#0F7D6C; --accent-soft:#EAF6F3; --accent-bd:#8FCEC2;
+    --warm:#A16A1F; --warm-soft:#FBF5E9; --warm-bd:#DDBE7E;
+    --cool:#2B5FD9; --cool-soft:#EFF4FE; --cool-bd:#A6BDF0;
+    --shadow:0 1px 2px rgba(15,25,40,.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0F151D; --surface:#182029; --ink:#E7EDF5; --muted:#98A7B8; --line:#2A3644;
+      --accent:#43C2AC; --accent-soft:#0F211D; --accent-bd:#24564B;
+      --warm:#E0AC57; --warm-soft:#221C10; --warm-bd:#5D4A22;
+      --cool:#82A7F4; --cool-soft:#161F30; --cool-bd:#31497C;
+      --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F151D; --surface:#182029; --ink:#E7EDF5; --muted:#98A7B8; --line:#2A3644;
+    --accent:#43C2AC; --accent-soft:#0F211D; --accent-bd:#24564B;
+    --warm:#E0AC57; --warm-soft:#221C10; --warm-bd:#5D4A22;
+    --cool:#82A7F4; --cool-soft:#161F30; --cool-bd:#31497C;
+    --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  :root[data-theme="light"]{
+    --bg:#F3F5F8; --surface:#FFFFFF; --ink:#17222E; --muted:#5D6C7B; --line:#D9E0E8;
+    --accent:#0F7D6C; --accent-soft:#EAF6F3; --accent-bd:#8FCEC2;
+    --warm:#A16A1F; --warm-soft:#FBF5E9; --warm-bd:#DDBE7E;
+    --cool:#2B5FD9; --cool-soft:#EFF4FE; --cool-bd:#A6BDF0;
+    --shadow:0 1px 2px rgba(15,25,40,.07);
+  }
+
+  *{box-sizing:border-box}
+  html{background:var(--bg)}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI Variable Text","Segoe UI","Avenir Next","Helvetica Neue",system-ui,sans-serif;
+    font-size:14px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1040px; margin:0 auto; padding:28px 24px 48px}
+
+  /* ---------- masthead ---------- */
+  header.mast{
+    border-bottom:2px solid var(--accent); padding-bottom:14px; margin-bottom:18px;
+  }
+  .eyebrow{
+    font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; margin-bottom:6px;
+  }
+  h1{font-size:29px; line-height:1.15; margin:0 0 8px; letter-spacing:-.015em}
+  .deck{font-size:15.5px; color:var(--muted); margin:0; max-width:70ch}
+  .deck strong{color:var(--ink); font-weight:600}
+
+  /* ---------- structure ---------- */
+  section{margin:0 0 20px}
+  h2{
+    font-size:12px; letter-spacing:.11em; text-transform:uppercase; font-weight:700;
+    color:var(--muted); margin:0 0 10px; padding-bottom:5px; border-bottom:1px solid var(--line);
+  }
+  h3{font-size:14px; margin:0 0 4px; font-weight:650}
+  p{margin:0 0 9px}
+  .lede{font-size:14.5px; max-width:78ch}
+
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:16px 26px}
+  @media (max-width:760px){ .cols{grid-template-columns:1fr} }
+
+  /* ---------- callout ---------- */
+  .callout{
+    background:var(--warm-soft); border:1px solid var(--warm-bd); border-left:3px solid var(--warm);
+    border-radius:6px; padding:11px 14px; margin:0 0 18px;
+  }
+  .callout p{margin:0; font-size:14px}
+  .callout .label{
+    display:block; font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+    font-weight:700; color:var(--warm); margin-bottom:4px;
+  }
+
+  /* ---------- capability grid ---------- */
+  .caps{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  @media (max-width:760px){ .caps{grid-template-columns:1fr} }
+  .cap{
+    background:var(--surface); border:1px solid var(--line); border-radius:7px;
+    padding:10px 13px; box-shadow:var(--shadow);
+  }
+  .cap h3{color:var(--ink)}
+  .cap p{margin:0; font-size:13px; color:var(--muted); line-height:1.45}
+
+  /* ---------- admin list ---------- */
+  ul.ticks{list-style:none; margin:0; padding:0}
+  ul.ticks li{
+    position:relative; padding:0 0 9px 22px; font-size:13.5px;
+  }
+  ul.ticks li::before{
+    content:""; position:absolute; left:3px; top:.52em;
+    width:8px; height:8px; border-radius:2px; background:var(--accent);
+  }
+  ul.ticks strong{font-weight:650}
+
+  /* ---------- comparison table ---------- */
+  table{border-collapse:collapse; width:100%; font-size:13px}
+  thead th{
+    text-align:left; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--muted); font-weight:700; padding:0 10px 6px; border-bottom:1px solid var(--line);
+  }
+  thead th.them{color:var(--muted)}
+  thead th.us{color:var(--accent)}
+  tbody td{padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  td.row-label{font-weight:600; width:26%}
+  td.them{color:var(--muted); width:34%}
+  td.us{color:var(--ink); background:var(--accent-soft); width:40%}
+  tbody tr td.us{border-bottom:1px solid var(--line)}
+
+  /* ---------- governance chips ---------- */
+  .chips{display:flex; flex-wrap:wrap; gap:7px}
+  .chip{
+    background:var(--cool-soft); border:1px solid var(--cool-bd); color:var(--ink);
+    border-radius:999px; padding:4px 11px; font-size:12.5px;
+  }
+  .chip b{color:var(--cool); font-weight:650}
+
+  /* ---------- start steps ---------- */
+  .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; counter-reset:s}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr 1fr} }
+  .step{
+    background:var(--surface); border:1px solid var(--line); border-radius:7px;
+    padding:9px 12px; font-size:12.5px; color:var(--muted); box-shadow:var(--shadow);
+  }
+  .step b{display:block; color:var(--ink); font-size:13px; margin-bottom:2px; font-weight:650}
+  .step b::before{
+    counter-increment:s; content:counter(s); display:inline-grid; place-items:center;
+    width:16px; height:16px; margin-right:6px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:10px; font-weight:700; vertical-align:1px;
+  }
+  @media (prefers-color-scheme: dark){ .step b::before{color:#0F151D} }
+  :root[data-theme="dark"] .step b::before{color:#0F151D}
+  :root[data-theme="light"] .step b::before{color:#fff}
+
+  footer.foot{
+    margin-top:22px; padding-top:12px; border-top:1px solid var(--line);
+    font-size:12.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;
+    justify-content:space-between;
+  }
+  footer.foot .close{max-width:64ch; color:var(--ink)}
+
+  @media print{
+    :root{
+      --bg:#fff; --surface:#fff; --ink:#17222E; --muted:#4A5866; --line:#CBD4DE;
+      --accent:#0F7D6C; --accent-soft:#F0F8F6; --shadow:none;
+    }
+    body{font-size:9.6pt; line-height:1.38}
+    .page{max-width:none; padding:0}
+    h1{font-size:19pt} .deck{font-size:10.4pt}
+    section{margin-bottom:11px}
+    h2{margin-bottom:6px}
+    .caps{gap:6px} .cap{padding:6px 9px} .cap p{font-size:8.9pt; line-height:1.34}
+    ul.ticks li{padding-bottom:5px; font-size:9.3pt}
+    .callout{padding:7px 10px; margin-bottom:11px}
+    table{font-size:9pt} tbody td{padding:4px 8px}
+    .step{padding:6px 9px; font-size:8.7pt}
+    section, .cap, tr, .callout{break-inside:avoid}
+    @page{size:letter; margin:12mm 13mm}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <div class="eyebrow">Apex Agent Orchestrator &middot; Salesforce-native AI agents</div>
+  <h1>AI agents your admins build - not your vendor's backlog.</h1>
+  <p class="deck">A production-ready package that installs into the Salesforce org you already run, and turns
+  agent building into <strong>point-and-click admin work</strong>: same app, same security model, same people who
+  already own your reports, flows, and page layouts.</p>
+</header>
+
+<div class="callout">
+  <span class="label">The situation today</span>
+  <p>Another team builds your agents. That works - but every new agent, every wording tweak, every
+  &ldquo;can it also check the attached contract?&rdquo; is a request, a queue, a sprint, and a handoff. A small
+  change costs a development cycle, same as a big one, and the knowledge of how your agents behave lives
+  somewhere other than your team.</p>
+</div>
+
+<section>
+  <h2>What it does</h2>
+  <p class="lede">It runs AI agents that <strong>take action</strong>, not just answer questions - looking up records,
+  reading attached documents, creating and updating data, handing work to other agents, and holding a real
+  conversation with a person, all inside your existing Salesforce permissions.</p>
+  <div class="caps">
+    <div class="cap"><h3>Agents that do the work</h3><p>Find records, read attached documents, create and update data, and complete a task end to end - not just draft a suggestion for someone else to key in.</p></div>
+    <div class="cap"><h3>Conversations with memory</h3><p>Threads people can come back to. Agents remember durable facts and preferences across conversations, and draw lessons from how earlier runs went.</p></div>
+    <div class="cap"><h3>Work that actually finishes</h3><p>Long, multi-step jobs aren't cut off by platform limits. An agent takes as many steps as the task needs, and can split work across several agents at once.</p></div>
+    <div class="cap"><h3>Bring your own AI vendor</h3><p>OpenAI, Anthropic (Claude), and Azure OpenAI supported out of the box, chosen per agent from a dropdown. Switching model or vendor is a settings change - so pricing stays negotiable.</p></div>
+    <div class="cap"><h3>Spend control built in</h3><p>Routine background work can be pointed at a cheaper model while customer-facing conversations use your best one. No code change to re-tune the mix.</p></div>
+    <div class="cap"><h3>Nothing in a black box</h3><p>Every run and every step is stored in your org: what was asked, what the agent did, what it decided, how long it took, and which version of its instructions it was following.</p></div>
+    <div class="cap"><h3>Reaches your customers</h3><p>One agent can be safely published to your website through a ready-made chat widget - internal reasoning stripped out, per-visitor rate limits on by default.</p></div>
+    <div class="cap"><h3>Fits what you already build</h3><p>Trigger agents from Flow, embed them on any record page, or call them from another system. Nothing new for your team to stand up or learn.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>How easy it is to run - as an admin</h2>
+  <div class="cols">
+    <ul class="ticks">
+      <li><strong>Build an agent in a form.</strong> Name it, write its instructions in plain English, pick its AI model from a dropdown, tick the boxes for what it's allowed to do, save. It's live.</li>
+      <li><strong>Change it without fear.</strong> Instructions are versioned automatically - numbered, attributed, and locked once published. If the new version made things worse, <strong>rollback is one click and takes effect on the next run</strong>. No deployment, no ticket.</li>
+      <li><strong>Try before you commit.</strong> A built-in Test Bench runs an agent against a saved sample and shows every step it took - and can run the <em>same</em> input against two versions of the instructions so you compare before making one live.</li>
+    </ul>
+    <ul class="ticks">
+      <li><strong>Watch the work happen.</strong> A live monitor lists every run with Cancel and Re-run buttons, and a step-by-step trace behind each one.</li>
+      <li><strong>Manage what agents remember.</strong> One screen shows every memory an agent holds. People curate their own; admins curate everything, and review the lessons agents draw about themselves before those take effect.</li>
+      <li><strong>See exactly what's granted.</strong> A catalog lists every capability and which agents have it - an access review anyone can read without opening code.</li>
+    </ul>
+  </div>
+  <p style="margin-top:2px"><strong>The self-service line is clear:</strong> new agents, new instructions, permissions, model choice, memory settings, and rollbacks are all admin work. A developer is needed only to add a genuinely new <em>capability</em> - a new kind of action, such as calling a specific external system.</p>
+</section>
+
+<section>
+  <h2>Control and risk</h2>
+  <div class="chips">
+    <span class="chip"><b>Your security model.</b> Agents read and write as the person running them - never beyond what that user could do themselves.</span>
+    <span class="chip"><b>Least privilege.</b> Capabilities are granted one at a time, visible on screen.</span>
+    <span class="chip"><b>Nothing public by accident.</b> External access stays off until an admin opts exactly one agent in.</span>
+    <span class="chip"><b>Full audit trail.</b> Every run records the exact instructions it ran.</span>
+    <span class="chip"><b>Self-healing.</b> Background jobs time out stuck work and clear stale data unattended.</span>
+    <span class="chip"><b>Two roles, ready to assign.</b> Admin builds and monitors; User chats.</span>
+  </div>
+</section>
+
+<section>
+  <h2>Why owning it beats renting it</h2>
+  <table>
+    <thead>
+      <tr><th></th><th class="them">Outsourced build team</th><th class="us">Apex Agent Orchestrator</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="row-label">A wording change to an agent</td><td class="them">Request &rarr; backlog &rarr; sprint &rarr; deploy</td><td class="us">An admin edits and saves; live on the next run</td></tr>
+      <tr><td class="row-label">Undoing a bad change</td><td class="them">Another ticket, another cycle</td><td class="us">One click, instant</td></tr>
+      <tr><td class="row-label">A new agent</td><td class="them">A project</td><td class="us">An afternoon in a form</td></tr>
+      <tr><td class="row-label">Switching AI vendors</td><td class="them">Rework</td><td class="us">A dropdown</td></tr>
+      <tr><td class="row-label">Who understands your agents</td><td class="them">The other team</td><td class="us">Your team</td></tr>
+      <tr><td class="row-label">Visibility into what ran</td><td class="them">Whatever gets reported back</td><td class="us">Every step, in your own org, always</td></tr>
+      <tr><td class="row-label">Where your data sits</td><td class="them">Depends on their architecture</td><td class="us">In your Salesforce org, under your controls</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Getting started - version 1.2, released and production-ready</h2>
+  <div class="steps">
+    <div class="step"><b>Install</b>Standard Salesforce managed package, into a sandbox first.</div>
+    <div class="step"><b>Connect</b>Point it at your AI vendor account with a standard credential setup.</div>
+    <div class="step"><b>Assign</b>Admin permission set to your builders, User to everyone else.</div>
+    <div class="step"><b>Build</b>Open the Agent Orchestrator app and create the first agent.</div>
+  </div>
+</section>
+
+<footer class="foot">
+  <span class="close">A proof point is one agent, not a program: rebuild a single workflow the other team owns today -
+  then time how long the <em>second</em> change to it takes.</span>
+</footer>
+
+</div>
+</body>
+</html>
