@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  static-checks:
+    name: Format, lint, and LWC tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm run prettier:verify` is intentionally not run here yet: 278 pre-existing files
+      # (mostly packaged metadata XML) don't match the current prettier config, so the check
+      # would be red on every PR. Run `npm run prettier` once repo-wide, commit that on its
+      # own, then add this step:
+      #
+      #   - name: Check formatting
+      #     run: npm run prettier:verify
+
+      - name: Lint LWC
+        run: npx eslint force-app
+
+      - name: LWC unit tests
+        run: npm run test:unit
+
+  # Apex tests need a Dev Hub and the `aao` namespace registry org, so they can't run on
+  # forked PRs without secrets. Enable this once SFDX_AUTH_URL is set in repo secrets.
+  #
+  # apex-tests:
+  #   name: Apex tests (scratch org)
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: npm install -g @salesforce/cli
+  #     - run: echo "${{ secrets.SFDX_AUTH_URL }}" > auth.txt && sf org login sfdx-url -f auth.txt -d
+  #     - run: sf org create scratch -f config/project-scratch-def.json -a ci -d 1 -w 20
+  #     - run: sf project deploy start -o ci
+  #     - run: sf apex run test -o ci --code-coverage --result-format human --wait 20
+  #     - if: always()
+  #       run: sf org delete scratch -o ci -p

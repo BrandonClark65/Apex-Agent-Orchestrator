@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a capability, tool, or provider
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: >
+        Describe the goal, not just the feature. "I want my agent to be able to send an email
+        after it updates a case" is more useful than "add a SendEmailTool".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to see?
+      validations:
+        required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - A new built-in tool
+        - A new LLM provider
+        - Engine / orchestration behavior
+        - Memory
+        - UI (chat, builder, monitor, test bench)
+        - External REST API
+        - Docs
+        - Something else
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contributing
+    attributes:
+      label: Would you be up for building it?
+      description: No obligation — it just helps me prioritize.
+      options:
+        - "Yes, with some guidance"
+        - "Yes, I've got it"
+        - "No, just suggesting"
+    validations:
+      required: true
