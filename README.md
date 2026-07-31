@@ -11,17 +11,11 @@ multi-step agents that query and update records, delegate to sub-agents, remembe
 learned, and show you every step they took - without Agentforce credits, Data Cloud, or an
 external orchestration service.
 
-[![Agent Chat: a user asks "Show me all of my cases from the last year", the agent calls QuerySalesforceTool, and the matching records come back in the thread](docs/images/agent-chat.png)](docs/images/demo.mp4)
+![Agent Chat: a user asks "Show me all my cases from January 2025", the agent calls QuerySalesforceTool and answers "I found 30 cases from January 2025, each with various subjects related to generator issues", with the matching records available behind a Details toggle](docs/images/demo.gif)
 
-<!--
-  For inline autoplay, drag docs/images/demo.mp4 into a GitHub issue or release, copy the
-  https://github.com/user-attachments/assets/... URL it generates, and replace the image above
-  with that bare URL on its own line. GitHub only plays video from its own asset CDN, so a
-  relative repo path renders as a link rather than a player.
--->
-
-**[▶ Watch the 15-second demo](docs/images/demo.mp4)** - ask a question, watch the agent pick a
-tool, get an answer.
+Ask in plain English, the agent picks its own tools, and the answer comes back as a sentence -
+with the underlying records one click away.
+[Higher-quality MP4](docs/images/demo.mp4).
 
 ---
 
