@@ -21,7 +21,7 @@ outside markdown.** Fix them only in lines you were already editing for another 
 
 Other conventions:
 
-- Sentence case for headings, not Title Case.
+- Sentence case for headings, not Title Case (`## Orgs and their roles`).
 - Prefer plain words over jargon, and don't oversell. The docs deliberately state tradeoffs
   ("there is no vendor SLA behind this") rather than hiding them.
 
@@ -50,10 +50,11 @@ so counting braces is not a valid syntax check.
 ## Verifying changes
 
 ```bash
-npm run lint          # eslint on LWC - note the package.json glob is unreliable,
-                      # `npx eslint force-app` is the dependable form
-npm run test:unit     # LWC jest
+npm run lint          # eslint on the 14 LWC js files
+npm run test:unit     # LWC jest, 5 suites
 ```
+
+CI (`.github/workflows/ci.yml`) runs exactly these two on every PR, nothing more.
 
 Apex tests need a real org and **cannot run in a sandboxed session**:
 
@@ -65,10 +66,12 @@ If you changed Apex or packaged metadata and couldn't run those, **say so explic
 than implying the change is verified. Coverage must stay at or above 75% or
 `sf package version create` fails.
 
-**Don't run `npm run prettier` repo-wide as a side effect.** 278 files predate the current
-prettier config, so a repo-wide format produces a huge diff touching 233 metadata XML files.
-That cleanup is its own commit, and it needs a scratch-org deploy to verify. Format only the
-files you touched. This is also why the prettier check is commented out of CI.
+**Don't run `npm run prettier` repo-wide as a side effect.** Roughly 270 files predate the
+current prettier config (`npm run prettier:verify` to see the live count), the large majority
+of them packaged metadata XML. A repo-wide format is therefore a huge diff that needs a
+scratch-org deploy to verify, so it belongs in its own commit. Format only the files you
+touched - `npx prettier --write <paths>`. This is also why the prettier check is commented out
+of CI rather than enabled.
 
 ## Docs live in specific places
 
