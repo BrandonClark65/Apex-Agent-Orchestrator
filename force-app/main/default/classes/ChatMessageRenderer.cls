@@ -17,8 +17,9 @@ public with sharing class ChatMessageRenderer {
     public String text;
     public String toolName;
     // Structured payload that rode alongside the agent's final answer: every key of the `final`
-    // object other than `message` (which becomes `text`). Null unless the final answer carried
-    // extra keys. Lets a client render cards/links/buttons without the prose showing raw JSON.
+    // object other than the one rendered as prose (which becomes `text`). Null unless the final
+    // answer carried extra keys. Lets a client render cards/links/buttons without the prose
+    // showing raw JSON.
     public Map<String, Object> data;
   }
 
@@ -67,7 +68,9 @@ public with sharing class ChatMessageRenderer {
 
       // The agent's final answer is the only assistant content a customer sees.
       if (parsed != null && parsed.containsKey('final')) {
-        Map<String, Object> finalResult = (Map<String, Object>) parsed.get('final');
+        Map<String, Object> finalResult = (Map<String, Object>) parsed.get(
+          'final'
+        );
         View answer = entry('assistant', extractFinalText(finalResult), null);
         answer.data = structuredPayload(finalResult);
         messages.add(answer);
@@ -98,25 +101,59 @@ public with sharing class ChatMessageRenderer {
     return messages;
   }
 
-  // Soft contract with demo agent prompts: `final.message` carries the human-readable answer;
-  // anything else falls back to the serialized final object.
-  private static String extractFinalText(Map<String, Object> finalResult) {
-    if (finalResult.containsKey('message')) {
-      return String.valueOf(finalResult.get('message'));
+  // Keys a final answer may use to carry its human-readable prose, best first. The packaged
+  // prompts require `message`; the rest are tolerated because the model does not always comply
+  // and subscriber-authored prompts name this differently.
+  private static final List<String> TEXT_KEYS = new List<String>{
+    'message',
+    'answer',
+    'summary',
+    'text',
+    'response',
+    'error'
+  };
+
+  // Which key holds the prose, or null if none does. A final answer with no prose key at all
+  // renders as serialized JSON, which is a bad chat experience - the fix for that is the
+  // agent's prompt, not this method. See docs/ARCHITECTURE.md#the-final-answer-contract.
+  private static String proseKey(Map<String, Object> finalResult) {
+    for (String key : TEXT_KEYS) {
+      Object value = finalResult.get(key);
+      if (value instanceof String && String.isNotBlank((String) value)) {
+        return key;
+      }
     }
-    return JSON.serializePretty(finalResult);
+    // A single-key object wrapping a bare string, e.g. {"final":{"result":"All set."}}.
+    if (finalResult.size() == 1) {
+      String onlyKey = new List<String>(finalResult.keySet())[0];
+      Object only = finalResult.get(onlyKey);
+      if (only instanceof String && String.isNotBlank((String) only)) {
+        return onlyKey;
+      }
+    }
+    return null;
   }
 
-  // The structured half of the final answer: every key except `message` (already the bubble
-  // text). Returned so a client can act on the data without the prose becoming raw JSON.
-  // Null when the final answer is message-only, or has no `message` at all (in which case the
-  // whole object is already shown as the bubble text via extractFinalText).
-  private static Map<String, Object> structuredPayload(Map<String, Object> finalResult) {
-    if (!finalResult.containsKey('message')) {
+  private static String extractFinalText(Map<String, Object> finalResult) {
+    String key = proseKey(finalResult);
+    return key == null
+      ? JSON.serializePretty(finalResult)
+      : String.valueOf(finalResult.get(key));
+  }
+
+  // The structured half of the final answer: every key except the one already rendered as the
+  // bubble text. Returned so a client can act on the data without the prose becoming raw JSON.
+  // Null when the answer is prose-only, or carries no prose at all (in which case the whole
+  // object is already shown as the bubble text via extractFinalText).
+  private static Map<String, Object> structuredPayload(
+    Map<String, Object> finalResult
+  ) {
+    String key = proseKey(finalResult);
+    if (key == null) {
       return null;
     }
     Map<String, Object> rest = new Map<String, Object>(finalResult);
-    rest.remove('message');
+    rest.remove(key);
     return rest.isEmpty() ? null : rest;
   }
 

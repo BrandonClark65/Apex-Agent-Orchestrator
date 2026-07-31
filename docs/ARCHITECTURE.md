@@ -57,6 +57,42 @@ turn it belonged to.
 
 The tradeoff of storing versions as data: they are records, not metadata, so they don't move between orgs with a `sf project deploy`. The packaged baseline still deploys normally, and `scripts/apex/BackfillPromptVersions.apex` recreates v1 in a new org from that baseline.
 
+## The final-answer contract
+
+An agent ends a run by emitting `{"final": { ... }}`. What goes **inside** that object decides
+whether the chat window shows a sentence or a wall of JSON, so it is a contract, not a
+convention.
+
+```json
+{
+  "final": {
+    "message": "I found 3 open cases from January, all still unassigned.",
+    "records": [{ "id": "500...", "subject": "..." }],
+    "count": 3
+  }
+}
+```
+
+- **`message` is the prose.** `ChatMessageRenderer` renders it as the chat bubble. It is the
+  only part a user reads as text.
+- **Every sibling key is structured data.** It rides alongside the answer in `View.data`, and
+  the `aaoChatMessage` LWC renders it as a collapsible **Details** block. This is how an agent
+  returns records without the bubble becoming a record dump.
+- **No prose key means the bubble shows serialized JSON.** That is the deliberate fallback -
+  showing something beats showing nothing - but it is a bad chat experience, and the fix is
+  the agent's prompt, not the renderer.
+
+For resilience the renderer also accepts `answer`, `summary`, `text`, `response`, and `error`
+as the prose key, and unwraps a single-key object holding a bare string. Don't rely on those
+in a prompt you control; write `message`.
+
+> **If your agent is answering with raw JSON, this is why.** Its active prompt version doesn't
+> ask for `message`. Note that fixing `Agent_Definition__mdt.SystemPrompt__c` only affects
+> agents with **no prompt versions at all**, since the CMDT field is just the packaged baseline
+>
+> - see [Prompt versioning](#prompt-versioning). For an agent that already has versions, save a
+>   new version in the Agent Builder and activate it.
+
 ## Built-in tools
 
 Each tool is an `AgentTool` implementation registered via an `Agent_Tool_Definition__mdt` record; grant an agent access by adding an `Agent_Tool_Mapping__mdt` record (or from the Agent Builder UI). All record reads and writes run in **user mode**, so a tool can only see or change data the running user could. The framework ships:

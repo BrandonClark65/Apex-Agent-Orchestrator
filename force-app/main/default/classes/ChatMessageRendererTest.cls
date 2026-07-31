@@ -20,7 +20,10 @@ private class ChatMessageRendererTest {
         '{"tool":"QuerySalesforceTool","output":{"success":true,"message":"5 rows"}}'
       ),
       new LLMMessage('user', '{"instruction":"decide next step"}'),
-      new LLMMessage('assistant', '{"final":{"message":"You have 5 open opportunities."}}')
+      new LLMMessage(
+        'assistant',
+        '{"final":{"message":"You have 5 open opportunities."}}'
+      )
     };
   }
 
@@ -57,7 +60,11 @@ private class ChatMessageRendererTest {
     System.assertEquals('assistant', views[1].role);
     System.assertEquals('You have 5 open opportunities.', views[1].text);
     for (ChatMessageRenderer.View v : views) {
-      System.assertNotEquals('tool', v.role, 'No tool activity should be exposed to customers');
+      System.assertNotEquals(
+        'tool',
+        v.role,
+        'No tool activity should be exposed to customers'
+      );
     }
   }
 
@@ -71,7 +78,10 @@ private class ChatMessageRendererTest {
       )
     };
 
-    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(history, false);
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(
+      history,
+      false
+    );
 
     System.assertEquals(2, views.size());
     ChatMessageRenderer.View answer = views[1];
@@ -79,7 +89,11 @@ private class ChatMessageRendererTest {
     // Prose stays as the bubble text...
     System.assertEquals('It ships Thursday.', answer.text);
     // ...and the remaining keys ride alongside as structured data.
-    System.assertNotEquals(null, answer.data, 'structured payload should be exposed');
+    System.assertNotEquals(
+      null,
+      answer.data,
+      'structured payload should be exposed'
+    );
     System.assertEquals('801xx', answer.data.get('orderId'));
     System.assertEquals('shipped', answer.data.get('status'));
     System.assert(
@@ -94,7 +108,10 @@ private class ChatMessageRendererTest {
       new LLMMessage('assistant', '{"final":{"message":"Done."}}')
     };
 
-    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(history, false);
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(
+      history,
+      false
+    );
 
     System.assertEquals(1, views.size());
     System.assertEquals('Done.', views[0].text);
@@ -102,6 +119,81 @@ private class ChatMessageRendererTest {
       null,
       views[0].data,
       'a message-only final answer exposes no structured payload'
+    );
+  }
+
+  @IsTest
+  static void testFinalProseAliasRendersAsText() {
+    // The packaged prompts require `message`, but models don't always comply and subscriber
+    // prompts name this differently. An alias must still render as prose, not raw JSON.
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage(
+        'assistant',
+        '{"final":{"answer":"There are 3 open cases.","count":3}}'
+      )
+    };
+
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(
+      history,
+      false
+    );
+
+    System.assertEquals(1, views.size());
+    System.assertEquals('There are 3 open cases.', views[0].text);
+    System.assertEquals(
+      3,
+      views[0].data.get('count'),
+      'siblings of the prose key stay in the structured payload'
+    );
+    System.assert(
+      !views[0].data.containsKey('answer'),
+      'the key used for prose is not duplicated into data'
+    );
+  }
+
+  @IsTest
+  static void testFinalSingleBareStringRendersAsText() {
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage('assistant', '{"final":{"result":"All set."}}')
+    };
+
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(
+      history,
+      false
+    );
+
+    System.assertEquals('All set.', views[0].text);
+    System.assertEquals(
+      null,
+      views[0].data,
+      'unwrapping the only key leaves no structured payload'
+    );
+  }
+
+  @IsTest
+  static void testFinalWithNoProseFallsBackToJson() {
+    // The bad-chat-experience case the prompt contract exists to prevent: a final answer that
+    // is pure structured data has nothing to render as prose, so the bubble shows JSON.
+    List<LLMMessage> history = new List<LLMMessage>{
+      new LLMMessage(
+        'assistant',
+        '{"final":{"records":[{"id":"500xx"}],"count":1}}'
+      )
+    };
+
+    List<ChatMessageRenderer.View> views = ChatMessageRenderer.render(
+      history,
+      false
+    );
+
+    System.assert(
+      views[0].text.contains('records'),
+      'with no prose key the whole final object becomes the bubble text'
+    );
+    System.assertEquals(
+      null,
+      views[0].data,
+      'the object is already shown as text, so it is not repeated as data'
     );
   }
 }
