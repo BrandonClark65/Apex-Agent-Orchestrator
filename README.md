@@ -8,15 +8,12 @@
 
 Install the managed package, point it at OpenAI / Anthropic / Azure, and your admins can build
 multi-step agents that query and update records, delegate to sub-agents, remember what they
-learned, and show you every step they took — without Agentforce credits, Data Cloud, or an
+learned, and show you every step they took - without Agentforce credits, Data Cloud, or an
 external orchestration service.
 
-<!--
-  SCREENSHOTS GO HERE. This is the single highest-impact thing missing from this README.
-  See docs/images/SHOTLIST.md for the five shots to capture, then replace this comment with:
 
   ![Agent Chat](docs/images/agent-chat.png)
--->
+
 
 ---
 
@@ -40,7 +37,7 @@ Agentforce.
 
 ## Install
 
-**Current version: 1.2.0 (Released)** — a promoted managed package, installable in any org
+**Current version: 1.2.0 (Released)** - a promoted managed package, installable in any org
 including production. Test in a sandbox or scratch org first.
 
 **[→ Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OeXNAA0)**
@@ -49,10 +46,10 @@ including production. Test in a sandbox or scratch org first.
 Then, roughly 20 minutes of setup:
 
 1. **Create a named credential** for your LLM provider and grant the Automated Process User
-   access to it — this one trips up almost everyone, and
+   access to it - this one trips up almost everyone, and
    [docs/INSTALL.md](docs/INSTALL.md#1-grant-the-automated-process-user-access-to-llm-credentials)
    explains why.
-2. **Assign permission sets** — `AAO_Admin` to builders, `AAO_User` to chat users.
+2. **Assign permission sets** - `AAO_Admin` to builders, `AAO_User` to chat users.
 3. **Schedule the background jobs** (watchdog + memory janitor).
 4. **Open the Agent Orchestrator app** from the App Launcher and chat with the shipped agent.
 
@@ -61,29 +58,29 @@ Flow actions: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ## What you get
 
-- **Multi-step agent reasoning** — an async ReAct loop where each LLM/tool step runs in its own
+- **Multi-step agent reasoning** - an async ReAct loop where each LLM/tool step runs in its own
   transaction, chained by platform events (no queueable depth limits)
-- **Apex-based tool execution** — CRUD, query, describe, and validation tools out of the box;
+- **Apex-based tool execution** - CRUD, query, describe, and validation tools out of the box;
   new tools are one class + two Custom Metadata records
-- **Multi-agent collaboration** — agents delegate to sub-agents via suspend/resume, with
+- **Multi-agent collaboration** - agents delegate to sub-agents via suspend/resume, with
   parallel tool fan-out
-- **Conversational sessions** — ChatGPT-style threads: users reply and the agent remembers the
+- **Conversational sessions** - ChatGPT-style threads: users reply and the agent remembers the
   conversation, with automatic history compaction for long threads
-- **Long-term memory** — agents extract durable facts and preferences from runs, recall them
+- **Long-term memory** - agents extract durable facts and preferences from runs, recall them
   into future prompts, and learn lessons from their own successes and failures (pluggable
   store, Salesforce-native today, vector-ready)
-- **LLM provider abstraction** — provider configs in Custom Metadata; OpenAI, Anthropic
+- **LLM provider abstraction** - provider configs in Custom Metadata; OpenAI, Anthropic
   (Claude), Azure OpenAI, and the OpenAI Responses API out of the box; new providers are one
   class + one factory branch
-- **Versioned prompts** — every prompt edit is an immutable, numbered version; each run records
+- **Versioned prompts** - every prompt edit is an immutable, numbered version; each run records
   which one it executed, rollback is one click, and the Test Bench can replay the same input
   against any version to compare
-- **Full observability** — every run and step persisted, live progress events, a run monitor
+- **Full observability** - every run and step persisted, live progress events, a run monitor
   with cancel/re-run, and a step-by-step trace viewer
-- **External access** — drive a single agent from outside Salesforce through a REST API, with a
+- **External access** - drive a single agent from outside Salesforce through a REST API, with a
   standalone, framework-agnostic web chat widget; customer-facing surfaces hide the tool and
   thinking activity and are rate-limited per caller
-- **Admin-configurable agents** via Custom Metadata — tool grants, providers, and memory
+- **Admin-configurable agents** via Custom Metadata - tool grants, providers, and memory
   behavior are records, not code
 
 ### The Agent Orchestrator app
@@ -128,26 +125,26 @@ Details and the "write your own tool" guide: [docs/ARCHITECTURE.md](docs/ARCHITE
 [GitHub issue](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/issues) for bugs and
 feature requests, or start a
 [Discussion](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/discussions) for
-questions and "how would I build X" — I read all of them.
+questions and "how would I build X" - I read all of them.
 
 **Paid help is available** if you'd rather not do it yourself. I'm the author, and I do
 contract work on this and on Salesforce-native AI generally:
 
 - Installing and configuring AAO in your org, wired to your LLM provider
 - Building agents and custom tools for your specific processes
-- Architecture review — including the honest "you should just use Agentforce" answer when
+- Architecture review - including the honest "you should just use Agentforce" answer when
   that's the right call
 - Reducing Agentforce credit spend by moving suitable workloads to a native runtime
 
-📧 **clark.brandon.98@gmail.com** — tell me what you're trying to build.
+📧 **clark.brandon.98@gmail.com** - tell me what you're trying to build.
 
 ## Contributing
 
-Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the scratch-org dev loop
+Contributions welcome - see [CONTRIBUTING.md](CONTRIBUTING.md) for the scratch-org dev loop
 and conventions. Good first issues are tagged
 [`good first issue`](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/labels/good%20first%20issue).
 
-Security issues: please **don't** open a public issue — see [SECURITY.md](SECURITY.md).
+Security issues: please **don't** open a public issue - see [SECURITY.md](SECURITY.md).
 
 ## Roadmap
 
@@ -166,11 +163,11 @@ Security issues: please **don't** open a public issue — see [SECURITY.md](SECU
 - ✅ Prompt versioning
 - ✅ Managed package release (2GP, v1.2 Released)
 - ⏳ Vector/hybrid memory recall (provider seam in place)
-- ⏳ AppExchange listing (free app — security review fee is waived)
+- ⏳ AppExchange listing (free app - security review fee is waived)
 
 ## License
 
-[Apache License 2.0](LICENSE) — use it commercially, fork it, embed it in client work. No
+[Apache License 2.0](LICENSE) - use it commercially, fork it, embed it in client work. No
 attribution required beyond the license header, though a star or a note about what you built
 is always welcome.
 

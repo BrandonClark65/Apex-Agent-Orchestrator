@@ -36,7 +36,7 @@ To fix this, after installing the package:
 
 If your external credential uses **Per-User** authentication, switch it to a **Named Principal** instead - the Automated Process User cannot complete a per-user OAuth flow.
 
-**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`; set `Model_Name__c` to **your Azure deployment name** — deployment names are per-resource, so the shipped `gpt-4o-mini` only works if you named your deployment that — and put the same name plus `api-version` in the record's endpoint path when using the legacy `/openai/deployments/...` style, or use the v1 path `/openai/v1/chat/completions`, which reads the deployment from `Model_Name__c`). The `Azure_OpenAI_Responses` record targets the same resource's **Responses API** (`/openai/responses?api-version=...`) through the same `AzureOpenAI_NC` credential; the `Responses` provider type also works against OpenAI directly (endpoint `/v1/responses` with a Bearer-auth credential). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
+**Named credentials per provider:** the shipped `LLM_Provider__mdt` records expect a named credential that injects the provider's auth header - `OpenAI_NC` (`Authorization: Bearer`), `Anthropic_NC` (`x-api-key`), `AzureOpenAI_NC` (`api-key`; set `Model_Name__c` to **your Azure deployment name** - deployment names are per-resource, so the shipped `gpt-4o-mini` only works if you named your deployment that - and put the same name plus `api-version` in the record's endpoint path when using the legacy `/openai/deployments/...` style, or use the v1 path `/openai/v1/chat/completions`, which reads the deployment from `Model_Name__c`). The `Azure_OpenAI_Responses` record targets the same resource's **Responses API** (`/openai/responses?api-version=...`) through the same `AzureOpenAI_NC` credential; the `Responses` provider type also works against OpenAI directly (endpoint `/v1/responses` with a Bearer-auth credential). Create the credential(s) for the providers you use and grant the Automated Process User access as above.
 
 ## 2. Grant Metadata API access for the Agent Builder
 
@@ -125,11 +125,11 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 
 | Symptom                                              | Cause                                                                     |
 | ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| `We couldn't access the credential(s)`               | Automated Process User lacks the credential permission set — see step 1   |
-| `Not allowed to install or modify metadata via Apex` | Missing user permission _or_ the org-wide Apex Setting — see step 2, both |
+| `We couldn't access the credential(s)`               | Automated Process User lacks the credential permission set - see step 1   |
+| `Not allowed to install or modify metadata via Apex` | Missing user permission _or_ the org-wide Apex Setting - see step 2, both |
 | `Variable does not exist: PromptVersionBackfill`     | Org is on a package version earlier than 1.2.0                            |
-| Runs stay `Running` forever                          | Watchdog isn't scheduled — see step 3                                     |
-| Prompt version panel is blank for some users         | They lack read on `Agent_Prompt_Version__c` — see step 4                  |
+| Runs stay `Running` forever                          | Watchdog isn't scheduled - see step 3                                     |
+| Prompt version panel is blank for some users         | They lack read on `Agent_Prompt_Version__c` - see step 4                  |
 
 Still stuck? [Open a Discussion](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/discussions)
 with the run's `Agent_Step__c` trace and I'll take a look.
