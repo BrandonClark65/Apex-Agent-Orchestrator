@@ -7,7 +7,7 @@ light.
 
 For anything larger than a bug fix, **open an issue or Discussion first**. Some things are
 deliberate design decisions rather than oversights (prompt versions being records rather than
-Custom Metadata, for example — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#prompt-versioning)),
+Custom Metadata, for example - see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#prompt-versioning)),
 and I'd rather save you the work than reject a PR.
 
 ## Dev setup (source-driven scratch org)
@@ -46,7 +46,7 @@ npm run test:unit          # LWC jest tests
 sf apex run test --target-org <alias> --code-coverage --result-format human
 ```
 
-Apex coverage must stay at or above **75%** across the package — `sf package version create`
+Apex coverage must stay at or above **75%** across the package - `sf package version create`
 enforces it and fails late if you're short.
 
 A pre-commit hook (husky + lint-staged) formats and lints staged files automatically.
@@ -54,7 +54,7 @@ A pre-commit hook (husky + lint-staged) formats and lints staged files automatic
 ## Conventions
 
 - **User mode everywhere.** All tool SOQL and DML runs in user mode. The framework's entire
-  security model rests on this — a PR that bypasses it won't be merged without a very good
+  security model rests on this - a PR that bypasses it won't be merged without a very good
   reason.
 - **ApexDoc on public surfaces.** Add or update `@description` / `@param` / `@return` on any
   public class, method, or constructor you touch, so `npm run docs` stays accurate.
@@ -62,12 +62,12 @@ A pre-commit hook (husky + lint-staged) formats and lints staged files automatic
   clear the 75% gate.
 - **Don't break subscribers.** Fields on packaged Custom Metadata are `SubscriberControlled`
   for a reason. Renaming or removing packaged components is a breaking change for every
-  installed org — flag it explicitly in the PR.
+  installed org - flag it explicitly in the PR.
 
 ## Adding a new tool
 
 The most useful contributions. See
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#writing-your-own-tool) — it's one Apex class plus
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#writing-your-own-tool) - it's one Apex class plus
 two Custom Metadata records.
 
 ## Adding an LLM provider
@@ -77,5 +77,5 @@ One `LLMClient` implementation plus one branch in `LLMClientFactory`, plus an
 
 ## Releases
 
-Package versions are cut by the maintainer — see [docs/PACKAGING.md](docs/PACKAGING.md).
+Package versions are cut by the maintainer - see [docs/PACKAGING.md](docs/PACKAGING.md).
 Contributors don't need to touch `sfdx-project.json`.

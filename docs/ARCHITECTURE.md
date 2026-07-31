@@ -28,7 +28,7 @@ events sidestep that: the trigger enqueues the next step, so the chain length is
 your patience rather than by the platform.
 
 The tradeoff is that the Queueable performing the LLM callout executes as the **Automated
-Process User**, not the user who started the run — which is why granting that user access to
+Process User**, not the user who started the run - which is why granting that user access to
 your LLM credential is step 1 of
 [installation](INSTALL.md#1-grant-the-automated-process-user-access-to-llm-credentials).
 
@@ -46,7 +46,7 @@ baseline by the backfill script.
 - **`Agent_Definition__mdt.SystemPrompt__c` is now only the packaged baseline** - the fallback the engine uses when an agent has no versions at all. Creating an agent in the builder seeds both the baseline and v1 from the same text; after that the baseline is frozen and edits go through versions. Editing the CMDT field directly has no effect on an agent that has versions.
 - **Runs record what they ran.** `Agent_Run__c.Prompt_Version__c` is stamped at run start and honored for the whole run, so activating a new version mid-run doesn't swap the prompt underneath it. A conversation pins on its first turn (`Agent_Session__c.Prompt_Version__c`) so a multi-turn thread can't change prompts halfway through.
 - **Rollback is instant.** Activating an older version takes effect on the next run with no metadata deploy. This is the reason versions are ordinary records and not Custom Metadata: Apex cannot DML CMDT, so routing prompt edits through `Metadata.Operations` would make every save _and every rollback_ a ~90 second async deploy.
-- **Drafts are the workspace.** A version saved without publishing stays editable and affects nothing. **Restore as draft** copies an older (immutable) version into a new editable one so you can build on it — the usual case being "v6 regressed, v3 was better, but I want v3 plus one fix." Drafts can be edited repeatedly and test-run before you publish.
+- **Drafts are the workspace.** A version saved without publishing stays editable and affects nothing. **Restore as draft** copies an older (immutable) version into a new editable one so you can build on it - the usual case being "v6 regressed, v3 was better, but I want v3 plus one fix." Drafts can be edited repeatedly and test-run before you publish.
 - **Compare before you commit.** The Test Bench can run a saved input against any version, drafts included, so you can put two traces side by side before making one live.
 
 ![Agent Run detail showing the stamped prompt version APV-0001, token usage of 5,633 prompt and 1,212 completion tokens, sub-agent depth, and the owning session](images/run-trace2.png)
@@ -111,7 +111,7 @@ Each tool is an `AgentTool` implementation registered via an `Agent_Tool_Definit
 1. Implement `AgentTool` in a new Apex class.
 2. Add an `Agent_Tool_Definition__mdt` record pointing `Tool_Class__c` at it, with
    `InputSchema__c` / `OutputSchema__c` describing the contract for the model.
-3. Add an `Agent_Tool_Mapping__mdt` record granting a specific agent access — or do it from
+3. Add an `Agent_Tool_Mapping__mdt` record granting a specific agent access - or do it from
    the Agent Builder UI.
 
 Keep all DML and SOQL in user mode. The security model of the whole framework rests on it.

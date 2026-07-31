@@ -18,7 +18,7 @@
 - [ ] Apex tests pass and coverage is still ≥ 75%
 - [ ] ApexDoc updated on any public class/method I touched
 - [ ] Tool SOQL/DML still runs in **user mode**
-- [ ] No breaking change to packaged components — or it's called out below
+- [ ] No breaking change to packaged components - or it's called out below
 
 ## Breaking changes
 
