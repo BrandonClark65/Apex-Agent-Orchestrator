@@ -146,22 +146,18 @@ Details and the "write your own tool" guide: [docs/ARCHITECTURE.md](docs/ARCHITE
 
 ## Getting help
 
-**Community support is free.** Open a
+**Free.** Open a
 [GitHub issue](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/issues) for bugs and
 feature requests, or start a
 [Discussion](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/discussions) for
 questions and "how would I build X" - I read all of them.
 
-**Paid help is available** if you'd rather not do it yourself. I'm the author, and I do
-contract work on this and on Salesforce-native AI generally:
-
-- Installing and configuring AAO in your org, wired to your LLM provider
-- Building agents and custom tools for your specific processes
-- Architecture review - including the honest "you should just use Agentforce" answer when
-  that's the right call
-- Reducing Agentforce credit spend by moving suitable workloads to a native runtime
-
+**Paid.** I'm the author and I take contract work on this: setup and configuration, agent and
+custom tool development, architecture review, and Agentforce cost reduction.
 📧 **clark.brandon.98@gmail.com** - tell me what you're trying to build.
+
+Both routes in full, plus what to include so a question gets a useful answer first time:
+**[SUPPORT.md](SUPPORT.md)**.
 
 ## Contributing
 
