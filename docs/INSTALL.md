@@ -1,13 +1,21 @@
 # Installation and post-install setup
 
-**Current version: 1.2.0 (Released).** This is a promoted managed package version - it can be
+**Current version: 1.3.0 (Released).** This is a promoted managed package version - it can be
 installed into any org, including production. Testing in a sandbox or scratch org first is
 still recommended.
 
-- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OeXNAA0)
-- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000OeXNAA0)
+- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
+- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
 
 Steps 1-4 are required. Steps 5-8 are optional.
+
+> **Upgrading from 1.2.0 or earlier?** 1.3.0 changes the packaged agent prompts so agents
+> answer in prose instead of dumping JSON into the chat. That reaches an agent only if it has
+> no `Agent_Prompt_Version__c` records - the packaged prompt is just the baseline. **An agent
+> that already has prompt versions keeps running its active one and will look unchanged after
+> the upgrade.** To pick up the fix there, open the Agent Builder, save a new version whose
+> final-answer instruction requires `message`, and activate it. See
+> [the final-answer contract](ARCHITECTURE.md#the-final-answer-contract).
 
 ---
 
