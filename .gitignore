@@ -42,8 +42,7 @@ $RECYCLE.BIN/
 # Local environment variables
 .env
 
-# Claude Code project guidance
-CLAUDE.md
+# Claude Code scratch files (CLAUDE.md is tracked - it's shared project guidance)
 plan.md
 
 # Python Salesforce Functions
