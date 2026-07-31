@@ -36,12 +36,24 @@ your LLM credential is step 1 of
 
 A system prompt is the highest-churn thing in an agent, so it is versioned rather than edited in place. Every save creates an **`Agent_Prompt_Version__c`** record: numbered per agent, attributable, and immutable once published (a validation rule blocks edits to a published body - you save a new version instead).
 
+<img src="images/prompt-versions.png" width="380" alt="Prompt version history panel: v5 active and restored from v3, v4 through v2 published, v1 backfilled from the packaged baseline, each with Diff vs active, Activate, and Restore as draft actions">
+
+The version history panel in the Agent Builder. Note v5 - "Restored from v3" - which is the
+rollback-plus-one-fix case the bullets below describe, and v1, seeded from the packaged
+baseline by the backfill script.
+
 - **The active version is what runs.** Exactly one version per agent is active, enforced at the database level by a unique key rather than by convention.
 - **`Agent_Definition__mdt.SystemPrompt__c` is now only the packaged baseline** - the fallback the engine uses when an agent has no versions at all. Creating an agent in the builder seeds both the baseline and v1 from the same text; after that the baseline is frozen and edits go through versions. Editing the CMDT field directly has no effect on an agent that has versions.
 - **Runs record what they ran.** `Agent_Run__c.Prompt_Version__c` is stamped at run start and honored for the whole run, so activating a new version mid-run doesn't swap the prompt underneath it. A conversation pins on its first turn (`Agent_Session__c.Prompt_Version__c`) so a multi-turn thread can't change prompts halfway through.
 - **Rollback is instant.** Activating an older version takes effect on the next run with no metadata deploy. This is the reason versions are ordinary records and not Custom Metadata: Apex cannot DML CMDT, so routing prompt edits through `Metadata.Operations` would make every save _and every rollback_ a ~90 second async deploy.
 - **Drafts are the workspace.** A version saved without publishing stays editable and affects nothing. **Restore as draft** copies an older (immutable) version into a new editable one so you can build on it — the usual case being "v6 regressed, v3 was better, but I want v3 plus one fix." Drafts can be edited repeatedly and test-run before you publish.
 - **Compare before you commit.** The Test Bench can run a saved input against any version, drafts included, so you can put two traces side by side before making one live.
+
+![Agent Run detail showing the stamped prompt version APV-0001, token usage of 5,633 prompt and 1,212 completion tokens, sub-agent depth, and the owning session](images/run-trace2.png)
+
+What that looks like after the fact: the run records which prompt version it executed, so a
+trace from six weeks ago still tells you what it ran - alongside token usage and the session
+turn it belonged to.
 
 The tradeoff of storing versions as data: they are records, not metadata, so they don't move between orgs with a `sf project deploy`. The packaged baseline still deploys normally, and `scripts/apex/BackfillPromptVersions.apex` recreates v1 in a new org from that baseline.
 

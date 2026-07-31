@@ -78,6 +78,15 @@ Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should ch
 
 Note that **AAO_User** grants read access to `Agent_Prompt_Version__c`. Chat users never edit prompts, but the Agent Builder's version panel and the run trace's version badge both read these records, so removing that access leaves those surfaces blank for them.
 
+**What a working install looks like.** Send an agent a message, then open **Run Monitor**. You
+should see the run land with a status of `Succeeded`:
+
+![Run Monitor listing agent runs with status, trigger, depth, and start time](images/run-monitor.png)
+
+If runs sit at `Running` and never finish, the watchdog isn't scheduled (step 3). If they go
+straight to `Failed`, open the run and read the step trace - a failure on step 1 is almost
+always the credential problem in step 1 above.
+
 ## 5. Seed prompt version history (optional)
 
 Agents installed with the package start with no `Agent_Prompt_Version__c` records and run on their packaged baseline prompt. That works fine, but prompt history then begins at your first edit rather than at what shipped. To capture the shipped prompts as v1 so you can diff and roll back to them:

@@ -11,9 +11,7 @@ multi-step agents that query and update records, delegate to sub-agents, remembe
 learned, and show you every step they took - without Agentforce credits, Data Cloud, or an
 external orchestration service.
 
-
-  ![Agent Chat](docs/images/agent-chat.png)
-
+![Agent Chat: a user asks "Show me all of my cases from the last year", the agent calls QuerySalesforceTool, and the matching records come back in the thread](docs/images/agent-chat.png)
 
 ---
 
@@ -98,6 +96,29 @@ The included Lightning app ships six UI surfaces (LWCs):
 
 Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response
 detail and the sub-agent family tree.
+
+<table>
+  <tr>
+    <td width="50%">
+      <a href="docs/images/agent-builder1.png"><img src="docs/images/agent-builder1.png" width="100%" alt="Agent Builder showing an agent's provider, memory config, versioned system prompt, and granted tools with their input schemas"></a>
+      <sub><b>Agents</b> - provider, memory, the active prompt version, and every granted tool with its schema and prompt guidance.</sub>
+    </td>
+    <td width="50%">
+      <a href="docs/images/test-bench.png"><img src="docs/images/test-bench.png" width="100%" alt="Test Bench running a saved input against prompt v1, with the step trace expanded to show the raw LLM request and response"></a>
+      <sub><b>Test Bench</b> - run a saved input against any prompt version and read the raw LLM request and response.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/images/run-monitor.png"><img src="docs/images/run-monitor.png" width="100%" alt="Run Monitor listing agent runs with status, trigger, depth, and start time"></a>
+      <sub><b>Run Monitor</b> - every run, filterable by status and agent, with cancel and re-run.</sub>
+    </td>
+    <td width="50%">
+      <a href="docs/images/run-trace1.png"><img src="docs/images/run-trace1.png" width="100%" alt="Agent Run record page listing three steps: an LLM call, a QuerySalesforceTool call, and a second LLM call"></a>
+      <sub><b>Run trace</b> - the step-by-step record of what the agent actually did.</sub>
+    </td>
+  </tr>
+</table>
 
 ### Built-in tools
 
