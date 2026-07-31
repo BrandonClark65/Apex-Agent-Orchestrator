@@ -141,8 +141,8 @@ Details and the "write your own tool" guide: [docs/ARCHITECTURE.md](docs/ARCHITE
 | **[docs/INSTALL.md](docs/INSTALL.md)**                 | Full post-install setup: credentials, Metadata API, jobs, permission sets, Flow     |
 | **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**       | Core components, prompt versioning design, tools, and how the engine actually works |
 | **[docs/EXTERNAL-ACCESS.md](docs/EXTERNAL-ACCESS.md)** | REST API + embeddable web chat widget                                               |
-| **[docs/PACKAGING.md](docs/PACKAGING.md)**             | How package versions are cut and released                                           |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)**                 | Dev setup (scratch org workflow), conventions, PR process                           |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)**                 | What you can build and verify, conventions, PR process                              |
+| **[docs/PACKAGING.md](docs/PACKAGING.md)**             | How package versions are cut and released (maintainer reference)                    |
 
 ## Getting help
 

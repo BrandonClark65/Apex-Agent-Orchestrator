@@ -12,13 +12,20 @@
 
 ## Checklist
 
-- [ ] `npm run prettier:verify` passes
+Things anyone can do:
+
 - [ ] `npm run lint` passes
 - [ ] `npm run test:unit` passes
-- [ ] Apex tests pass and coverage is still ≥ 75%
+- [ ] Ran `npx prettier --write` on the files I changed (not the whole repo)
 - [ ] ApexDoc updated on any public class/method I touched
 - [ ] Tool SOQL/DML still runs in **user mode**
 - [ ] No breaking change to packaged components - or it's called out below
+
+Apex tests need the `aao` namespace, so contributors can't run them - see
+[CONTRIBUTING.md](../CONTRIBUTING.md). Tick this only if you actually could:
+
+- [ ] Apex tests pass in a namespaced org and coverage is still ≥ 75%
+- [ ] N/A - no org available, Apex not verified
 
 ## Breaking changes
 

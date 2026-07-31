@@ -1,8 +1,15 @@
 # External Access (REST API + Web Chatbot)
 
-This explores driving an AAO agent from **outside Salesforce** - a customer-facing web chatbot
-bound to a single agent. It is a proof-of-concept slice: the REST boundary, the identity model,
-the safety gates, and a standalone widget.
+Drive an AAO agent from **outside Salesforce** - a customer-facing web chatbot, or any HTTP
+client. This covers the REST boundary, the identity model, the safety gates, and the example
+widget.
+
+**Scope, so you can judge whether it fits.** The API exposes exactly one agent, chosen
+server-side, and runs every conversation as a single integration user. That is deliberate: it
+keeps the blast radius to what that one user can see. It is not a general-purpose API over
+every agent in your org, and there is no per-end-user identity - if you need either, this is
+the wrong surface and you'd want the `@AuraEnabled` controller behind your own layer instead.
+The example widget in `examples/` is a demo, not a supported client library.
 
 ## Architecture
 
