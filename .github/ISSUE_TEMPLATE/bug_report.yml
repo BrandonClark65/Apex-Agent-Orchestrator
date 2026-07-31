@@ -1,0 +1,82 @@
+name: Bug report
+description: Something in the framework doesn't work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The **step trace** is the single most useful thing you can
+        include — Run Monitor → open the run → step timeline. Most bugs are diagnosable
+        straight from it.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create an agent with tools X and Y granted
+        2. Ask it "..."
+        3. The run fails at step 3 with ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: trace
+    attributes:
+      label: Step trace / error
+      description: >
+        The Agent_Step__c timeline for the failing run, or the Apex error. Redact any
+        customer data.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: package-version
+    attributes:
+      label: Package version (or commit)
+      placeholder: "1.2.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: LLM provider
+      options:
+        - OpenAI
+        - Anthropic (Claude)
+        - Azure OpenAI
+        - OpenAI Responses API
+        - Azure OpenAI Responses API
+        - Other / custom
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: How is it installed?
+      options:
+        - Managed package (production or sandbox)
+        - Source deployed to a scratch org
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the [install troubleshooting table](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/blob/main/docs/INSTALL.md#troubleshooting)
+          required: true
+        - label: This isn't a security vulnerability (those go to [SECURITY.md](https://github.com/BrandonClark65/Apex-Agent-Orchestrator/blob/main/SECURITY.md))
+          required: true

@@ -1,10 +1,10 @@
-# Packaging Guide — Apex Agent Orchestrator (2GP)
+# Packaging Guide - Apex Agent Orchestrator (2GP)
 
 How to cut and release new versions of the **second-generation managed package (2GP)**
 `Apex Agent Orchestrator` (package id `0Hofj0000002LpxCAE`, namespace `aao`).
 
 All commands are **single-line PowerShell** (this repo's shell). Bash-style `\`
-line continuations will not work here — keep each command on one line or use a
+line continuations will not work here - keep each command on one line or use a
 backtick (`` ` ``) to continue.
 
 ---
@@ -15,7 +15,7 @@ backtick (`` ` ``) to continue.
 |-----|-------|------|------|
 | **Dev Hub** | `DevHub` | Owns the `0Ho` package, all versions, and the namespace-registry link. Every `version create` / `promote` runs here. | Keep alive; don't lose access. Log in periodically so a DE org isn't deactivated. |
 | **Namespace org** | `aao` | Owns the `aao` namespace, linked to the Dev Hub. (Also the retired 1GP packaging org.) | Don't delete; don't unlink the namespace. A namespace binds to exactly one Dev Hub. |
-| **Repo** | — | Source of truth for all metadata. | This is the day-to-day working surface. |
+| **Repo** | - | Source of truth for all metadata. | This is the day-to-day working surface. |
 | **Scratch orgs** | `2gp-test` etc. | Disposable dev / test environments. | Create, test, delete freely. |
 
 > Verify the aliases with `sf org list`. Substitute your real Dev Hub alias for
@@ -27,7 +27,7 @@ backtick (`` ` ``) to continue.
 
 ### 0. Pre-flight
 
-Make sure tests pass before spending time on a build — `version create` enforces
+Make sure tests pass before spending time on a build - `version create` enforces
 75% Apex coverage across the package and fails late if you're short.
 
 ```powershell
@@ -38,7 +38,7 @@ sf apex run test --target-org aao --code-coverage --result-format human
 
 For a managed 2GP package, **a new version is upgradeable by subscribers only if
 it declares the previous *released* version as its ancestor.** Skip this and
-subscribers on the old version cannot upgrade in place — they'd have to uninstall
+subscribers on the old version cannot upgrade in place - they'd have to uninstall
 (losing data) and reinstall.
 
 Edit `sfdx-project.json` → the `force-app` entry in `packageDirectories`. Add
@@ -56,13 +56,13 @@ Edit `sfdx-project.json` → the `force-app` entry in `packageDirectories`. Add
 ```
 
 Notes:
-- The **very first** version (1.0) has **no** ancestor — it's the root. Every
+- The **very first** version (1.0) has **no** ancestor - it's the root. Every
   version after that needs one.
 - The ancestor must be a **promoted/Released** version, and it must be the
   highest promoted version.
 - You can use `ancestorId` (a `04t...` id or a `packageAliases` entry) instead of
   `ancestorVersion`.
-- The `HIGHEST` keyword appears in Salesforce docs but is **broken in the CLI** —
+- The `HIGHEST` keyword appears in Salesforce docs but is **broken in the CLI** -
   always specify the explicit version number.
 
 ### 2. Create the version
@@ -90,7 +90,7 @@ Click through the app (tabs, permission sets, a sample agent run) to confirm it 
 ### 4. Promote to Released
 
 Only a **Released** version can be installed in production and can serve as an
-upgrade source. **Promotion is permanent** — components in a released version can
+upgrade source. **Promotion is permanent** - components in a released version can
 never be removed (only deprecated). Test first.
 
 ```powershell
@@ -113,11 +113,11 @@ is recorded in git.
 | Scenario | In-place upgrade? | Data kept? |
 |----------|-------------------|------------|
 | Released → newer Released **with ancestor set** | ✅ Yes | ✅ Yes |
-| Released → newer Released **ancestor NOT set** | ❌ No — new root; must uninstall first | ❌ Lost |
-| Beta installed (dev/sandbox) → any version | ❌ No — Beta isn't upgradeable; uninstall first | ❌ Lost |
+| Released → newer Released **ancestor NOT set** | ❌ No - new root; must uninstall first | ❌ Lost |
+| Beta installed (dev/sandbox) → any version | ❌ No - Beta isn't upgradeable; uninstall first | ❌ Lost |
 
 Takeaways:
-- Real subscribers only ever install **Released** versions and upgrade in place —
+- Real subscribers only ever install **Released** versions and upgrade in place -
   **as long as you always set the ancestor** (Step 1).
 - Betas are for *your* testing only; uninstall them before installing another.
 - To upgrade a subscriber, just send them the new version's install URL/id; they
@@ -166,7 +166,7 @@ sf package version delete --package 04tXXXXXXXXXXXX --target-dev-hub DevHub
 
 - **Scheduled jobs block class deploys.** The `aao` dev org typically has
   `AgentWatchdogSchedulable` and `MemoryJanitorSchedulable` cron jobs. Salesforce
-  refuses to deploy a class referenced by a scheduled job — unschedule those crons
+  refuses to deploy a class referenced by a scheduled job - unschedule those crons
   before deploying engine classes, then reschedule. (Fresh scratch-org installs are
   unaffected.)
 - **2GP validates the whole metadata graph.** Unlike scratch/1GP builds, a
@@ -181,7 +181,7 @@ sf package version delete --package 04tXXXXXXXXXXXX --target-dev-hub DevHub
 
 ---
 
-## One-time setup (already done — for reference)
+## One-time setup (already done - for reference)
 
 1. Enabled Dev Hub + Namespace Registry in the Dev Hub org.
 2. Registered the `aao` namespace to the Dev Hub.
@@ -190,5 +190,5 @@ sf package version delete --package 04tXXXXXXXXXXXX --target-dev-hub DevHub
 4. First `version create` + scratch-org test.
 
 The old 1GP package (`033bm000000U58j`, Beta-only, single dev-org install) was
-**abandoned**, not converted — there were no production subscribers to preserve an
+**abandoned**, not converted - there were no production subscribers to preserve an
 upgrade path for, so a fresh 2GP under the same namespace was the clean route.

@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / how do I…
+    url: https://github.com/BrandonClark65/Apex-Agent-Orchestrator/discussions
+    about: Setup help, design questions, and "how would I build X" — Discussions are the right place.
+  - name: Installation trouble
+    url: https://github.com/BrandonClark65/Apex-Agent-Orchestrator/blob/main/docs/INSTALL.md#troubleshooting
+    about: The troubleshooting table covers the errors nearly everyone hits first.
+  - name: Security vulnerability
+    url: https://github.com/BrandonClark65/Apex-Agent-Orchestrator/blob/main/SECURITY.md
+    about: Please report privately by email rather than opening a public issue.
+  - name: Paid setup or agent development
+    url: https://github.com/BrandonClark65/Apex-Agent-Orchestrator/blob/main/SUPPORT.md#paid
+    about: If you'd rather have this done for you, I do contract work on it.
