@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
+        <members>AgentAccess</members>
+        <members>AgentAccessTest</members>
         <members>AgentBuilderController</members>
         <members>AgentBuilderControllerTest</members>
         <members>AgentChatController</members>
@@ -85,6 +87,7 @@
         <members>Agent_Definition__mdt.LLMProvider__c</members>
         <members>Agent_Definition__mdt.MaxSteps__c</members>
         <members>Agent_Definition__mdt.MemoryConfig__c</members>
+        <members>Agent_Definition__mdt.Required_Custom_Permission__c</members>
         <members>Agent_Definition__mdt.SystemPrompt__c</members>
         <members>Agent_Memory__c.Access_Count__c</members>
         <members>Agent_Memory__c.Agent__c</members>

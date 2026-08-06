@@ -125,6 +125,46 @@ Keep all DML and SOQL in user mode. The security model of the whole framework re
 the Agent Builder's version panel and the run trace's version badge both read these records,
 so removing that access leaves those surfaces blank for them.
 
+## Restricting an agent to specific users
+
+`AAO_User` is all-or-nothing: it decides whether someone can chat at all, not which agents they
+get. By default every active agent is offered to every chat user.
+
+To narrow one, set `Agent_Definition__mdt.Required_Custom_Permission__c` to the API name of a
+Custom Permission. Only users who hold that permission can then start or continue a run against
+that agent. You can set it from the Agent Builder ("Required Custom Permission" on the agent
+form) or directly on the Custom Metadata record. Leave it blank and the agent stays open to
+everyone, which is what the packaged agents ship as.
+
+Membership is whatever Salesforce already says it is: create the Custom Permission, add it to a
+permission set, and assign that permission set (or a permission set group containing it) to the
+users and teams that should get in. There is no separate grant object to keep in sync.
+
+`AgentAccess` is the single decision point. It is consulted in two places:
+
+- `AgentChatController.getAvailableAgents` filters the chat picker, so a restricted agent is
+  simply not offered.
+- `AgentEngine.runAgent` and `AgentEngine.runAgentInSession` check again before anything is
+  created. That is the real boundary: the picker is presentation only, and a hand-built
+  `@AuraEnabled`, Flow, or REST call naming a restricted agent is refused the same way. On a
+  follow-up turn the check runs against the agent pinned to the session rather than the agent
+  name the caller passed, so revoking access also closes threads that are already open.
+
+Two consequences worth knowing before you turn this on:
+
+- **It fails closed.** `FeatureManagement.checkPermission` returns false for a Custom Permission
+  that does not exist, so a typo in the field locks the agent for everyone rather than opening
+  it. If an agent suddenly vanishes from every picker, check the spelling first.
+- **It applies to you too.** There is no admin bypass. Restricting an agent also blocks it in
+  the Test Bench and in Run Monitor's rerun until you assign yourself the permission.
+
+Sub-agent delegation is deliberately not gated. Which agents may delegate to which is set by an
+admin in `Agent_Tool_Mapping__mdt`, not chosen by the user, so an orchestrator can still hand
+work to a restricted agent through `SubAgentTool`. The child run's tools still execute in user
+mode, so delegation widens which agent answers, never which data the running user can reach. If
+an agent must be unreachable even indirectly, revoke the `SubAgentTool` grant rather than
+relying on the permission.
+
 ## Apex reference documentation
 
 Apex classes are documented with [ApexDocs](https://github.com/cesarParra/apexdocs) via `/** @description ... */` comment blocks. The generated reference guide is a build artifact (`docs/apex/`, gitignored) - regenerate it locally whenever you want current docs:

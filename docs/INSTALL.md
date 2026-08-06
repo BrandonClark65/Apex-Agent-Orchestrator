@@ -86,6 +86,14 @@ Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should ch
 
 Note that **AAO_User** grants read access to `Agent_Prompt_Version__c`. Chat users never edit prompts, but the Agent Builder's version panel and the run trace's version badge both read these records, so removing that access leaves those surfaces blank for them.
 
+**Restricting individual agents (optional).** **AAO_User** decides whether someone can chat, not which agents they get - by default every active agent shows up in every chat user's picker. To limit one:
+
+1. Create a Custom Permission in Setup, e.g. `AAO_Finance_Agent_Access`.
+2. Add it to a permission set, and assign that permission set (or a permission set group containing it) to the users who should have the agent.
+3. Put the Custom Permission's **API name** in `Required_Custom_Permission__c` on the agent - from the Agent Builder's agent form, or on the `Agent_Definition__mdt` record directly.
+
+Leave the field blank and the agent stays open to everyone. Two things to know: the check fails closed, so a mistyped API name hides the agent from everybody, and there is no admin bypass - assign yourself the permission too, or the Test Bench will refuse to run the agent. See [ARCHITECTURE.md](ARCHITECTURE.md#restricting-an-agent-to-specific-users) for where the check runs and why sub-agent delegation is exempt.
+
 **What a working install looks like.** Send an agent a message, then open **Run Monitor**. You
 should see the run land with a status of `Succeeded`:
 

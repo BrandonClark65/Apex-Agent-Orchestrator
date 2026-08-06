@@ -21,6 +21,10 @@ private class AgentBuilderControllerTest {
     System.assertNotEquals(null, crud, 'CRUD_Agent present');
     System.assert(!crud.tools.isEmpty(), 'granted tools joined');
     System.assertEquals('Default_Memory', crud.memoryConfig);
+    System.assert(
+      String.isBlank(crud.requiredCustomPermission),
+      'packaged demo agents ship unrestricted'
+    );
   }
 
   @IsTest

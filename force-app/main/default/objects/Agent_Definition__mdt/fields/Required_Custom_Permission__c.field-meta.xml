@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Required_Custom_Permission__c</fullName>
+    <description
+  >API name of a Custom Permission a user must hold to start or continue a conversation with this agent. Leave blank to let every user of the framework reach the agent. Assign the custom permission through permission sets or permission set groups to control which users and teams get in. A name that does not resolve to a real custom permission locks the agent for everyone, so the failure mode is closed rather than open.</description>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText
+  >Custom Permission API name required to use this agent. Blank means no restriction.</inlineHelpText>
+    <label>Required Custom Permission</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

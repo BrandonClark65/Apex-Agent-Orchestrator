@@ -8,8 +8,11 @@
  */
 public with sharing class AgentChatController {
   /**
-   * @description Lists active agents for the chat agent picker.
-   * @return One AgentOption per `Agent_Definition__mdt` with `IsActive__c = true`.
+   * @description Lists the agents the running user may chat with, for the agent picker.
+   * Agents restricted by `Required_Custom_Permission__c` are omitted unless the user holds
+   * that permission. Filtering the picker is presentation only — `AgentEngine` re-checks on
+   * every send, so a hand-crafted call cannot reach a hidden agent.
+   * @return One AgentOption per active `Agent_Definition__mdt` the user is allowed to reach.
    */
   @AuraEnabled(cacheable=true)
   public static List<AgentOption> getAvailableAgents() {
@@ -20,6 +23,9 @@ public with sharing class AgentChatController {
       WHERE aao__IsActive__c = TRUE
       ORDER BY MasterLabel
     ]) {
+      if (!AgentAccess.hasAccess(def.DeveloperName)) {
+        continue;
+      }
       AgentOption opt = new AgentOption();
       opt.developerName = def.DeveloperName;
       opt.label = def.MasterLabel;

@@ -2,17 +2,21 @@
 
 Captured and in use. This file is the map, so a UI change tells you which docs went stale.
 
-| File                  | Used in                                                            | What it shows                                                        |
-| --------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `demo.gif`            | `README.md` - hero, above the fold                                 | Full loop: question, tool call, prose answer, records behind Details |
-| `demo.mp4`            | `README.md` - "higher-quality MP4" link                            | Same cut at 1280px/24fps                                             |
-| `agent-chat.png`      | Social preview and AppExchange listing (no longer the README hero) | The finished prose answer with Details collapsed                     |
-| `agent-builder1.png`  | `README.md` - app gallery                                          | Provider, memory config, active prompt version, granted tool schemas |
-| `test-bench.png`      | `README.md` - app gallery                                          | Version picker plus the raw LLM request/response in the step trace   |
-| `run-monitor.png`     | `README.md` - app gallery; `docs/INSTALL.md` - "working install"   | The run table, filterable, with statuses and triggers                |
-| `run-trace1.png`      | `README.md` - app gallery                                          | Agent Run step list: LLM call, tool call, LLM call                   |
-| `prompt-versions.png` | `docs/ARCHITECTURE.md` - Prompt versioning                         | Version history with active/published states and restore actions     |
-| `run-trace2.png`      | `docs/ARCHITECTURE.md` - Prompt versioning                         | Stamped prompt version, token usage, session, sub-agent depth        |
+| File                  | Used in                                                            | What it shows                                                                               |
+| --------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `demo.gif`            | `README.md` - hero, above the fold                                 | Full loop: question, tool call, prose answer, records behind Details                        |
+| `demo.mp4`            | `README.md` - "higher-quality MP4" link                            | Same cut at 1280px/24fps                                                                    |
+| `agent-chat.png`      | Social preview and AppExchange listing (no longer the README hero) | The finished prose answer with Details collapsed                                            |
+| `agent-builder1.png`  | `README.md` - app gallery                                          | Provider, memory config, who can use the agent, active prompt version, granted tool schemas |
+| `test-bench.png`      | `README.md` - app gallery                                          | Version picker plus the raw LLM request/response in the step trace                          |
+| `run-monitor.png`     | `README.md` - app gallery; `docs/INSTALL.md` - "working install"   | The run table, filterable, with statuses and triggers                                       |
+| `run-trace1.png`      | `README.md` - app gallery                                          | Agent Run step list: LLM call, tool call, LLM call                                          |
+| `prompt-versions.png` | `docs/ARCHITECTURE.md` - Prompt versioning                         | Version history with active/published states and restore actions                            |
+| `run-trace2.png`      | `docs/ARCHITECTURE.md` - Prompt versioning                         | Stamped prompt version, token usage, session, sub-agent depth                               |
+
+**Stale:** `agent-builder1.png` predates the "Who Can Use It" row on the agent detail pane and
+the "Required Custom Permission" field on the edit form. Re-shoot when convenient - the shot is
+still accurate about everything else it shows.
 
 Two carry the most weight: `demo.gif` is the first thing a visitor sees, and
 `prompt-versions.png` is the only reason the versioning section reads as a real feature rather

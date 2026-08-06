@@ -16,6 +16,11 @@
  * its ToolCall step is logged as `'Pending'` and nothing further is scheduled — until the
  * child run's `ExecutionLogger.finishRun` calls `resumeParentRun` with the child's final
  * output as the tool result.
+ *
+ * Both public entry points ask `AgentAccess` whether the running user may use the requested
+ * agent before anything is created, so per-user agent restrictions hold for every caller -
+ * LWC, Flow, REST - not just the ones that filter their own picker. `startSubAgentRun` is
+ * intentionally exempt; see `AgentAccess` for why.
  * @group Agent Engine
  */
 public with sharing class AgentEngine {
@@ -73,6 +78,7 @@ public with sharing class AgentEngine {
    * @param triggerType Free-text label describing what triggered this run, stored for observability.
    * @param promptVersionId `Agent_Prompt_Version__c` to run against, or null to use the active version.
    * @return Id of the newly created Agent_Run__c record.
+   * @exception AuraHandledException When the running user lacks the agent's `Required_Custom_Permission__c` (see `AgentAccess`).
    */
   public static Id runAgent(
     String agentDeveloperName,
@@ -80,6 +86,8 @@ public with sharing class AgentEngine {
     String triggerType,
     Id promptVersionId
   ) {
+    AgentAccess.assertAccess(agentDeveloperName);
+
     PromptVersionService.ResolvedPrompt prompt = PromptVersionService.resolveById(
       promptVersionId,
       agentDeveloperName,
@@ -122,6 +130,7 @@ public with sharing class AgentEngine {
    * @param userMessage The user's chat message for this turn.
    * @param sessionId Existing `Agent_Session__c` to continue, or null to start a new thread.
    * @return Id of the newly created Agent_Run__c record for this turn.
+   * @exception AuraHandledException When the running user lacks the agent's `Required_Custom_Permission__c` (see `AgentAccess`). On a continuation this is checked against the session's pinned agent, not the argument.
    */
   @AuraEnabled
   public static Id runAgentInSession(
@@ -139,6 +148,7 @@ public with sharing class AgentEngine {
     Id pinnedVersionId = null;
 
     if (sessionId == null) {
+      AgentAccess.assertAccess(agentDeveloperName);
       sessionId = SessionService.startSession(agentDeveloperName, userMessage);
       // Pin the thread to whichever version is active right now, so publishing a new version
       // mid-conversation doesn't swap the prompt out from under an in-progress chat.
@@ -171,7 +181,11 @@ public with sharing class AgentEngine {
           'This session is closed. Start a new session to continue.'
         );
       }
+      // Check the session's pinned agent, not the caller's argument: the session decides which
+      // agent runs, so a user whose access was revoked must not be able to keep an old thread
+      // alive by passing an agent they are still allowed to use.
       agentDeveloperName = session.Agent__c;
+      AgentAccess.assertAccess(agentDeveloperName);
       turnNumber =
         (session.Turn_Count__c == null
           ? 0

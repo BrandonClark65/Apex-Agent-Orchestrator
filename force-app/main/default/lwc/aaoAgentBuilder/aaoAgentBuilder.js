@@ -158,7 +158,8 @@ export default class AaoAgentBuilder extends LightningElement {
         llmProvider: source?.llmProvider ?? this.providerOptions[0]?.value,
         maxSteps: source?.maxSteps ?? 10,
         memoryConfig: source?.memoryConfig ?? this.memoryOptions[0]?.value,
-        isActive: source ? source.isActive : true
+        isActive: source ? source.isActive : true,
+        requiredCustomPermission: source?.requiredCustomPermission ?? ""
       };
       const catalog = await getToolCatalog();
       const granted = new Set(
@@ -538,6 +539,11 @@ export default class AaoAgentBuilder extends LightningElement {
   get activeVersionLabel() {
     const number = this.selected?.activePromptVersionNumber;
     return number ? `v${number}` : "Packaged baseline";
+  }
+
+  get accessLabel() {
+    const permission = this.selected?.requiredCustomPermission;
+    return permission ? `Requires ${permission}` : "Every framework user";
   }
 
   get hasTools() {
