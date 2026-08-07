@@ -7,6 +7,19 @@ import getMySessions from "@salesforce/apex/AgentChatController.getMySessions";
 
 const UI_EVENT_CHANNEL = "/event/aao__Agent_UI_Event__e";
 const POLL_INTERVAL_MS = 4000;
+const GENERIC_THINKING_TEXT = "Thinking…";
+
+/**
+ * App Builder leaves a property out entirely for a component placed before that property
+ * existed, and the Tab target has no configuration at all - so an absent value has to keep
+ * rendering what those pages render today, not fall to a bare JavaScript false.
+ */
+function normalizeBoolean(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return value !== false && value !== "false";
+}
 
 /**
  * Chat container: session sidebar, agent picker, message thread, composer, and a
@@ -18,6 +31,20 @@ export default class AaoAgentChat extends LightningElement {
   @api agentDeveloperName;
   /** Record page context; attached to the first message when present. */
   @api recordId;
+
+  /**
+   * Show what the agent is doing: tool activity chips in the thread, and the tool's name in
+   * the progress indicator. Off gives an answer-only chat that just says "Thinking…".
+   * Design-time property on App/Home/Record pages.
+   */
+  @api
+  get showToolActivity() {
+    return this._showToolActivity;
+  }
+  set showToolActivity(value) {
+    this._showToolActivity = normalizeBoolean(value, true);
+  }
+  _showToolActivity = true;
 
   @track sessions = [];
   @track messages = [];
@@ -80,9 +107,10 @@ export default class AaoAgentChat extends LightningElement {
     );
 
     if (eventType === "StepCompleted") {
-      this.thinkingText = detail?.toolName
-        ? `Calling ${detail.toolName}…`
-        : "Thinking…";
+      this.thinkingText =
+        this._showToolActivity && detail?.toolName
+          ? `Calling ${detail.toolName}…`
+          : GENERIC_THINKING_TEXT;
     } else if (eventType === "RunFinished") {
       this.finishTurn();
     }
@@ -172,7 +200,7 @@ export default class AaoAgentChat extends LightningElement {
     // optimistic user bubble
     this.messages = this.withKeys([...this.messages, { role: "user", text }]);
     this.sessionStatus = "Busy";
-    this.thinkingText = "Thinking…";
+    this.thinkingText = GENERIC_THINKING_TEXT;
 
     const message = this.recordId
       ? `${text}\n\n(Context: this conversation is about record ${this.recordId})`
@@ -242,8 +270,19 @@ export default class AaoAgentChat extends LightningElement {
     return this.composerDisabled || !(this.inputText || "").trim();
   }
 
+  /**
+   * The thread as rendered. Tool chips are filtered here rather than dropped on load, so
+   * flipping the property re-renders an open conversation without a refetch, and the keys
+   * assigned by `withKeys` stay stable either way.
+   */
+  get visibleMessages() {
+    return this._showToolActivity
+      ? this.messages
+      : this.messages.filter((m) => m.role !== "tool");
+  }
+
   get hasMessages() {
-    return this.messages.length > 0;
+    return this.visibleMessages.length > 0;
   }
 
   // ── utils ───────────────────────────────────────────────────

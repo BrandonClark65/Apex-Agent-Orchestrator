@@ -45,7 +45,7 @@
         <div class="thread slds-p-around_small slds-scrollable_y">
           <template lwc:if={hasMessages}>
             <ul class="slds-chat-list">
-              <template for:each={messages} for:item="msg">
+              <template for:each={visibleMessages} for:item="msg">
                 <c-aao-chat-message
                   key={msg.key}
                   message={msg}

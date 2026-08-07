@@ -144,6 +144,21 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - **Customer-safe by default.** Session responses show only the user's messages and the agent's final answers - tool calls, intermediate thinking, and error internals are stripped. `POST` is rate-limited per `externalRef` (default 20 turns / 60s → `429` with `Retry-After`).
 - **Example widget.** `examples/external-chatbot/index.html` is a standalone chat UI (demo mode out of the box; add an API URL + token for live). Don't ship the integration token to a public browser - front the API with a thin backend proxy, as the doc describes.
 
+## 9. Tune the chat component (optional)
+
+The **Agent Chat** component can be dropped onto an App, Home, or Record page in the Lightning App Builder. It has two design-time properties:
+
+| Property                | Default | What it does                                                                                                                                                                                                                                  |
+| ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pinned Agent**        | blank   | An `Agent_Definition__mdt` DeveloperName. When set, the agent picker is hidden and every chat on that page uses this agent.                                                                                                                   |
+| **Show Agent Activity** | on      | Shows the tool steps the agent runs on the way to an answer: activity chips in the thread ("Used QuerySalesforceTool") and the tool's name in the progress indicator ("Calling QuerySalesforceTool..."). Turn it off for an answer-only chat. |
+
+Leave **Show Agent Activity** on for admins and builders - seeing which tool ran is most of the value when something looks wrong. Turn it off for pages aimed at people who just want the answer, such as a sales rep's record page: the thread then shows only their questions and the agent's replies, and the progress indicator reads a plain "Thinking...". Nothing else changes - the same run happens, the steps are still logged, and Run Monitor still shows the full trace.
+
+The setting is per placement, so the same agent can be transparent on an internal admin page and answer-only on a rep-facing one. It affects display only and is not a security control: the run trace is still readable to anyone with access to `Agent_Run__c`. On the **Agent Chat** tab, which has no App Builder configuration, activity is always shown.
+
+A component that was placed on a page before this property existed keeps showing activity, so upgrading changes nothing until you edit the page.
+
 ---
 
 ## Troubleshooting

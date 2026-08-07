@@ -21,6 +21,13 @@
         label="Pinned Agent"
         description="Agent_Definition__mdt DeveloperName. When set, the agent picker is hidden and all chats use this agent."
       />
+      <property
+        name="showToolActivity"
+        type="Boolean"
+        default="true"
+        label="Show Agent Activity"
+        description="Show the tool steps the agent runs on its way to an answer, as activity chips in the thread and by name in the progress indicator. Uncheck for an audience that only wants the answer - the chat then shows a plain 'Thinking...' while it works."
+      />
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>

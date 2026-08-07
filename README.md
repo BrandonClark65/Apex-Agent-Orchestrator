@@ -89,14 +89,14 @@ Flow actions: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 The included Lightning app ships six UI surfaces (LWCs):
 
-| Tab              | What it does                                                                                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto-attaches the record as context).             |
-| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                 |
-| **Agents**       | Agent builder: view or edit each agent's tools, provider, and memory config, plus a prompt version history (diff, publish, activate, restore) and a "what the LLM actually sees" manifest preview. |
-| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                     |
-| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                            |
-| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace. Pick a prompt version to run against, so the same input can be compared across two versions.         |
+| Tab              | What it does                                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips - switchable off per page for an answer-only chat. Also embeddable on record pages (auto-attaches the record as context). |
+| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                                                       |
+| **Agents**       | Agent builder: view or edit each agent's tools, provider, and memory config, plus a prompt version history (diff, publish, activate, restore) and a "what the LLM actually sees" manifest preview.                                       |
+| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                                                           |
+| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                                                                  |
+| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace. Pick a prompt version to run against, so the same input can be compared across two versions.                                               |
 
 Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response
 detail and the sub-agent family tree.
