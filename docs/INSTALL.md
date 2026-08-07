@@ -1,11 +1,11 @@
 # Installation and post-install setup
 
-**Current version: 1.3.0 (Released).** This is a promoted managed package version - it can be
+**Current version: 1.4.0 (Released).** This is a promoted managed package version - it can be
 installed into any org, including production. Testing in a sandbox or scratch org first is
 still recommended.
 
-- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
-- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
+- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)
+- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)
 
 Steps 1-4 are required. Steps 5-8 are optional.
 

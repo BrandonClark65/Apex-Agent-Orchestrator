@@ -23,8 +23,8 @@ upgraded in place, the fix path is "install the new version" rather than a backp
 
 | Version | Supported  |
 | ------- | ---------- |
-| 1.3.x   | ✅         |
-| < 1.3   | ❌ upgrade |
+| 1.4.x   | ✅         |
+| < 1.4   | ❌ upgrade |
 
 ## Security model, in brief
 

@@ -1,7 +1,7 @@
 # Apex Agent Orchestrator (AAO)
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Package version](https://img.shields.io/badge/package-1.3.0-brightgreen.svg)](#install)
+[![Package version](https://img.shields.io/badge/package-1.4.0-brightgreen.svg)](#install)
 [![Salesforce](https://img.shields.io/badge/platform-Salesforce-00A1E0.svg)](https://developer.salesforce.com/)
 
 **Open-source AI agents that live inside your Salesforce org, run on your own LLM keys, and cost you nothing per conversation.**
@@ -39,11 +39,11 @@ Agentforce.
 
 ## Install
 
-**Current version: 1.3.0 (Released)** - a promoted managed package, installable in any org
+**Current version: 1.4.0 (Released)** - a promoted managed package, installable in any org
 including production. Test in a sandbox or scratch org first.
 
-**[→ Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)**
-· **[→ Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)**
+**[→ Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)**
+· **[→ Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)**
 
 Then, roughly 20 minutes of setup:
 
@@ -182,7 +182,7 @@ Security issues: please **don't** open a public issue - see [SECURITY.md](SECURI
 - ✅ Memory management UI
 - ✅ External REST API + embeddable web chatbot
 - ✅ Prompt versioning
-- ✅ Managed package release (2GP, v1.3 Released)
+- ✅ Managed package release (2GP, v1.4 Released)
 - ⏳ Vector/hybrid memory recall (provider seam in place)
 - ⏳ AppExchange listing (free app - security review fee is waived)
 

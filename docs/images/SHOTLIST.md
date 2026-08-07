@@ -14,10 +14,6 @@ Captured and in use. This file is the map, so a UI change tells you which docs w
 | `prompt-versions.png` | `docs/ARCHITECTURE.md` - Prompt versioning                         | Version history with active/published states and restore actions                            |
 | `run-trace2.png`      | `docs/ARCHITECTURE.md` - Prompt versioning                         | Stamped prompt version, token usage, session, sub-agent depth                               |
 
-**Stale:** `agent-builder1.png` predates the "Who Can Use It" row on the agent detail pane and
-the "Required Custom Permission" field on the edit form. Re-shoot when convenient - the shot is
-still accurate about everything else it shows.
-
 Two carry the most weight: `demo.gif` is the first thing a visitor sees, and
 `prompt-versions.png` is the only reason the versioning section reads as a real feature rather
 than a design essay. Re-shoot those first when the UI moves.
