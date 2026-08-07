@@ -147,6 +147,79 @@ private class AgentChatControllerTest {
   }
 
   @IsTest
+  static void testGetAvailableAgentsHidesRestrictedAgents() {
+    // CRUD_Agent now needs a custom permission this user does not hold; Orchestrator_Agent
+    // is absent from the map, which means unrestricted.
+    AgentAccess.setRequirements(
+      new Map<String, String>{ 'CRUD_Agent' => 'AAO_Crud_Agent_Access' }
+    );
+
+    Set<String> visible = new Set<String>();
+    for (
+      AgentChatController.AgentOption opt : AgentChatController.getAvailableAgents()
+    ) {
+      visible.add(opt.developerName);
+    }
+
+    System.assert(
+      !visible.contains('CRUD_Agent'),
+      'restricted agent should not reach the picker'
+    );
+    System.assert(
+      visible.contains('Orchestrator_Agent'),
+      'unrestricted agents still show'
+    );
+  }
+
+  @IsTest
+  static void testSendMessageRejectsRestrictedAgent() {
+    // The picker is filtered, but the real gate is the send: a hand-crafted call naming an
+    // agent the picker never offered has to be refused too.
+    AgentAccess.setRequirements(
+      new Map<String, String>{ 'CRUD_Agent' => 'AAO_Crud_Agent_Access' }
+    );
+
+    Boolean threw = false;
+    try {
+      AgentChatController.sendMessage('CRUD_Agent', null, 'Find my accounts');
+    } catch (AuraHandledException e) {
+      threw = true;
+    }
+    System.assert(threw, 'sendMessage must refuse a restricted agent');
+    System.assertEquals(
+      0,
+      [SELECT COUNT() FROM Agent_Session__c],
+      'no session is created for a refused agent'
+    );
+  }
+
+  @IsTest
+  static void testExistingSessionIsRefusedAfterAccessIsRevoked() {
+    Id sessionId = SessionService.startSession('CRUD_Agent', 'hi');
+
+    // Access revoked after the thread already exists.
+    AgentAccess.setRequirements(
+      new Map<String, String>{ 'CRUD_Agent' => 'AAO_Crud_Agent_Access' }
+    );
+
+    Boolean threw = false;
+    try {
+      AgentChatController.sendMessage(null, sessionId, 'another question');
+    } catch (AuraHandledException e) {
+      threw = true;
+    }
+    System.assert(
+      threw,
+      'the session pins the agent, so a revoked user cannot keep chatting in it'
+    );
+    System.assertEquals(
+      'Active',
+      [SELECT Status__c FROM Agent_Session__c WHERE Id = :sessionId].Status__c,
+      'a refused turn must not leave the session locked Busy'
+    );
+  }
+
+  @IsTest
   static void testCloseSession() {
     Id sessionId = SessionService.startSession('CRUD_Agent', 'hi');
     AgentChatController.closeSession(sessionId);

@@ -84,6 +84,41 @@ of CI rather than enabled.
 
 Keep the README lean. It is a landing page, not a manual - deep detail belongs in `docs/`.
 
+## Releasing a package version
+
+[docs/PACKAGING.md](docs/PACKAGING.md) is the build procedure (ancestor, create, scratch-org
+test, promote). What that doc doesn't cover is the doc sweep afterwards. **Only a promoted
+(Released) version gets published** - never point these at a Beta `04t` id.
+
+`sf package version create` writes the new `04t` id into `packageAliases` in
+`sfdx-project.json` itself, so read the id from there rather than scrolling back through CLI
+output. Then update, in one commit:
+
+| File                               | What changes                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `sfdx-project.json`                | `versionName` / `versionNumber` bumped to the **next** release, `ancestorVersion` set to the one just promoted, new `packageAliases` entry |
+| [README.md](README.md)             | version badge, "Current version:" line, **both** install links, the roadmap bullet (`v1.4 Released`)                                       |
+| [docs/INSTALL.md](docs/INSTALL.md) | "Current version:" line, **both** install links                                                                                           |
+| [SECURITY.md](SECURITY.md)         | supported-versions table (`1.4.x` supported, `< 1.4` upgrade)                                                                             |
+
+Four files, five install-link occurrences. `grep -rn "installPackage.apexp" --include=*.md`
+catches any that were missed; the only legitimate leftover is the `04tXXXXXXXXXXXX`
+placeholder in `docs/PACKAGING.md`.
+
+Two things that are easy to get wrong:
+
+- **Don't bump every version number you find.** Some record when a feature arrived, not what
+  the current release is. The `PromptVersionBackfill` "requires 1.2.0 or later" notes in
+  `docs/INSTALL.md` are the standing example - bumping those makes the docs wrong.
+- **Add an upgrade note to `docs/INSTALL.md` only when upgrading is not transparent.** The
+  1.3.0 note exists because the prompt fix silently does nothing for agents that already have
+  `Agent_Prompt_Version__c` records, which reads as the fix being broken. A feature that
+  defaults to today's behavior for existing installs needs no note.
+
+Patch versions (a non-zero third digit, `1.3.1`) are **rejected** - `version create` fails with
+"Can't create patch version" unless Salesforce enables patch versioning for the namespace org
+via a Partner Community case. Every release so far has been a minor bump.
+
 ## Screenshots and demo media
 
 Encode GIFs **from the MP4, not the raw screen capture**. Going straight from a capture

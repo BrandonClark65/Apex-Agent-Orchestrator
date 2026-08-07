@@ -1,11 +1,11 @@
 # Installation and post-install setup
 
-**Current version: 1.3.0 (Released).** This is a promoted managed package version - it can be
+**Current version: 1.4.0 (Released).** This is a promoted managed package version - it can be
 installed into any org, including production. Testing in a sandbox or scratch org first is
 still recommended.
 
-- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
-- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)
+- [Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)
+- [Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)
 
 Steps 1-4 are required. Steps 5-8 are optional.
 
@@ -86,6 +86,14 @@ Assign **AAO_Admin** to builders/admins and **AAO_User** to anyone who should ch
 
 Note that **AAO_User** grants read access to `Agent_Prompt_Version__c`. Chat users never edit prompts, but the Agent Builder's version panel and the run trace's version badge both read these records, so removing that access leaves those surfaces blank for them.
 
+**Restricting individual agents (optional).** **AAO_User** decides whether someone can chat, not which agents they get - by default every active agent shows up in every chat user's picker. To limit one:
+
+1. Create a Custom Permission in Setup, e.g. `AAO_Finance_Agent_Access`.
+2. Add it to a permission set, and assign that permission set (or a permission set group containing it) to the users who should have the agent.
+3. Put the Custom Permission's **API name** in `Required_Custom_Permission__c` on the agent - from the Agent Builder's agent form, or on the `Agent_Definition__mdt` record directly.
+
+Leave the field blank and the agent stays open to everyone. Two things to know: the check fails closed, so a mistyped API name hides the agent from everybody, and there is no admin bypass - assign yourself the permission too, or the Test Bench will refuse to run the agent. See [ARCHITECTURE.md](ARCHITECTURE.md#restricting-an-agent-to-specific-users) for where the check runs and why sub-agent delegation is exempt.
+
 **What a working install looks like.** Send an agent a message, then open **Run Monitor**. You
 should see the run land with a status of `Succeeded`:
 
@@ -135,6 +143,21 @@ Both `Run Agent` and `Send Chat Message` return immediately with a Run Id - the 
 - **Endpoints.** `POST /agent/message` `{message, externalRef, sessionId?}` starts or continues a thread and returns immediately (poll for the answer); `GET /agent/session/{id}?externalRef=…` polls a thread; `GET /agent/config` returns the agent's display label.
 - **Customer-safe by default.** Session responses show only the user's messages and the agent's final answers - tool calls, intermediate thinking, and error internals are stripped. `POST` is rate-limited per `externalRef` (default 20 turns / 60s → `429` with `Retry-After`).
 - **Example widget.** `examples/external-chatbot/index.html` is a standalone chat UI (demo mode out of the box; add an API URL + token for live). Don't ship the integration token to a public browser - front the API with a thin backend proxy, as the doc describes.
+
+## 9. Tune the chat component (optional)
+
+The **Agent Chat** component can be dropped onto an App, Home, or Record page in the Lightning App Builder. It has two design-time properties:
+
+| Property                | Default | What it does                                                                                                                                                                                                                                  |
+| ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pinned Agent**        | blank   | An `Agent_Definition__mdt` DeveloperName. When set, the agent picker is hidden and every chat on that page uses this agent.                                                                                                                   |
+| **Show Agent Activity** | on      | Shows the tool steps the agent runs on the way to an answer: activity chips in the thread ("Used QuerySalesforceTool") and the tool's name in the progress indicator ("Calling QuerySalesforceTool..."). Turn it off for an answer-only chat. |
+
+Leave **Show Agent Activity** on for admins and builders - seeing which tool ran is most of the value when something looks wrong. Turn it off for pages aimed at people who just want the answer, such as a sales rep's record page: the thread then shows only their questions and the agent's replies, and the progress indicator reads a plain "Thinking...". Nothing else changes - the same run happens, the steps are still logged, and Run Monitor still shows the full trace.
+
+The setting is per placement, so the same agent can be transparent on an internal admin page and answer-only on a rep-facing one. It affects display only and is not a security control: the run trace is still readable to anyone with access to `Agent_Run__c`. On the **Agent Chat** tab, which has no App Builder configuration, activity is always shown.
+
+A component that was placed on a page before this property existed keeps showing activity, so upgrading changes nothing until you edit the page.
 
 ---
 

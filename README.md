@@ -1,7 +1,7 @@
 # Apex Agent Orchestrator (AAO)
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Package version](https://img.shields.io/badge/package-1.3.0-brightgreen.svg)](#install)
+[![Package version](https://img.shields.io/badge/package-1.4.0-brightgreen.svg)](#install)
 [![Salesforce](https://img.shields.io/badge/platform-Salesforce-00A1E0.svg)](https://developer.salesforce.com/)
 
 **Open-source AI agents that live inside your Salesforce org, run on your own LLM keys, and cost you nothing per conversation.**
@@ -39,11 +39,11 @@ Agentforce.
 
 ## Install
 
-**Current version: 1.3.0 (Released)** - a promoted managed package, installable in any org
+**Current version: 1.4.0 (Released)** - a promoted managed package, installable in any org
 including production. Test in a sandbox or scratch org first.
 
-**[→ Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)**
-· **[→ Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000P2ppAAC)**
+**[→ Install in production](https://login.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)**
+· **[→ Install in a sandbox](https://test.salesforce.com/packaging/installPackage.apexp?p0=04tfj000000QI9NAAW)**
 
 Then, roughly 20 minutes of setup:
 
@@ -89,14 +89,14 @@ Flow actions: **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 The included Lightning app ships six UI surfaces (LWCs):
 
-| Tab              | What it does                                                                                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips. Also embeddable on record pages (auto-attaches the record as context).             |
-| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                 |
-| **Agents**       | Agent builder: view or edit each agent's tools, provider, and memory config, plus a prompt version history (diff, publish, activate, restore) and a "what the LLM actually sees" manifest preview. |
-| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                     |
-| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                            |
-| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace. Pick a prompt version to run against, so the same input can be compared across two versions.         |
+| Tab              | What it does                                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Chat**   | Chat with any active agent: session sidebar, live "Calling QuerySalesforceTool…" progress, tool activity chips - switchable off per page for an answer-only chat. Also embeddable on record pages (auto-attaches the record as context). |
+| **Run Monitor**  | Live, filterable table of all runs with Cancel and Re-run actions.                                                                                                                                                                       |
+| **Agents**       | Agent builder: view or edit each agent's tools, provider, and memory config, plus a prompt version history (diff, publish, activate, restore) and a "what the LLM actually sees" manifest preview.                                       |
+| **Memories**     | What agents remember: users curate their own memories; admins curate everything, including the reflection lesson review queue.                                                                                                           |
+| **Tool Catalog** | Every registered tool with input/output schemas, prompt guidance, and per-agent grants.                                                                                                                                                  |
+| **Test Bench**   | Run any agent against an editable input JSON (savable samples) and watch the live step trace. Pick a prompt version to run against, so the same input can be compared across two versions.                                               |
 
 Plus the **Agent Run** record page trace: step timeline with expandable LLM request/response
 detail and the sub-agent family tree.
@@ -182,7 +182,7 @@ Security issues: please **don't** open a public issue - see [SECURITY.md](SECURI
 - ✅ Memory management UI
 - ✅ External REST API + embeddable web chatbot
 - ✅ Prompt versioning
-- ✅ Managed package release (2GP, v1.3 Released)
+- ✅ Managed package release (2GP, v1.4 Released)
 - ⏳ Vector/hybrid memory recall (provider seam in place)
 - ⏳ AppExchange listing (free app - security review fee is waived)
 

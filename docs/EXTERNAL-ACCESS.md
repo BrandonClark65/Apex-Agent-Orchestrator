@@ -69,6 +69,11 @@ extra keys, letting a client render cards/links/buttons while the bubble stays p
 - **Single, opt-in agent.** `Externally_Accessible__c` defaults to `false`, so nothing is exposed
   until an admin opts exactly one agent in. Do not flag internal/privileged agents.
 - **No client-chosen agent / no tool exposure.** Enforced server-side, as above.
+- **Per-user agent restrictions still apply.** If the externally accessible agent also sets
+  `Required_Custom_Permission__c`, the integration user has to hold that Custom Permission or every
+  `POST /message` fails. Either leave the field blank on the external agent or grant the permission
+  to the integration user. See
+  [ARCHITECTURE.md](ARCHITECTURE.md#restricting-an-agent-to-specific-users).
 - **Message size.** Messages over 8,000 characters are rejected (`400`).
 - **User-mode data access.** Tool reads/writes run in user mode, so the integration user's
   object/field/record permissions bound what any external conversation can touch. Give that user

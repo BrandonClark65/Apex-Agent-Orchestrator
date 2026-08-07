@@ -117,6 +117,15 @@
               ></lightning-input>
             </div>
           </div>
+          <lightning-input
+            label="Required Custom Permission"
+            value={form.requiredCustomPermission}
+            data-field="requiredCustomPermission"
+            onchange={handleFormChange}
+            field-level-help="API name of a Custom Permission a user must hold to chat with this agent. Leave blank to let every framework user reach it. Assign the permission through permission sets or permission set groups."
+            placeholder="Blank = available to everyone"
+            class="slds-m-bottom_x-small"
+          ></lightning-input>
           <lightning-textarea
             label="Goal"
             value={form.goal}
@@ -188,6 +197,10 @@
             <div class="slds-col">
               <p class="field-label">Max Steps</p>
               <p>{selected.maxSteps}</p>
+            </div>
+            <div class="slds-col">
+              <p class="field-label">Who Can Use It</p>
+              <p>{accessLabel}</p>
             </div>
           </div>
 

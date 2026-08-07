@@ -590,6 +590,62 @@ private class AgentEngineTest {
   }
 
   @IsTest
+  static void testRunAgentRejectsAnAgentTheUserCannotUse() {
+    // runAgent is the Flow / test-bench / rerun entry point, so the restriction has to hold
+    // there too - not only in the chat picker.
+    AgentAccess.setRequirements(
+      new Map<String, String>{ 'CRUD_Agent' => 'AAO_Crud_Agent_Access' }
+    );
+
+    Boolean threw = false;
+    try {
+      AgentEngine.runAgent('CRUD_Agent', '{"task":"x"}', 'Flow');
+    } catch (AuraHandledException e) {
+      threw = true;
+    }
+
+    System.assert(threw, 'runAgent must refuse a restricted agent');
+    System.assertEquals(
+      0,
+      [SELECT COUNT() FROM aao__Agent_Run__c],
+      'a refused run leaves no Agent_Run__c behind'
+    );
+  }
+
+  @IsTest
+  static void testSubAgentDelegationIsNotGatedByUserAccess() {
+    // Delegation is configured by an admin through Agent_Tool_Mapping__mdt, not chosen by the
+    // user, and the child's tools still run in user mode - so a restricted agent stays
+    // reachable as a sub-agent of an agent the user is allowed to use.
+    AgentAccess.setRequirements(
+      new Map<String, String>{
+        'Orchestrator_Agent' => 'AAO_Orchestrator_Access'
+      }
+    );
+
+    Id parentRunId = ExecutionLogger.startRun(
+      'CRUD_Agent',
+      '{"task":"x"}',
+      'Apex'
+    );
+
+    Test.startTest();
+    Id childRunId = AgentEngine.startSubAgentRun(
+      'Orchestrator_Agent',
+      '{"task":"delegated"}',
+      parentRunId,
+      1
+    );
+    Test.stopTest();
+
+    System.assertNotEquals(
+      null,
+      childRunId,
+      'a restricted agent is still reachable through delegation'
+    );
+  }
+
+  @IsTest
   static void testSubAgentRunResolvesItsOwnAgentsVersion() {
     publishVersion('CRUD_Agent', 'PARENT_MARKER');
     publishVersion('Orchestrator_Agent', 'CHILD_MARKER');

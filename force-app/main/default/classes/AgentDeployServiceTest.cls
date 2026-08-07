@@ -51,6 +51,41 @@ private class AgentDeployServiceTest {
   }
 
   @IsTest
+  static void testRequiredCustomPermissionIsDeployed() {
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.requiredCustomPermission = '  AAO_Sales_Agent_Access  ';
+
+    AgentDeployService.deployAgent(request);
+
+    Metadata.CustomMetadata definition = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[0];
+    System.assertEquals(
+      'AAO_Sales_Agent_Access',
+      valueMap(definition).get('aao__Required_Custom_Permission__c'),
+      'The permission name should deploy trimmed'
+    );
+  }
+
+  @IsTest
+  static void testClearingTheRequiredPermissionShipsAnEmptyValue() {
+    // Unlike SystemPrompt__c, a blank restriction has to ship: a CMDT deploy only touches the
+    // fields it lists, so omitting this one would make a restriction impossible to remove.
+    AgentDeployService.AgentSaveRequest request = sampleRequest();
+    request.requiredCustomPermission = null;
+
+    AgentDeployService.deployAgent(request);
+
+    Metadata.CustomMetadata definition = (Metadata.CustomMetadata) AgentDeployService.lastDeployedContainer.getMetadata()[0];
+    System.assert(
+      valueMap(definition).containsKey('aao__Required_Custom_Permission__c'),
+      'Clearing the restriction must be deployed, not skipped'
+    );
+    System.assertEquals(
+      '',
+      valueMap(definition).get('aao__Required_Custom_Permission__c')
+    );
+  }
+
+  @IsTest
   static void testContainerConstruction() {
     Id jobId = AgentDeployService.deployAgent(sampleRequest());
     System.assertEquals(null, jobId, 'enqueue bypassed in tests');

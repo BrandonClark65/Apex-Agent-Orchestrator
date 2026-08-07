@@ -40,7 +40,8 @@ public with sharing class AgentBuilderController {
         aao__LLMProvider__c,
         aao__MaxSteps__c,
         aao__MemoryConfig__c,
-        aao__IsActive__c
+        aao__IsActive__c,
+        aao__Required_Custom_Permission__c
       FROM aao__Agent_Definition__mdt
       ORDER BY MasterLabel
     ]) {
@@ -64,6 +65,7 @@ public with sharing class AgentBuilderController {
         : Integer.valueOf(def.aao__MaxSteps__c);
       config.memoryConfig = def.aao__MemoryConfig__c;
       config.isActive = def.aao__IsActive__c == true;
+      config.requiredCustomPermission = def.aao__Required_Custom_Permission__c;
       config.tools = new List<ToolInfo>();
       for (
         aao__Agent_Tool_Definition__mdt toolDef : ToolRegistry.getToolDefinitionsForAgent(
@@ -536,6 +538,9 @@ public with sharing class AgentBuilderController {
     public String memoryConfig;
     @AuraEnabled
     public Boolean isActive;
+    /** @description Custom Permission API name a user must hold to chat with this agent; blank means unrestricted. */
+    @AuraEnabled
+    public String requiredCustomPermission;
     @AuraEnabled
     public List<ToolInfo> tools;
   }

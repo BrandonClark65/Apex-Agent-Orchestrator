@@ -35,6 +35,7 @@ public with sharing class AgentDeployService {
     public Integer maxSteps;
     public String memoryConfig;
     public Boolean isActive;
+    public String requiredCustomPermission;
     public List<ToolGrant> tools;
   }
 
@@ -146,6 +147,17 @@ public with sharing class AgentDeployService {
     );
     record.values.add(value('aao__MemoryConfig__c', request.memoryConfig));
     record.values.add(value('aao__IsActive__c', request.isActive == true));
+    // Blank clears the restriction, so an empty string has to ship rather than be omitted -
+    // a CMDT deploy only touches the fields it lists, and omitting this one would make the
+    // restriction impossible to remove from the builder.
+    record.values.add(
+      value(
+        'aao__Required_Custom_Permission__c',
+        String.isBlank(request.requiredCustomPermission)
+          ? ''
+          : request.requiredCustomPermission.trim()
+      )
+    );
     return record;
   }
 
